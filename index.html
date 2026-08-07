@@ -1,0 +1,2233 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#009b84" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png" />
+  <link rel="apple-touch-icon" href="./icon-192.png" />
+  <meta name="application-name" content="ContainerTrack" />
+  <meta name="apple-mobile-web-app-title" content="ContainerTrack" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <title>ContainerTrack</title>
+  <style>
+    :root{
+      --bg:#050811;
+      --bg2:#091225;
+      --panel:rgba(13,24,46,.78);
+      --panel2:rgba(10,18,35,.9);
+      --line:rgba(125,211,252,.16);
+      --line2:rgba(139,92,246,.22);
+      --text:#eef7ff;
+      --muted:#91a6bc;
+      --cyan:#22d3ee;
+      --blue:#3b82f6;
+      --violet:#8b5cf6;
+      --green:#34d399;
+      --amber:#fbbf24;
+      --red:#fb7185;
+      --shadow:0 20px 60px rgba(0,0,0,.42);
+      --radius:20px;
+    }
+    *{box-sizing:border-box}
+    html{background:var(--bg)}
+    body{
+      margin:0;
+      min-height:100vh;
+      color:var(--text);
+      font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      background:
+        radial-gradient(circle at 12% 0%, rgba(34,211,238,.12), transparent 32%),
+        radial-gradient(circle at 92% 10%, rgba(139,92,246,.14), transparent 36%),
+        linear-gradient(160deg,var(--bg),var(--bg2) 56%,#070a13);
+    }
+    button,input,textarea{font:inherit}
+    button{cursor:pointer}
+    .app{max-width:1120px;margin:0 auto;padding:16px 16px 112px}
+    .topbar{
+      position:sticky;top:0;z-index:20;
+      margin:-16px -16px 18px;padding:14px 16px;
+      display:flex;align-items:center;justify-content:space-between;gap:12px;
+      background:rgba(5,8,17,.82);backdrop-filter:blur(18px);
+      border-bottom:1px solid var(--line);
+    }
+    .brand{display:flex;align-items:center;gap:11px}
+    .logo{
+      width:38px;height:38px;border-radius:13px;
+      display:grid;place-items:center;font-weight:900;color:#031018;
+      background:linear-gradient(135deg,var(--cyan),var(--blue) 52%,var(--violet));
+      box-shadow:0 0 28px rgba(34,211,238,.25);
+    }
+    .brand h1{font-size:15px;margin:0;letter-spacing:.2px}
+    .brand span{display:block;color:var(--muted);font-size:11px;margin-top:2px}
+    .top-actions{display:flex;gap:8px}
+    .icon-btn,.ghost,.primary,.danger,.success{
+      border:1px solid var(--line);color:var(--text);border-radius:13px;
+      background:rgba(255,255,255,.045);padding:10px 13px;
+      transition:.18s ease;min-height:42px;
+    }
+    .icon-btn:hover,.ghost:hover{border-color:rgba(34,211,238,.45);background:rgba(34,211,238,.08)}
+    .primary{
+      border-color:transparent;color:#021219;font-weight:800;
+      background:linear-gradient(135deg,var(--cyan),#67e8f9);
+      box-shadow:0 8px 24px rgba(34,211,238,.16);
+    }
+    .primary:hover{transform:translateY(-1px)}
+    .primary:disabled{opacity:.45;cursor:not-allowed;transform:none}
+    .danger{border-color:rgba(251,113,133,.28);color:#fecdd3;background:rgba(251,113,133,.08)}
+    .success{border-color:rgba(52,211,153,.28);color:#bbf7d0;background:rgba(52,211,153,.08)}
+    .hero{
+      border:1px solid var(--line);
+      background:linear-gradient(145deg,rgba(12,23,44,.94),rgba(11,17,31,.78));
+      box-shadow:var(--shadow);border-radius:26px;padding:20px;
+      position:relative;overflow:hidden;
+    }
+    .hero:after{
+      content:"";position:absolute;inset:auto -80px -120px auto;width:260px;height:260px;border-radius:50%;
+      background:radial-gradient(circle,rgba(139,92,246,.19),transparent 68%);pointer-events:none;
+    }
+    .eyebrow{color:var(--cyan);font-size:12px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase}
+    .hero h2{margin:7px 0 7px;font-size:clamp(24px,5vw,42px);line-height:1.05}
+    .hero p{margin:0;color:var(--muted);max-width:720px;line-height:1.55}
+    .setup-grid{display:grid;grid-template-columns:1.4fr .7fr .7fr;gap:12px;margin-top:20px}
+    .field label{display:block;font-size:12px;color:var(--muted);margin:0 0 7px}
+    .field input,.field textarea{
+      width:100%;border:1px solid var(--line);border-radius:14px;
+      background:rgba(3,8,18,.78);color:var(--text);padding:13px 14px;outline:none;
+    }
+    .field input:focus,.field textarea:focus{border-color:rgba(34,211,238,.62);box-shadow:0 0 0 3px rgba(34,211,238,.08)}
+    .container-input{text-transform:uppercase;font-weight:900;letter-spacing:1.4px}
+    .dashboard{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:14px 0}
+    .stat{
+      border:1px solid var(--line);background:var(--panel);border-radius:18px;padding:15px;
+      backdrop-filter:blur(12px)
+    }
+    .stat strong{display:block;font-size:24px}
+    .stat span{color:var(--muted);font-size:12px}
+    .progress-wrap{
+      border:1px solid var(--line);background:var(--panel);border-radius:18px;padding:15px;margin-bottom:14px
+    }
+    .progress-head{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:10px}
+    .progress-head strong{font-size:14px}
+    .progress-head span{font-size:12px;color:var(--muted)}
+    .progress{height:10px;border-radius:999px;background:rgba(255,255,255,.06);overflow:hidden}
+    .progress > div{
+      height:100%;width:0;background:linear-gradient(90deg,var(--cyan),var(--blue),var(--violet));
+      border-radius:inherit;transition:width .25s ease;
+    }
+    .status-banner{
+      display:none;border:1px solid rgba(251,191,36,.28);background:rgba(251,191,36,.08);
+      color:#fde68a;border-radius:16px;padding:13px 14px;margin-bottom:14px;line-height:1.4
+    }
+    .status-banner.show{display:block}
+    .status-banner.done{border-color:rgba(52,211,153,.3);background:rgba(52,211,153,.08);color:#bbf7d0}
+    .sections{display:grid;gap:14px}
+    .section{
+      border:1px solid var(--line);background:var(--panel2);border-radius:22px;overflow:hidden;
+      box-shadow:0 12px 40px rgba(0,0,0,.18)
+    }
+    .section-head{
+      padding:16px 17px;border-bottom:1px solid var(--line);
+      display:flex;align-items:center;justify-content:space-between;gap:12px
+    }
+    .section-title{display:flex;gap:11px;align-items:center}
+    .section-icon{
+      width:38px;height:38px;border-radius:12px;display:grid;place-items:center;
+      background:linear-gradient(135deg,rgba(34,211,238,.16),rgba(139,92,246,.16));
+      border:1px solid var(--line2)
+    }
+    .section-title h3{margin:0;font-size:15px}
+    .section-title p{margin:3px 0 0;color:var(--muted);font-size:12px}
+    .section-count{font-size:12px;color:var(--muted);white-space:nowrap}
+    .steps{display:grid;gap:1px;background:rgba(255,255,255,.035)}
+    .step{
+      background:rgba(6,12,24,.9);padding:15px;display:grid;
+      grid-template-columns:42px 1fr auto;gap:12px;align-items:center;
+    }
+    .step.done{background:linear-gradient(90deg,rgba(52,211,153,.055),rgba(6,12,24,.9) 28%)}
+    .step-number{
+      width:38px;height:38px;border-radius:12px;border:1px solid var(--line);
+      display:grid;place-items:center;color:var(--muted);font-size:13px;font-weight:900;
+      background:rgba(255,255,255,.035)
+    }
+    .step.done .step-number{color:#04130e;background:var(--green);border-color:transparent}
+    .step-copy h4{margin:0;font-size:14px}
+    .step-copy p{margin:4px 0 0;color:var(--muted);font-size:12px;line-height:1.35}
+    .step-actions{display:flex;align-items:center;gap:8px}
+    .thumb{
+      width:58px;height:58px;border-radius:12px;object-fit:cover;border:1px solid var(--line);
+      display:none;background:#030712
+    }
+    .step.done .thumb{display:block}
+    .camera-btn{
+      min-width:104px;border:1px solid rgba(34,211,238,.32);border-radius:13px;
+      color:#cffafe;background:rgba(34,211,238,.08);padding:11px 12px;font-weight:800
+    }
+    .camera-btn:hover{background:rgba(34,211,238,.14)}
+    .camera-btn:disabled{opacity:.38;cursor:not-allowed;background:rgba(255,255,255,.03);border-color:var(--line);color:var(--muted)}
+    .retake{display:none}
+    .step.done .camera-label{display:none}
+    .step.done .retake{display:inline}
+    .more-btn{width:42px;padding:10px 0}
+    .footerbar{
+      position:fixed;z-index:25;left:0;right:0;bottom:0;
+      padding:12px max(16px,env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));
+      background:rgba(5,8,17,.9);backdrop-filter:blur(18px);border-top:1px solid var(--line)
+    }
+    .footer-inner{max-width:1120px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .footer-inner button{min-height:50px}
+    .sheet,.modal{
+      position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.68);
+      display:none;align-items:flex-end;justify-content:center;padding:14px;backdrop-filter:blur(8px)
+    }
+    .sheet.show,.modal.show{display:flex}
+    .sheet-card,.modal-card{
+      width:min(620px,100%);border:1px solid var(--line);border-radius:24px;
+      background:#08101f;box-shadow:var(--shadow);padding:18px;max-height:88vh;overflow:auto
+    }
+    .modal{align-items:center}
+    .modal-card{text-align:center}
+    .modal-icon{
+      width:72px;height:72px;border-radius:24px;margin:0 auto 14px;display:grid;place-items:center;font-size:32px;
+      background:linear-gradient(135deg,rgba(52,211,153,.22),rgba(34,211,238,.18));border:1px solid rgba(52,211,153,.28)
+    }
+    .modal-card h3{font-size:24px;margin:0 0 8px}
+    .modal-card p{color:var(--muted);line-height:1.5;margin:0 auto 18px;max-width:460px}
+    .sheet-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
+    .sheet-head h3{margin:0}
+    .filename{font-size:12px;color:var(--cyan);word-break:break-all;background:rgba(34,211,238,.06);padding:10px;border-radius:12px;margin:12px 0}
+    .sheet-actions{display:grid;gap:9px}
+    .preview-img{width:100%;max-height:60vh;object-fit:contain;border-radius:16px;background:#030712}
+    .history{display:grid;gap:9px}
+    .history-item{
+      display:flex;justify-content:space-between;gap:12px;align-items:center;
+      border:1px solid var(--line);background:rgba(255,255,255,.035);border-radius:15px;padding:12px
+    }
+    .history-item strong{display:block;font-size:13px}
+    .history-item span{color:var(--muted);font-size:11px}
+    .empty{color:var(--muted);text-align:center;padding:24px 10px}
+    .hint{
+      margin-top:14px;border-left:3px solid var(--cyan);padding:10px 12px;
+      background:rgba(34,211,238,.055);color:#c8eef5;font-size:12px;line-height:1.45;border-radius:0 12px 12px 0
+    }
+    .toast{
+      position:fixed;left:50%;bottom:92px;z-index:60;transform:translate(-50%,24px);
+      opacity:0;pointer-events:none;background:#111827;color:#fff;border:1px solid var(--line);
+      border-radius:14px;padding:12px 16px;box-shadow:var(--shadow);transition:.22s ease;
+      max-width:calc(100% - 28px);text-align:center;font-size:13px
+    }
+    .toast.show{opacity:1;transform:translate(-50%,0)}
+
+    .live-scanner{
+      position:fixed;inset:0;z-index:80;background:#000;
+      display:none;flex-direction:column;
+    }
+    .live-scanner.show{display:flex}
+    .scanner-top{
+      padding:calc(12px + env(safe-area-inset-top)) 14px 12px;
+      display:flex;align-items:center;justify-content:space-between;gap:12px;
+      background:rgba(3,7,18,.94);border-bottom:1px solid rgba(255,255,255,.12);
+    }
+    .scanner-top strong{font-size:15px}
+    .scanner-top span{display:block;color:#9fb3c8;font-size:11px;margin-top:2px}
+    .scanner-close{
+      min-width:44px;min-height:44px;border-radius:14px;border:1px solid rgba(255,255,255,.16);
+      color:#fff;background:rgba(255,255,255,.08);font-size:20px
+    }
+    .scanner-stage{
+      position:relative;flex:1;display:flex;align-items:center;justify-content:center;
+      overflow:hidden;background:#000;
+    }
+    .scanner-video{
+      display:block;width:100%;height:auto;max-height:100%;object-fit:contain;background:#000
+    }
+    .scanner-overlay{position:absolute;inset:0;pointer-events:none}
+    .scan-frame{
+      position:absolute;left:10%;right:10%;top:34%;height:22%;
+      border:2px solid #67e8f9;border-radius:18px;
+      box-shadow:0 0 0 9999px rgba(0,0,0,.52),0 0 30px rgba(34,211,238,.25);
+      transition:.2s ease;
+    }
+    .scan-frame.cx{left:4%;right:4%;top:38%;height:18%}
+    .scan-frame.hit{border-color:#34d399;box-shadow:0 0 0 9999px rgba(0,0,0,.5),0 0 35px rgba(52,211,153,.4)}
+    .scan-line{
+      position:absolute;left:3%;right:3%;height:2px;top:12%;
+      background:linear-gradient(90deg,transparent,#67e8f9,transparent);
+      box-shadow:0 0 12px rgba(103,232,249,.85);
+      animation:scanMove 1.8s linear infinite;
+    }
+    @keyframes scanMove{0%{top:10%}50%{top:88%}100%{top:10%}}
+    .scanner-status{
+      position:absolute;left:14px;right:14px;bottom:14px;
+      background:rgba(3,7,18,.86);backdrop-filter:blur(12px);
+      border:1px solid rgba(255,255,255,.13);border-radius:18px;padding:13px 14px;
+      color:#fff;text-align:center
+    }
+    .scanner-status strong{display:block;font-size:19px;margin-bottom:3px}
+    .scanner-status span{font-size:12px;color:#a9bbca}
+    .scanner-dots{display:flex;justify-content:center;gap:7px;margin-top:9px}
+    .scanner-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.18)}
+    .scanner-dot.on{background:#34d399;box-shadow:0 0 10px rgba(52,211,153,.65)}
+    .scanner-bottom{
+      padding:12px 14px calc(12px + env(safe-area-inset-bottom));
+      background:rgba(3,7,18,.96);border-top:1px solid rgba(255,255,255,.12);
+      display:grid;grid-template-columns:1fr 1fr;gap:9px
+    }
+
+    .hidden{display:none!important}
+    @media (max-width:760px){
+      .setup-grid{grid-template-columns:1fr}
+      .dashboard{grid-template-columns:repeat(3,1fr)}
+      .stat{padding:12px}.stat strong{font-size:20px}
+      .step{grid-template-columns:38px 1fr;align-items:start}
+      .step-actions{grid-column:2;justify-content:space-between}
+      .thumb{width:72px;height:58px}
+      .camera-btn{flex:1}
+      .top-actions .label{display:none}
+    }
+    @media (max-width:420px){
+      .app{padding-left:10px;padding-right:10px}
+      .topbar{margin-left:-10px;margin-right:-10px}
+      .hero{padding:17px}
+      .dashboard{gap:8px}
+      .stat span{font-size:10px}
+      .section-head{align-items:flex-start}
+    }
+
+    /* ============================================================
+       CORPORATE COLOR UI
+       ============================================================ */
+    :root{
+      --bg:#f2f5f4;
+      --bg2:#e9efed;
+      --panel:#ffffff;
+      --panel2:#ffffff;
+      --line:rgba(8,31,40,.13);
+      --line2:rgba(0,155,132,.24);
+      --text:#091b25;
+      --muted:#687780;
+      --cyan:#009b84;
+      --blue:#007f70;
+      --violet:#009b84;
+      --green:#009b84;
+      --amber:#d99a00;
+      --red:#c84646;
+      --shadow:0 12px 32px rgba(8,31,40,.09);
+      --radius:16px;
+    }
+
+    html{background:#f2f5f4}
+    body{
+      color:var(--text);
+      background:
+        linear-gradient(135deg,rgba(0,155,132,.045),transparent 34%),
+        #f2f5f4;
+    }
+
+    .topbar{
+      background:rgba(255,255,255,.96);
+      border-bottom:1px solid rgba(8,31,40,.10);
+      box-shadow:0 4px 18px rgba(8,31,40,.045);
+    }
+
+    .-brand{gap:12px}
+    .-symbol{
+      width:39px;height:39px;
+      position:relative;
+      transform:rotate(45deg);
+      border-radius:8px;
+      background:linear-gradient(135deg,#00a88e,#008d7b);
+      box-shadow:0 7px 16px rgba(0,155,132,.18);
+      flex:0 0 auto;
+    }
+    .-symbol:after{
+      content:"";
+      position:absolute;
+      width:14px;height:14px;
+      right:5px;bottom:5px;
+      border-radius:3px;
+      background:#dce9e6;
+    }
+    .-symbol span{
+      position:absolute;inset:10px;
+      border-radius:3px;
+      background:white;
+    }
+    .-wordmark{line-height:1}
+    .-name{
+      font-size:24px;
+      font-weight:850;
+      letter-spacing:-1.4px;
+      color:#081a25;
+    }
+    .-sub{
+      margin-top:5px;
+      color:#008f7d;
+      font-size:8.5px;
+      font-weight:850;
+      letter-spacing:1.45px;
+    }
+
+    .icon-btn,.ghost,.primary,.danger,.success{
+      border-radius:10px;
+    }
+
+    .icon-btn,.ghost{
+      color:#18313b;
+      background:#ffffff;
+      border-color:rgba(8,31,40,.14);
+    }
+    .icon-btn:hover,.ghost:hover{
+      color:#007d6d;
+      border-color:rgba(0,155,132,.42);
+      background:#f1fbf8;
+    }
+
+    .primary{
+      color:#fff;
+      background:#009b84;
+      border-color:#009b84;
+      box-shadow:0 7px 18px rgba(0,155,132,.18);
+    }
+    .primary:hover{background:#008a76}
+
+    .hero{
+      border:1px solid rgba(8,31,40,.10);
+      background:#fff;
+      border-radius:18px;
+      box-shadow:var(--shadow);
+    }
+    .hero:before{
+      content:"";
+      position:absolute;left:0;top:0;bottom:0;width:6px;
+      background:#009b84;
+    }
+    .hero:after{
+      width:250px;height:250px;
+      right:-95px;bottom:-145px;
+      background:radial-gradient(circle,rgba(0,155,132,.10),transparent 70%);
+    }
+    .eyebrow{color:#008f7d}
+    .hero h2{color:#081a25;letter-spacing:-.8px}
+    .hero p{color:#65747c}
+
+    .hero [style*="background:rgba(3,8,18,.62)"]{
+      background:#f7f9f8 !important;
+      border-color:rgba(8,31,40,.10) !important;
+    }
+
+    .field input,.field textarea{
+      background:#fff;
+      color:#091b25;
+      border-color:rgba(8,31,40,.16);
+    }
+    .field input:focus,.field textarea:focus{
+      border-color:#009b84;
+      box-shadow:0 0 0 3px rgba(0,155,132,.10);
+    }
+
+    .stat,.progress-wrap{
+      background:#fff;
+      border-color:rgba(8,31,40,.10);
+      box-shadow:0 6px 20px rgba(8,31,40,.045);
+    }
+    .stat strong{color:#091b25}
+    .progress{background:#e4ece9}
+    .progress > div{background:#009b84}
+
+    .status-banner{
+      border-color:rgba(217,154,0,.25);
+      background:#fff8df;color:#7c5a00;
+    }
+    .status-banner.done{
+      border-color:rgba(0,155,132,.25);
+      background:#ecf9f5;color:#006a59;
+    }
+
+    .section{
+      border-color:rgba(8,31,40,.10);
+      background:#fff;
+      box-shadow:0 8px 25px rgba(8,31,40,.055);
+      border-radius:16px;
+    }
+    .section-head{border-color:rgba(8,31,40,.09)}
+    .section-icon{
+      color:#007d6d;
+      background:#e8f6f2;
+      border-color:rgba(0,155,132,.18);
+    }
+    .steps{background:#e9efed}
+    .step{background:#fff}
+    .step.done{background:linear-gradient(90deg,#eefaf7,#fff 32%)}
+    .step-number{
+      color:#60717a;
+      background:#f5f7f7;
+      border-color:rgba(8,31,40,.12);
+    }
+    .step.done .step-number{
+      color:#fff;background:#009b84;
+    }
+
+    .camera-btn{
+      color:#007d6d;
+      background:#edf9f6;
+      border-color:rgba(0,155,132,.28);
+    }
+    .camera-btn:hover{background:#e1f5ef}
+    .camera-btn:disabled{
+      color:#88969c;
+      background:#f5f6f6;
+      border-color:rgba(8,31,40,.10);
+    }
+
+    .footerbar{
+      background:rgba(255,255,255,.97);
+      border-top:1px solid rgba(8,31,40,.10);
+      box-shadow:0 -5px 22px rgba(8,31,40,.055);
+    }
+
+    .sheet,.modal{background:rgba(6,21,27,.60)}
+    .sheet-card,.modal-card{
+      color:#091b25;
+      background:#fff;
+      border-color:rgba(8,31,40,.11);
+    }
+    .filename{color:#007d6d;background:#edf9f6}
+    .history-item{
+      background:#f8faf9;
+      border-color:rgba(8,31,40,.10);
+    }
+    .hint{
+      border-left-color:#009b84;
+      background:#eef8f5;
+      color:#315d55;
+    }
+    .toast{
+      background:#0b242d;
+      border-color:rgba(255,255,255,.10);
+    }
+
+    /* Scanner bleibt dunkel, damit die Kamera gut lesbar ist */
+    .scanner-top,.scanner-bottom{background:#071a21}
+    .scan-frame{
+      border-color:#1dc8aa;
+      box-shadow:0 0 0 9999px rgba(0,0,0,.56),0 0 30px rgba(29,200,170,.26);
+    }
+    .scan-frame.hit{
+      border-color:#47e5c7;
+      box-shadow:0 0 0 9999px rgba(0,0,0,.52),0 0 35px rgba(71,229,199,.42);
+    }
+    .scan-line{
+      background:linear-gradient(90deg,transparent,#47e5c7,transparent);
+    }
+
+    /* Wichtig: Elementbox entspricht jetzt wirklich dem sichtbaren Videobild */
+    .scanner-video{
+      width:auto !important;
+      height:auto !important;
+      max-width:100% !important;
+      max-height:100% !important;
+      object-fit:contain;
+    }
+
+    @media (max-width:520px){
+      .-name{font-size:22px}
+      .-sub{font-size:7.5px;letter-spacing:1.1px}
+      .-symbol{width:36px;height:36px}
+    }
+
+
+    .app-brand{display:flex;align-items:center;gap:12px}
+    .app-icon-mark{
+      width:40px;height:40px;border-radius:12px;
+      display:grid;place-items:center;
+      background:#009b84;color:#fff;
+      font-size:15px;font-weight:900;letter-spacing:.4px;
+      box-shadow:0 7px 16px rgba(0,155,132,.18);
+      flex:0 0 auto;
+    }
+    .app-brand h1{
+      margin:0;color:#081a25;font-size:18px;font-weight:850;letter-spacing:-.35px
+    }
+    .app-brand span{
+      display:block;margin-top:3px;color:#6e7c83;font-size:11px
+    }
+
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand app-brand">
+        <div class="app-icon-mark">CT</div>
+        <div>
+          <h1>ContainerTrack</h1>
+          <span>Geführte Fotodokumentation</span>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button class="icon-btn hidden" id="installBtn" type="button">↓ <span class="label">Installieren</span></button>
+        <button class="icon-btn" id="historyBtn" type="button">☰ <span class="label">Verläufe</span></button>
+        <button class="icon-btn" id="newBtn" type="button">＋ <span class="label">Neu</span></button>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="eyebrow">DIGITALER FOTO-WORKFLOW</div>
+        <h2>Container-Dokumentation</h2>
+        <p>Container identifizieren, den vorgeschriebenen Fotoablauf Schritt für Schritt durchführen und die Dokumentation vollständig exportieren.</p>
+
+        <div style="display:grid;gap:10px;margin-top:20px">
+          <div style="border:1px solid var(--line);border-radius:16px;padding:14px;background:rgba(3,8,18,.62)">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px">
+              <div>
+                <strong>1. Container-Nummer</strong>
+                <div style="font-size:12px;color:var(--muted);margin-top:3px">Nur die 4-stellige Nummer gross in den Scanrahmen halten, z. B. 0708</div>
+              </div>
+              <strong id="ocrContainer" style="color:var(--cyan);font-size:18px">–</strong>
+            </div>
+            <button class="primary" id="ocrContainerBtn" type="button" style="width:100%;min-height:50px">▣ Container live scannen</button>
+          </div>
+
+          <div style="border:1px solid var(--line);border-radius:16px;padding:14px;background:rgba(3,8,18,.62)">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px">
+              <div>
+                <strong>2. CX-Nummer</strong>
+                <div style="font-size:12px;color:var(--muted);margin-top:3px">Nur die CX-Zeile gross und gerade in den Scanrahmen halten, z. B. CX405-21015672</div>
+              </div>
+              <strong id="ocrCx" style="color:var(--cyan);font-size:16px;text-align:right">–</strong>
+            </div>
+            <button class="primary" id="ocrCxBtn" type="button" style="width:100%;min-height:50px">▣ CX live scannen</button>
+          </div>
+        </div>
+
+        <div id="ocrResultCard" style="display:none;margin-top:12px;border:1px solid var(--line);border-radius:16px;padding:14px;background:rgba(3,8,18,.62)">
+          <div id="ocrStatus" style="font-size:13px;color:var(--muted)">Identifikation noch unvollständig.</div>
+          <div id="ocrWarning" style="display:none;margin-top:9px;color:#fde68a;font-size:12px;line-height:1.4"></div>
+          <details id="ocrDebugDetails" style="margin-top:10px;display:none">
+            <summary style="font-size:12px;color:var(--muted);cursor:pointer">OCR-Diagnose anzeigen</summary>
+            <pre id="ocrDebug" style="white-space:pre-wrap;word-break:break-word;font-size:11px;color:#9fb3c8;background:rgba(0,0,0,.25);padding:10px;border-radius:10px;max-height:180px;overflow:auto"></pre>
+          </details>
+          <button class="ghost" id="ocrEditBtn" type="button" style="width:100%;margin-top:12px">Erkannte Daten korrigieren</button>
+        </div>
+
+        <div id="ocrEditArea" style="display:none;margin-top:12px" class="setup-grid">
+          <div class="field">
+            <label for="containerNo">Container-Nummer (4-stellig)</label>
+            <input id="containerNo" class="container-input" inputmode="numeric" maxlength="4" placeholder="z. B. 0708" autocomplete="off" />
+          </div>
+          <div class="field">
+            <label for="cxNo">CX-Nummer</label>
+            <input id="cxNo" class="container-input" placeholder="z. B. CX405-21015672" autocomplete="off" />
+          </div>
+        </div>
+
+        <div class="hint">Der Live-Scanner liest ausschliesslich <strong>Container-Nummer</strong> und <strong>CX-Nummer</strong>. Halte wirklich nur die gesuchte Nummer gross und gerade im Rahmen. Zwei identische Treffer werden automatisch übernommen. Der sichtbare Rahmen entspricht in V7 exakt dem OCR-Bildausschnitt. Datum und andere Angaben werden ignoriert. Erst wenn beide Werte vorhanden sind, wird Foto 1 freigeschaltet. Die 6 Dokumentationsfotos müssen danach zwingend in der vorgegebenen Reihenfolge aufgenommen werden.</div>
+        <div style="margin-top:12px;padding:10px 12px;border-radius:11px;background:#f4f8f7;border:1px solid rgba(8,31,40,.08);font-size:11px;color:#607078;line-height:1.45">
+          🔒 <strong>Local-only:</strong> Container-Daten, CX-Nummern und Fotos bleiben ausschliesslich auf diesem Gerät. GitHub Pages hostet nur die App selbst.
+        </div>
+      </section>
+
+      <section id="installCard" class="hidden" style="margin:14px 0;border:1px solid rgba(0,155,132,.22);background:#eef8f5;border-radius:14px;padding:13px 14px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+          <div>
+            <strong style="display:block;font-size:13px">ContainerTrack installieren</strong>
+            <span style="display:block;margin-top:3px;color:#5f7279;font-size:12px">Direkt vom Startbildschirm öffnen und wie eine App verwenden.</span>
+          </div>
+          <button id="installCardBtn" class="primary" type="button" style="min-width:110px">Installieren</button>
+        </div>
+      </section>
+
+      <section class="dashboard">
+        <div class="stat"><strong id="doneCount">0</strong><span>Pflichtfotos erledigt</span></div>
+        <div class="stat"><strong id="missingCount">6</strong><span>Noch offen</span></div>
+        <div class="stat"><strong id="photoSize">0 MB</strong><span>Lokaler Speicher</span></div>
+      </section>
+
+      <section class="progress-wrap">
+        <div class="progress-head">
+          <strong id="progressTitle">Ablauf noch nicht gestartet</strong>
+          <span id="progressText">0 von 6</span>
+        </div>
+        <div class="progress"><div id="progressBar"></div></div>
+      </section>
+
+      <div class="status-banner" id="statusBanner"></div>
+      <div class="sections" id="sections"></div>
+    </main>
+  </div>
+
+  <div class="footerbar">
+    <div class="footer-inner">
+      <button class="ghost" id="checkBtn" type="button">Ablauf prüfen</button>
+      <button class="primary" id="exportBtn" type="button" disabled>ZIP exportieren</button>
+    </div>
+  </div>
+
+  <input id="cameraInput" class="hidden" type="file" accept="image/*" capture="environment" />
+  <input id="ocrInput" class="hidden" type="file" accept="image/*" capture="environment" />
+
+  <div class="sheet" id="photoSheet">
+    <div class="sheet-card">
+      <div class="sheet-head">
+        <h3 id="sheetTitle">Foto</h3>
+        <button class="icon-btn" data-close="photoSheet" type="button">✕</button>
+      </div>
+      <img id="sheetImage" class="preview-img" alt="Foto-Vorschau" />
+      <div class="filename" id="sheetFilename"></div>
+      <div class="sheet-actions">
+        <button class="ghost" id="downloadPhotoBtn" type="button">Einzelfoto herunterladen</button>
+        <button class="danger" id="deletePhotoBtn" type="button">Foto löschen</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="sheet" id="historySheet">
+    <div class="sheet-card">
+      <div class="sheet-head">
+        <h3>Gespeicherte Container</h3>
+        <button class="icon-btn" data-close="historySheet" type="button">✕</button>
+      </div>
+      <div class="history" id="historyList"></div>
+    </div>
+  </div>
+
+  <div class="modal" id="completeModal">
+    <div class="modal-card">
+      <div class="modal-icon">✓</div>
+      <h3>Fotodokumentation vollständig</h3>
+      <p id="completeText">Alle Pflichtfotos sind aufgenommen. Prüfe die Vorschauen und exportiere danach das ZIP-Paket.</p>
+      <button class="primary" id="modalExportBtn" type="button">Jetzt ZIP exportieren</button>
+      <button class="ghost" data-close="completeModal" type="button" style="margin-top:8px">Nochmals prüfen</button>
+    </div>
+  </div>
+
+  <div class="modal" id="missingModal">
+    <div class="modal-card">
+      <div class="modal-icon" style="background:rgba(251,191,36,.12);border-color:rgba(251,191,36,.25)">!</div>
+      <h3>Aufnahmen fehlen</h3>
+      <p id="missingText"></p>
+      <button class="primary" data-close="missingModal" type="button">Zurück zum Ablauf</button>
+    </div>
+  </div>
+
+
+  <div class="live-scanner" id="liveScanner">
+    <div class="scanner-top">
+      <div>
+        <strong id="scannerTitle">Container live scannen</strong>
+        <span id="scannerHint">Nummer in den Rahmen halten</span>
+      </div>
+      <button class="scanner-close" id="scannerCloseBtn" type="button">✕</button>
+    </div>
+
+    <div class="scanner-stage" id="scannerStage">
+      <video id="scannerVideo" class="scanner-video" autoplay playsinline muted></video>
+      <div class="scanner-overlay">
+        <div id="scanFrame" class="scan-frame">
+          <div class="scan-line"></div>
+        </div>
+      </div>
+
+      <div class="scanner-status">
+        <strong id="scannerValue">Suche …</strong>
+        <span id="scannerSubstatus">Kamera ruhig halten</span>
+        <div class="scanner-dots">
+          <i class="scanner-dot" id="stableDot1"></i>
+          <i class="scanner-dot" id="stableDot2"></i>
+        </div>
+      </div>
+    </div>
+
+    <div class="scanner-bottom">
+      <button class="ghost" id="scannerFlashBtn" type="button">🔦 Licht</button>
+      <button class="ghost" id="scannerPhotoFallbackBtn" type="button">📷 Foto-OCR</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <script>
+  (() => {
+    "use strict";
+
+    const PHOTO_STEPS = [
+      {
+        id:"empty",
+        title:"1. Leerer Innenraum",
+        subtitle:"Ein Übersichtsbild vor dem Befüllen",
+        icon:"□",
+        steps:[
+          {id:"empty_overview", label:"Leerer Innenraum", hint:"Von der geöffneten Tür aus den kompletten leeren Innenraum möglichst vollständig aufnehmen.", code:"LEER_INNENRAUM"}
+        ]
+      },
+      {
+        id:"outside",
+        title:"2. Alle vier Aussenseiten",
+        subtitle:"Container von jeder Seite vollständig aufnehmen",
+        icon:"◇",
+        steps:[
+          {id:"outside_front", label:"Aussenseite – Front", hint:"Frontseite gerade und vollständig im Bild.", code:"AUSSEN_FRONT"},
+          {id:"outside_back", label:"Aussenseite – Rückseite / Türen", hint:"Rückseite mit Türen, Nummern und Verschlüssen.", code:"AUSSEN_RUECKSEITE"},
+          {id:"outside_left", label:"Aussenseite – links", hint:"Komplette linke Seitenwand inkl. Ecken.", code:"AUSSEN_LINKS"},
+          {id:"outside_right", label:"Aussenseite – rechts", hint:"Komplette rechte Seitenwand inkl. Ecken.", code:"AUSSEN_RECHTS"}
+        ]
+      },
+      {
+        id:"filled",
+        title:"3. Mit Kühlplatten befüllt",
+        subtitle:"Ein Übersichtsbild des fertig befüllten Containers",
+        icon:"▦",
+        steps:[
+          {id:"filled_overview", label:"Befüllter Innenraum", hint:"Von der geöffneten Tür aus den komplett mit Kühlplatten befüllten Innenraum aufnehmen.", code:"KUEHLPLATTEN_BEFUELLT"}
+        ]
+      }
+    ];
+
+    const ALL_STEPS = PHOTO_STEPS.flatMap(section => section.steps);
+    const TOTAL_REQUIRED = ALL_STEPS.length;
+
+    const el = id => document.getElementById(id);
+    const state = {
+      sessionId:null,
+      containerNo:"",
+      cxNo:"",
+      ocrComplete:false,
+      createdAt:null,
+      updatedAt:null,
+      photos:{},
+      activeStepId:null,
+      previewStepId:null,
+      completionShown:false
+    };
+
+    const dbPromise = openDB();
+    let saveTimer = null;
+    let toastTimer = null;
+
+    function openDB(){
+      return new Promise((resolve,reject)=>{
+        const req = indexedDB.open("container-fototrack-db",1);
+        req.onupgradeneeded = () => {
+          const db = req.result;
+          if(!db.objectStoreNames.contains("sessions")){
+            const store = db.createObjectStore("sessions",{keyPath:"sessionId"});
+            store.createIndex("updatedAt","updatedAt");
+            store.createIndex("containerNo","containerNo");
+          }
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    async function dbPut(session){
+      const db = await dbPromise;
+      return new Promise((resolve,reject)=>{
+        const tx = db.transaction("sessions","readwrite");
+        tx.objectStore("sessions").put(session);
+        tx.oncomplete = resolve;
+        tx.onerror = () => reject(tx.error);
+      });
+    }
+
+    async function dbGet(id){
+      const db = await dbPromise;
+      return new Promise((resolve,reject)=>{
+        const tx = db.transaction("sessions","readonly");
+        const req = tx.objectStore("sessions").get(id);
+        req.onsuccess = () => resolve(req.result || null);
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    async function dbGetAll(){
+      const db = await dbPromise;
+      return new Promise((resolve,reject)=>{
+        const tx = db.transaction("sessions","readonly");
+        const req = tx.objectStore("sessions").getAll();
+        req.onsuccess = () => resolve((req.result || []).sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0)));
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    async function dbDelete(id){
+      const db = await dbPromise;
+      return new Promise((resolve,reject)=>{
+        const tx = db.transaction("sessions","readwrite");
+        tx.objectStore("sessions").delete(id);
+        tx.oncomplete = resolve;
+        tx.onerror = () => reject(tx.error);
+      });
+    }
+
+    function newSession(){
+      state.sessionId = (crypto.randomUUID ? crypto.randomUUID() : "s-"+Date.now()+"-"+Math.random().toString(16).slice(2));
+      state.containerNo = "";
+      state.cxNo = "";
+      state.ocrComplete = false;
+      state.createdAt = Date.now();
+      state.updatedAt = Date.now();
+      state.photos = {};
+      state.activeStepId = null;
+      state.previewStepId = null;
+      state.completionShown = false;
+      el("containerNo").value = "";
+      el("cxNo").value = "";
+      el("ocrResultCard").style.display = "none";
+      el("ocrEditArea").style.display = "none";
+      el("ocrWarning").style.display = "none";
+      render();
+      scheduleSave();
+    }
+
+    function sessionSnapshot(){
+      return {
+        sessionId:state.sessionId,
+        containerNo:state.containerNo,
+        cxNo:state.cxNo,
+        ocrComplete:state.ocrComplete,
+        createdAt:state.createdAt,
+        updatedAt:Date.now(),
+        photos:state.photos,
+        completionShown:state.completionShown
+      };
+    }
+
+    function scheduleSave(){
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(async()=>{
+        if(!state.sessionId) return;
+        state.updatedAt = Date.now();
+        try{ await dbPut(sessionSnapshot()); }
+        catch(err){ console.error(err); toast("Lokales Speichern ist fehlgeschlagen."); }
+      },250);
+    }
+
+    function cleanContainerNo(value){
+      return String(value || "")
+        .toUpperCase()
+        .replace(/Ä/g,"AE").replace(/Ö/g,"OE").replace(/Ü/g,"UE")
+        .replace(/[^A-Z0-9_-]/g,"")
+        .slice(0,28);
+    }
+
+    function safeToken(value,fallback=""){
+      const token = cleanContainerNo(value);
+      return token || fallback;
+    }
+
+    function localDateStamp(ts=Date.now()){
+      const d = new Date(ts);
+      const y = d.getFullYear();
+      const m = String(d.getMonth()+1).padStart(2,"0");
+      const day = String(d.getDate()).padStart(2,"0");
+      const hh = String(d.getHours()).padStart(2,"0");
+      const mm = String(d.getMinutes()).padStart(2,"0");
+      const ss = String(d.getSeconds()).padStart(2,"0");
+      return `${y}-${m}-${day}_${hh}-${mm}-${ss}`;
+    }
+
+    function fileNameFor(step, capturedAt, mime="image/jpeg"){
+      const index = ALL_STEPS.findIndex(s=>s.id===step.id)+1;
+      const ext = mime.includes("png") ? "png" : mime.includes("webp") ? "webp" : "jpg";
+      const cNo = safeToken(state.containerNo,"CONTAINER");
+      return `${cNo}_${String(index).padStart(2,"0")}.${ext}`;
+    }
+
+    function findStep(stepId){
+      return ALL_STEPS.find(s=>s.id===stepId);
+    }
+
+    function completedCount(){
+      return ALL_STEPS.filter(step=>!!state.photos[step.id]).length;
+    }
+
+    function missingSteps(){
+      return ALL_STEPS.filter(step=>!state.photos[step.id]);
+    }
+
+    function totalBytes(){
+      return Object.values(state.photos).reduce((sum,p)=>sum+(p.blob?.size||0),0);
+    }
+
+    function formatBytes(bytes){
+      if(bytes < 1024*1024) return `${(bytes/1024).toFixed(bytes ? 0 : 0)} KB`;
+      return `${(bytes/1024/1024).toFixed(1)} MB`;
+    }
+
+    function render(){
+      renderSections();
+      renderStats();
+      el("exportBtn").disabled = completedCount() === 0 || !state.containerNo || !state.ocrComplete;
+    }
+
+    function renderSections(){
+      const host = el("sections");
+      host.innerHTML = "";
+      let runningIndex = 0;
+
+      PHOTO_STEPS.forEach(section=>{
+        const sectionDone = section.steps.filter(s=>state.photos[s.id]).length;
+        const wrap = document.createElement("section");
+        wrap.className = "section";
+        wrap.innerHTML = `
+          <div class="section-head">
+            <div class="section-title">
+              <div class="section-icon">${section.icon}</div>
+              <div><h3>${section.title}</h3><p>${section.subtitle}</p></div>
+            </div>
+            <div class="section-count">${sectionDone} / ${section.steps.length}</div>
+          </div>
+          <div class="steps"></div>`;
+        const stepsHost = wrap.querySelector(".steps");
+
+        section.steps.forEach(step=>{
+          runningIndex++;
+          const photo = state.photos[step.id];
+          const row = document.createElement("div");
+          row.className = "step" + (photo ? " done" : "");
+          const objectUrl = photo ? URL.createObjectURL(photo.blob) : "";
+          row.innerHTML = `
+            <div class="step-number">${photo ? "✓" : runningIndex}</div>
+            <div class="step-copy">
+              <h4>${step.label}</h4>
+              <p>${step.hint}</p>
+            </div>
+            <div class="step-actions">
+              <img class="thumb" alt="${step.label}" ${photo ? `src="${objectUrl}"` : ""} />
+              <button class="camera-btn" type="button" data-capture="${step.id}" ${(!state.ocrComplete || (!photo && runningIndex !== completedCount()+1) || (photo && runningIndex !== completedCount())) ? "disabled" : ""}>
+                <span class="camera-label">${!state.ocrComplete ? "🔒 OCR zuerst" : (!photo && runningIndex !== completedCount()+1 ? "🔒 Gesperrt" : "📷 Foto")}</span><span class="retake">↻ Neu</span>
+              </button>
+              ${photo ? `<button class="icon-btn more-btn" type="button" data-preview="${step.id}" aria-label="Foto anzeigen">⋯</button>` : ""}
+            </div>`;
+          stepsHost.appendChild(row);
+        });
+        host.appendChild(wrap);
+      });
+
+      host.querySelectorAll("[data-capture]").forEach(btn=>{
+        btn.addEventListener("click",()=>beginCapture(btn.dataset.capture));
+      });
+      host.querySelectorAll("[data-preview]").forEach(btn=>{
+        btn.addEventListener("click",()=>openPhotoSheet(btn.dataset.preview));
+      });
+    }
+
+    function renderStats(){
+      const done = completedCount();
+      const missing = TOTAL_REQUIRED-done;
+      const pct = Math.round(done/TOTAL_REQUIRED*100);
+      el("doneCount").textContent = done;
+      el("missingCount").textContent = missing;
+      el("photoSize").textContent = formatBytes(totalBytes());
+      el("progressText").textContent = `${done} von ${TOTAL_REQUIRED}`;
+      el("progressBar").style.width = `${pct}%`;
+      el("progressTitle").textContent = done === 0 ? "Ablauf noch nicht gestartet" : done === TOTAL_REQUIRED ? "Ablauf vollständig" : `Fotodokumentation ${pct}%`;
+
+      const banner = el("statusBanner");
+      banner.className = "status-banner";
+      if(done === TOTAL_REQUIRED){
+        banner.textContent = "✓ Alle Pflichtaufnahmen sind vorhanden. Kontrolliere die Fotos und exportiere anschliessend das ZIP-Paket.";
+        banner.classList.add("show","done");
+        if(!state.completionShown){
+          state.completionShown = true;
+          scheduleSave();
+          setTimeout(()=>openModal("completeModal"),250);
+        }
+      }else if(done > 0){
+        banner.textContent = `Noch ${missing} Pflichtaufnahme${missing===1?"":"n"} offen. Die App warnt dich beim Abschluss, falls etwas fehlt.`;
+        banner.classList.add("show");
+      }
+    }
+
+    function beginCapture(stepId){
+      if(!state.ocrComplete || !state.containerNo || !state.cxNo){
+        toast("Zuerst die Container-Beschriftung per OCR scannen.");
+        return;
+      }
+
+      const stepIndex = ALL_STEPS.findIndex(s=>s.id===stepId);
+      const done = completedCount();
+      const alreadyDone = !!state.photos[stepId];
+
+      // Strikte Reihenfolge:
+      // - neues Foto nur exakt beim nächsten offenen Schritt
+      // - Retake nur beim zuletzt aufgenommenen Schritt
+      if(!alreadyDone && stepIndex !== done){
+        toast(`Zuerst Foto ${done+1} aufnehmen.`);
+        return;
+      }
+      if(alreadyDone && stepIndex !== done-1){
+        toast("Nur das zuletzt aufgenommene Foto kann direkt wiederholt werden.");
+        return;
+      }
+
+      state.activeStepId = stepId;
+      el("cameraInput").value = "";
+      el("cameraInput").click();
+    }
+
+    async function handleFile(file){
+      if(!file || !state.activeStepId) return;
+      const step = findStep(state.activeStepId);
+      try{
+        toast("Foto wird verarbeitet …");
+        const blob = await optimizeImage(file,2000,.88);
+        const capturedAt = Date.now();
+        state.photos[step.id] = {
+          stepId:step.id,
+          capturedAt,
+          filename:fileNameFor(step,capturedAt,blob.type),
+          blob
+        };
+        state.completionShown = false;
+        state.updatedAt = Date.now();
+        scheduleSave();
+        render();
+        toast(`Gespeichert: ${step.label}`);
+      }catch(err){
+        console.error(err);
+        toast("Foto konnte nicht verarbeitet werden.");
+      }finally{
+        state.activeStepId = null;
+      }
+    }
+
+    async function optimizeImage(file,maxSide,quality){
+      if(!file.type.startsWith("image/")) throw new Error("Ungültiger Dateityp");
+      const bitmap = await createImageBitmap(file);
+      const scale = Math.min(1,maxSide/Math.max(bitmap.width,bitmap.height));
+      const width = Math.max(1,Math.round(bitmap.width*scale));
+      const height = Math.max(1,Math.round(bitmap.height*scale));
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d",{alpha:false});
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0,0,width,height);
+      ctx.drawImage(bitmap,0,0,width,height);
+      bitmap.close?.();
+      return await new Promise((resolve,reject)=>{
+        canvas.toBlob(blob=>blob ? resolve(blob) : reject(new Error("Canvas export failed")),"image/jpeg",quality);
+      });
+    }
+
+    function openPhotoSheet(stepId){
+      const photo = state.photos[stepId];
+      const step = findStep(stepId);
+      if(!photo || !step) return;
+      state.previewStepId = stepId;
+      el("sheetTitle").textContent = step.label;
+      el("sheetFilename").textContent = photo.filename;
+      el("sheetImage").src = URL.createObjectURL(photo.blob);
+      openModal("photoSheet");
+    }
+
+    async function deletePreviewPhoto(){
+      const stepId = state.previewStepId;
+      if(!stepId || !state.photos[stepId]) return;
+      const stepIndex = ALL_STEPS.findIndex(s=>s.id===stepId);
+      if(stepIndex !== completedCount()-1){
+        toast("Wegen der festen Reihenfolge kann nur das zuletzt aufgenommene Foto gelöscht werden.");
+        return;
+      }
+      delete state.photos[stepId];
+      state.completionShown = false;
+      state.previewStepId = null;
+      closeModal("photoSheet");
+      scheduleSave();
+      render();
+      toast("Letztes Foto gelöscht.");
+    }
+
+    function downloadPreviewPhoto(){
+      const photo = state.photos[state.previewStepId];
+      if(!photo) return;
+      downloadBlob(photo.blob,photo.filename);
+    }
+
+    function checkWorkflow(showComplete=true){
+      if(!state.ocrComplete || !state.containerNo || !state.cxNo){
+        toast("OCR-Identifikation ist noch nicht vollständig.");
+        return false;
+      }
+      const missing = missingSteps();
+      if(missing.length){
+        el("missingText").innerHTML = `Es fehlen noch <strong>${missing.length}</strong> Pflichtaufnahmen:<br><br>${missing.map(s=>"• "+s.label).join("<br>")}`;
+        openModal("missingModal");
+        return false;
+      }
+      if(showComplete) openModal("completeModal");
+      return true;
+    }
+
+    async function exportZip(){
+      if(!state.ocrComplete || !state.containerNo || !state.cxNo){
+        toast("OCR-Identifikation ist noch nicht vollständig.");
+        return;
+      }
+      if(completedCount() === 0){
+        toast("Noch keine Fotos vorhanden.");
+        return;
+      }
+      if(!checkWorkflow(false)){
+        return;
+      }
+
+      const exportBtn = el("exportBtn");
+      const modalBtn = el("modalExportBtn");
+      exportBtn.disabled = true;
+      modalBtn.disabled = true;
+      exportBtn.textContent = "ZIP wird erstellt …";
+      modalBtn.textContent = "ZIP wird erstellt …";
+
+      try{
+        const files = [];
+        for(const step of ALL_STEPS){
+          const photo = state.photos[step.id];
+          if(photo) files.push({name:photo.filename,data:new Uint8Array(await photo.blob.arrayBuffer()),date:new Date(photo.capturedAt)});
+        }
+        const metadata = {
+          app:"Container FotoTrack",
+          version:"1.5",
+          containerNumber:state.containerNo,
+          cxNumber:state.cxNo,
+            createdAt:new Date(state.createdAt).toISOString(),
+          exportedAt:new Date().toISOString(),
+          requiredPhotos:TOTAL_REQUIRED,
+          photoCount:files.length,
+          complete:files.length===TOTAL_REQUIRED,
+          photos:ALL_STEPS.filter(s=>state.photos[s.id]).map(s=>({
+            step:s.label,
+            code:s.code,
+            filename:state.photos[s.id].filename,
+            capturedAt:new Date(state.photos[s.id].capturedAt).toISOString()
+          }))
+        };
+        files.push({
+          name:`${state.containerNo}_META.json`,
+          data:new TextEncoder().encode(JSON.stringify(metadata,null,2)),
+          date:new Date()
+        });
+        const zipBlob = makeZip(files);
+        const zipName = `${state.containerNo}.zip`;
+        downloadBlob(zipBlob,zipName);
+        toast("ZIP-Paket wurde erstellt.");
+        closeModal("completeModal");
+      }catch(err){
+        console.error(err);
+        toast("ZIP-Export ist fehlgeschlagen.");
+      }finally{
+        exportBtn.disabled = false;
+        modalBtn.disabled = false;
+        exportBtn.textContent = "ZIP exportieren";
+        modalBtn.textContent = "Jetzt ZIP exportieren";
+      }
+    }
+
+    function downloadBlob(blob,name){
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(()=>URL.revokeObjectURL(url),1200);
+    }
+
+    function makeZip(files){
+      const localParts = [];
+      const centralParts = [];
+      let offset = 0;
+
+      files.forEach(file=>{
+        const nameBytes = new TextEncoder().encode(file.name);
+        const data = file.data instanceof Uint8Array ? file.data : new Uint8Array(file.data);
+        const crc = crc32(data);
+        const dos = dateToDos(file.date || new Date());
+
+        const local = new Uint8Array(30 + nameBytes.length);
+        const lv = new DataView(local.buffer);
+        lv.setUint32(0,0x04034b50,true);
+        lv.setUint16(4,20,true);
+        lv.setUint16(6,0,true);
+        lv.setUint16(8,0,true);
+        lv.setUint16(10,dos.time,true);
+        lv.setUint16(12,dos.date,true);
+        lv.setUint32(14,crc,true);
+        lv.setUint32(18,data.length,true);
+        lv.setUint32(22,data.length,true);
+        lv.setUint16(26,nameBytes.length,true);
+        lv.setUint16(28,0,true);
+        local.set(nameBytes,30);
+        localParts.push(local,data);
+
+        const central = new Uint8Array(46 + nameBytes.length);
+        const cv = new DataView(central.buffer);
+        cv.setUint32(0,0x02014b50,true);
+        cv.setUint16(4,20,true);
+        cv.setUint16(6,20,true);
+        cv.setUint16(8,0,true);
+        cv.setUint16(10,0,true);
+        cv.setUint16(12,dos.time,true);
+        cv.setUint16(14,dos.date,true);
+        cv.setUint32(16,crc,true);
+        cv.setUint32(20,data.length,true);
+        cv.setUint32(24,data.length,true);
+        cv.setUint16(28,nameBytes.length,true);
+        cv.setUint16(30,0,true);
+        cv.setUint16(32,0,true);
+        cv.setUint16(34,0,true);
+        cv.setUint16(36,0,true);
+        cv.setUint32(38,0,true);
+        cv.setUint32(42,offset,true);
+        central.set(nameBytes,46);
+        centralParts.push(central);
+
+        offset += local.length + data.length;
+      });
+
+      const centralSize = centralParts.reduce((n,p)=>n+p.length,0);
+      const end = new Uint8Array(22);
+      const ev = new DataView(end.buffer);
+      ev.setUint32(0,0x06054b50,true);
+      ev.setUint16(4,0,true);
+      ev.setUint16(6,0,true);
+      ev.setUint16(8,files.length,true);
+      ev.setUint16(10,files.length,true);
+      ev.setUint32(12,centralSize,true);
+      ev.setUint32(16,offset,true);
+      ev.setUint16(20,0,true);
+
+      return new Blob([...localParts,...centralParts,end],{type:"application/zip"});
+    }
+
+    function dateToDos(date){
+      const year = Math.max(1980,date.getFullYear());
+      return {
+        time:(date.getHours()<<11)|(date.getMinutes()<<5)|(date.getSeconds()>>1),
+        date:((year-1980)<<9)|((date.getMonth()+1)<<5)|date.getDate()
+      };
+    }
+
+    const CRC_TABLE = (() => {
+      const table = new Uint32Array(256);
+      for(let n=0;n<256;n++){
+        let c=n;
+        for(let k=0;k<8;k++) c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);
+        table[n]=c>>>0;
+      }
+      return table;
+    })();
+
+    function crc32(bytes){
+      let c=0xFFFFFFFF;
+      for(let i=0;i<bytes.length;i++) c=CRC_TABLE[(c^bytes[i])&0xFF]^(c>>>8);
+      return (c^0xFFFFFFFF)>>>0;
+    }
+
+    function openModal(id){ el(id).classList.add("show"); }
+    function closeModal(id){ el(id).classList.remove("show"); }
+
+    function toast(message){
+      const t=el("toast");
+      t.textContent=message;
+      t.classList.add("show");
+      clearTimeout(toastTimer);
+      toastTimer=setTimeout(()=>t.classList.remove("show"),2200);
+    }
+
+    async function renderHistory(){
+      const list = el("historyList");
+      list.innerHTML = `<div class="empty">Verläufe werden geladen …</div>`;
+      openModal("historySheet");
+      const sessions = await dbGetAll();
+      if(!sessions.length){
+        list.innerHTML = `<div class="empty">Noch keine gespeicherten Container vorhanden.</div>`;
+        return;
+      }
+      list.innerHTML = "";
+      sessions.forEach(session=>{
+        const count = ALL_STEPS.filter(s=>session.photos?.[s.id]).length;
+        const item = document.createElement("div");
+        item.className="history-item";
+        item.innerHTML=`
+          <div>
+            <strong>${session.containerNo || "Ohne Container-Nummer"}</strong>
+            <span>${session.cxNo ? session.cxNo+" · " : ""}${count}/${TOTAL_REQUIRED} Fotos · ${new Date(session.updatedAt).toLocaleString("de-CH")}</span>
+          </div>
+          <div style="display:flex;gap:7px">
+            <button class="ghost" type="button" data-load="${session.sessionId}">Öffnen</button>
+            <button class="danger" type="button" data-remove="${session.sessionId}">✕</button>
+          </div>`;
+        list.appendChild(item);
+      });
+      list.querySelectorAll("[data-load]").forEach(btn=>btn.addEventListener("click",()=>loadSession(btn.dataset.load)));
+      list.querySelectorAll("[data-remove]").forEach(btn=>btn.addEventListener("click",async()=>{
+        if(btn.dataset.remove===state.sessionId){
+          toast("Der aktuell geöffnete Verlauf kann nicht hier gelöscht werden.");
+          return;
+        }
+        await dbDelete(btn.dataset.remove);
+        renderHistory();
+      }));
+    }
+
+    async function loadSession(id){
+      const session = await dbGet(id);
+      if(!session) return;
+      state.sessionId = session.sessionId;
+      state.containerNo = session.containerNo || "";
+      state.cxNo = session.cxNo || "";
+      state.ocrComplete = !!(state.containerNo && state.cxNo);
+      state.createdAt = session.createdAt || Date.now();
+      state.updatedAt = session.updatedAt || Date.now();
+      state.photos = session.photos || {};
+      state.completionShown = !!session.completionShown;
+      el("containerNo").value = state.containerNo;
+      el("cxNo").value = state.cxNo;
+      renderOcrResult();
+      closeModal("historySheet");
+      render();
+      window.scrollTo({top:0,behavior:"smooth"});
+      toast("Container-Verlauf geöffnet.");
+    }
+
+
+    function normalizeContainerNumber(value){
+      return String(value || "")
+        .toUpperCase()
+        .replace(/[OQD]/g,"0")
+        .replace(/[IL]/g,"1")
+        .replace(/S/g,"5")
+        .replace(/B/g,"8")
+        .replace(/[^0-9]/g,"")
+        .slice(0,4);
+    }
+
+    function normalizeCxNumber(value){
+      let raw = String(value || "")
+        .toUpperCase()
+        .replace(/[–—_]/g,"-")
+        .replace(/\s+/g,"")
+        .replace(/[OQD]/g,"0")
+        .replace(/[IL]/g,"1")
+        .replace(/S/g,"5")
+        .replace(/B/g,"8");
+
+      raw = raw.replace(/[^CX0-9-]/g,"");
+
+      let m = raw.match(/^CX([0-9]{3})-?([0-9]{8})$/);
+      if(m) return `CX${m[1]}-${m[2]}`;
+
+      m = raw.match(/CX([0-9]{3})-?([0-9]{8})/);
+      return m ? `CX${m[1]}-${m[2]}` : raw.slice(0,20);
+    }
+
+    function renderOcrResult(){
+      const hasAny = !!(state.containerNo || state.cxNo);
+      el("ocrResultCard").style.display = hasAny ? "block" : "none";
+      el("ocrContainer").textContent = state.containerNo || "–";
+      el("ocrCx").textContent = state.cxNo || "–";
+
+      const warning = el("ocrWarning");
+      const missing = [];
+      if(!/^[0-9]{4}$/.test(state.containerNo)) missing.push("Container-Nummer");
+      if(!/^CX[0-9]{3}-[0-9]{8}$/.test(state.cxNo)) missing.push("CX-Nummer");
+
+      state.ocrComplete = missing.length === 0;
+
+      if(state.ocrComplete){
+        el("ocrStatus").innerHTML = `✓ Identifiziert: <strong>${state.containerNo}</strong> · <strong>${state.cxNo}</strong>`;
+        el("ocrStatus").style.color = "#bbf7d0";
+        warning.style.display = "none";
+      }else{
+        el("ocrStatus").textContent = "Identifikation noch unvollständig.";
+        el("ocrStatus").style.color = "var(--muted)";
+        warning.style.display = "block";
+        warning.textContent = "Noch erforderlich: " + missing.join(" und ") + ".";
+      }
+    }
+
+    function normalizeOcrText(text){
+      return String(text || "")
+        .replace(/\r/g,"\n")
+        .replace(/[|]/g,"I")
+        .replace(/[–—_]/g,"-")
+        .toUpperCase();
+    }
+
+    function charFixDigits(s){
+      return String(s || "")
+        .toUpperCase()
+        .replace(/[OQD]/g,"0")
+        .replace(/[IL]/g,"1")
+        .replace(/S/g,"5")
+        .replace(/B/g,"8");
+    }
+
+    function extractContainerNumber(text){
+      const raw = normalizeOcrText(text);
+      const fixed = charFixDigits(raw);
+
+      // 1) Bevorzugt direkt bei CONTAINER / NO
+      const lines = fixed.split(/\n+/).map(x=>x.trim()).filter(Boolean);
+
+      for(let i=0;i<lines.length;i++){
+        const line = lines[i];
+        if(/CONT|TAINER|NO\.?|N0\.?/.test(line)){
+          const local = (line + " " + (lines[i+1] || "")).match(/(?:^|[^0-9])([0-9]{4})(?:[^0-9]|$)/);
+          if(local) return local[1];
+        }
+      }
+
+      // 2) Eindeutige 4-stellige Kandidaten
+      const candidates = [...fixed.matchAll(/(?:^|[^0-9])([0-9]{4})(?:[^0-9]|$)/g)]
+        .map(m=>m[1])
+        .filter(Boolean);
+
+      const unique = [...new Set(candidates)];
+
+      // Container-Nummern wie 0708 behalten zwingend führende Null.
+      if(unique.length === 1) return unique[0];
+
+      // Bei mehreren Kandidaten zuerst typische Container-ID mit führender Null,
+      // aber Telefonnummer-Endungen wie 5000 vermeiden.
+      const leadingZero = unique.filter(v=>/^0[0-9]{3}$/.test(v));
+      if(leadingZero.length === 1) return leadingZero[0];
+
+      return "";
+    }
+
+    function extractCxNumber(text){
+      let raw = normalizeOcrText(text);
+      raw = charFixDigits(raw)
+        .replace(/\s*-\s*/g,"-")
+        .replace(/\s+/g," ");
+
+      // Normalfall
+      let m = raw.match(/C\s*[XK]\s*([0-9]{3})\s*[- ]?\s*([0-9]{8})/i);
+      if(m) return `CX${m[1]}-${m[2]}`;
+
+      // OCR kann C/X zusammenschieben/zerlegen oder "-" verlieren.
+      const compact = raw.replace(/[^A-Z0-9]/g,"");
+      m = compact.match(/CX([0-9]{3})([0-9]{8})/i);
+      if(m) return `CX${m[1]}-${m[2]}`;
+
+      // X wird gelegentlich als K erkannt.
+      m = compact.match(/CK([0-9]{3})([0-9]{8})/i);
+      if(m) return `CX${m[1]}-${m[2]}`;
+
+      return "";
+    }
+
+    async function fileToBitmap(file){
+      return await createImageBitmap(file);
+    }
+
+    function canvasToBlob(canvas, type="image/jpeg", quality=.96){
+      return new Promise((resolve,reject)=>{
+        canvas.toBlob(b=>b ? resolve(b) : reject(new Error("Bildkonvertierung fehlgeschlagen")), type, quality);
+      });
+    }
+
+    async function preprocessVariant(file, target, variant){
+      const bitmap = await fileToBitmap(file);
+      const sw = bitmap.width, sh = bitmap.height;
+
+      // Mehrere sinnvolle Bildbereiche:
+      // 0 = ganzes Bild
+      // 1 = mittlerer/rechter Bereich (Container-Schild)
+      // 2 = oberer Bereich (CX-Streifen)
+      let sx=0, sy=0, cw=sw, ch=sh;
+
+      if(target === "container" && variant === 1){
+        sx = Math.round(sw * .18);
+        sy = Math.round(sh * .17);
+        cw = Math.round(sw * .78);
+        ch = Math.round(sh * .48);
+      }else if(target === "cx" && variant === 1){
+        sx = 0;
+        sy = 0;
+        cw = sw;
+        ch = Math.round(sh * .46);
+      }else if(target === "cx" && variant === 2){
+        sx = 0;
+        sy = 0;
+        cw = sw;
+        ch = Math.round(sh * .30);
+      }
+
+      const maxDim = 2600;
+      const scale = Math.min(3, maxDim / Math.max(cw,ch));
+      const outW = Math.max(1, Math.round(cw * scale));
+      const outH = Math.max(1, Math.round(ch * scale));
+
+      const canvas = document.createElement("canvas");
+      canvas.width = outW;
+      canvas.height = outH;
+      const ctx = canvas.getContext("2d",{willReadFrequently:true});
+      ctx.drawImage(bitmap, sx, sy, cw, ch, 0, 0, outW, outH);
+      bitmap.close?.();
+
+      // Kontrast + Graustufen
+      const img = ctx.getImageData(0,0,outW,outH);
+      const d = img.data;
+
+      for(let i=0;i<d.length;i+=4){
+        const gray = Math.round(.299*d[i] + .587*d[i+1] + .114*d[i+2]);
+
+        let v;
+        if(variant === 0){
+          // sanfter Kontrast
+          v = Math.max(0, Math.min(255, (gray - 128) * 1.65 + 128));
+        }else{
+          // stärkere Schwelle für Beschriftungen
+          v = gray > 150 ? 255 : Math.max(0, Math.min(255, gray * .72));
+        }
+
+        d[i]=d[i+1]=d[i+2]=v;
+      }
+      ctx.putImageData(img,0,0);
+
+      return await canvasToBlob(canvas);
+    }
+
+    let ocrTarget = null;
+    let ocrWorker = null;
+
+    async function getOcrWorker(logger){
+      if(!window.Tesseract) throw new Error("OCR-Bibliothek nicht geladen.");
+
+      if(ocrWorker){
+        return ocrWorker;
+      }
+
+      ocrWorker = await Tesseract.createWorker("eng", 1, { logger });
+      return ocrWorker;
+    }
+
+    async function recognizeBlob(blob, target, logger, psm){
+      const worker = await getOcrWorker(logger);
+
+      const whitelist = target === "container"
+        ? "0123456789OQDILSBABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz.- "
+        : "CXcxKk0123456789OQDILSB- ";
+
+      await worker.setParameters({
+        tessedit_char_whitelist: whitelist,
+        tessedit_pageseg_mode: String(psm || 6),
+        preserve_interword_spaces: "1"
+      });
+
+      const result = await worker.recognize(blob);
+      return result?.data?.text || "";
+    }
+
+    async function runOcr(file,target){
+      if(!file || !target) return;
+
+      const btn = target === "container" ? el("ocrContainerBtn") : el("ocrCxBtn");
+      const normalLabel = target === "container"
+        ? "▣ Container erneut live scannen"
+        : "▣ CX erneut live scannen";
+
+      btn.disabled = true;
+      btn.textContent = "OCR wird vorbereitet …";
+
+      const debug = [];
+      let found = "";
+
+      try{
+        // Mehrere Varianten + passende Page Segmentation Modes.
+        const variants = target === "container" ? [1,0] : [2,1,0];
+        const psms = target === "container" ? [7,6,11] : [7,6,11];
+
+        for(const variant of variants){
+          const processed = await preprocessVariant(file,target,variant);
+
+          for(const psm of psms){
+            btn.textContent = `OCR läuft …`;
+            const txt = await recognizeBlob(
+              processed,
+              target,
+              m=>{
+                if(m.status === "recognizing text"){
+                  const pct = Math.round((m.progress || 0)*100);
+                  btn.textContent = `OCR ${pct}%`;
+                }
+              },
+              psm
+            );
+
+            debug.push(`VARIANTE ${variant} / PSM ${psm}\n${txt.trim()}\n`);
+
+            found = target === "container"
+              ? extractContainerNumber(txt)
+              : extractCxNumber(txt);
+
+            if(found) break;
+          }
+          if(found) break;
+        }
+
+        el("ocrDebug").textContent = debug.join("\n----------------\n");
+        el("ocrDebugDetails").style.display = "block";
+
+        if(target === "container"){
+          if(found){
+            state.containerNo = found;
+            el("containerNo").value = found;
+            toast(`Container erkannt: ${found}`);
+          }else{
+            el("ocrEditArea").style.display = "grid";
+            toast("Container-Nummer nicht erkannt. Bitte Foto näher am Schild aufnehmen.");
+          }
+        }else{
+          if(found){
+            state.cxNo = found;
+            el("cxNo").value = found;
+            toast(`CX erkannt: ${found}`);
+          }else{
+            el("ocrEditArea").style.display = "grid";
+            toast("CX-Nummer nicht erkannt. Bitte nur den CX-Aufkleber möglichst gross fotografieren.");
+          }
+        }
+
+        Object.values(state.photos).forEach(photo=>{
+          const step=findStep(photo.stepId);
+          if(step) photo.filename=fileNameFor(step,photo.capturedAt,photo.blob.type);
+        });
+
+        renderOcrResult();
+        render();
+        scheduleSave();
+
+      }catch(err){
+        console.error(err);
+        el("ocrEditArea").style.display = "grid";
+        el("ocrDebugDetails").style.display = "block";
+        el("ocrDebug").textContent = "OCR-Fehler:\n" + (err?.message || String(err));
+        toast("OCR konnte nicht gestartet werden. Öffne die App über GitHub Pages / HTTPS.");
+      }finally{
+        btn.disabled = false;
+        btn.textContent = normalLabel;
+        ocrTarget = null;
+      }
+    }
+
+
+    let scannerStream = null;
+    let scannerActive = false;
+    let scannerLoopBusy = false;
+    let scannerTarget = null;
+    let scannerStableValue = "";
+    let scannerStableCount = 0;
+    let scannerTorchOn = false;
+    let scannerLastRun = 0;
+
+    function setScannerDots(count){
+      el("stableDot1").classList.toggle("on", count >= 1);
+      el("stableDot2").classList.toggle("on", count >= 2);
+    }
+
+    function scannerUiForTarget(target){
+      scannerTarget = target;
+      scannerStableValue = "";
+      scannerStableCount = 0;
+      setScannerDots(0);
+      el("scanFrame").className = "scan-frame" + (target === "cx" ? " cx" : "");
+      el("scannerValue").textContent = "Suche …";
+      el("scannerSubstatus").textContent = target === "container"
+        ? "Nur die 4 Ziffern in den Rahmen halten"
+        : "Nur CX###-######## in den Rahmen halten";
+      el("scannerTitle").textContent = target === "container"
+        ? "Container-Nummer live scannen"
+        : "CX-Nummer live scannen";
+      el("scannerHint").textContent = target === "container"
+        ? "z. B. 0708 · weisse Zahl auf blauem Schild"
+        : "z. B. CX405-21015672 · schwarze Zeile auf weissem Etikett";
+
+      setTimeout(positionScanFrame, 80);
+    }
+
+    function positionScanFrame(){
+      const video = el("scannerVideo");
+      const stage = el("scannerStage");
+      const frame = el("scanFrame");
+      if(!video.videoWidth || !video.videoHeight) return;
+
+      const sr = stage.getBoundingClientRect();
+      const vr = video.getBoundingClientRect();
+      if(!vr.width || !vr.height) return;
+
+      const widthRatio = scannerTarget === "container" ? .58 : .93;
+      const heightRatio = scannerTarget === "container" ? .18 : .16;
+      const verticalRatio = scannerTarget === "container" ? .45 : .43;
+
+      const fw = Math.max(150, vr.width * widthRatio);
+      const fh = Math.max(62, vr.height * heightRatio);
+      const left = (vr.left - sr.left) + (vr.width - fw) / 2;
+      const top = (vr.top - sr.top) + vr.height * verticalRatio - fh/2;
+
+      frame.style.left = `${Math.max(6,left)}px`;
+      frame.style.top = `${Math.max(6,top)}px`;
+      frame.style.width = `${Math.min(fw,sr.width-12)}px`;
+      frame.style.height = `${Math.min(fh,sr.height-12)}px`;
+      frame.style.right = "auto";
+    }
+
+    async function openLiveScanner(target){
+      if(!navigator.mediaDevices?.getUserMedia){
+        toast("Live-Kamera wird von diesem Browser nicht unterstützt.");
+        el("ocrEditArea").style.display = "grid";
+        return;
+      }
+
+      scannerUiForTarget(target);
+      el("liveScanner").classList.add("show");
+      document.body.style.overflow = "hidden";
+
+      try{
+        scannerStream = await navigator.mediaDevices.getUserMedia({
+          video:{
+            facingMode:{ideal:"environment"},
+            width:{ideal:1920},
+            height:{ideal:1080},
+            focusMode:{ideal:"continuous"}
+          },
+          audio:false
+        });
+
+        const video = el("scannerVideo");
+        video.srcObject = scannerStream;
+        await video.play();
+        positionScanFrame();
+        setTimeout(positionScanFrame,250);
+
+        scannerActive = true;
+        scannerLoopBusy = false;
+        scannerLastRun = 0;
+        requestAnimationFrame(scannerLoop);
+
+      }catch(err){
+        console.error(err);
+        closeLiveScanner();
+        toast("Kamera konnte nicht geöffnet werden. GitHub Pages/HTTPS und Kamera-Berechtigung prüfen.");
+        el("ocrEditArea").style.display = "grid";
+      }
+    }
+
+    function closeLiveScanner(){
+      scannerActive = false;
+      scannerLoopBusy = false;
+      scannerStableValue = "";
+      scannerStableCount = 0;
+      setScannerDots(0);
+
+      if(scannerStream){
+        scannerStream.getTracks().forEach(t=>t.stop());
+        scannerStream = null;
+      }
+
+      const video = el("scannerVideo");
+      video.srcObject = null;
+      el("liveScanner").classList.remove("show");
+      document.body.style.overflow = "";
+      scannerTorchOn = false;
+    }
+
+    function scannerRoiFromVisibleFrame(){
+      const video = el("scannerVideo");
+      const frame = el("scanFrame");
+      const vw = video.videoWidth, vh = video.videoHeight;
+      if(!vw || !vh) return null;
+
+      const vr = video.getBoundingClientRect();
+      const fr = frame.getBoundingClientRect();
+      if(!vr.width || !vr.height) return null;
+
+      // Scanrahmen relativ zum tatsächlich sichtbaren Video.
+      let left = Math.max(fr.left,vr.left);
+      let top = Math.max(fr.top,vr.top);
+      let right = Math.min(fr.right,vr.right);
+      let bottom = Math.min(fr.bottom,vr.bottom);
+
+      if(right <= left || bottom <= top) return null;
+
+      let x = (left-vr.left)/vr.width*vw;
+      let y = (top-vr.top)/vr.height*vh;
+      let w = (right-left)/vr.width*vw;
+      let h = (bottom-top)/vr.height*vh;
+
+      x = Math.max(0,Math.min(vw-1,x));
+      y = Math.max(0,Math.min(vh-1,y));
+      w = Math.max(1,Math.min(vw-x,w));
+      h = Math.max(1,Math.min(vh-y,h));
+
+      return {
+        x:Math.round(x),y:Math.round(y),
+        w:Math.round(w),h:Math.round(h)
+      };
+    }
+
+    async function scannerFrameBlob(target, mode="gray"){
+      const video = el("scannerVideo");
+      const roi = scannerRoiFromVisibleFrame();
+      if(!roi) return null;
+
+      const scale = Math.min(4, 2200 / Math.max(roi.w,roi.h));
+      const outW = Math.max(1,Math.round(roi.w*scale));
+      const outH = Math.max(1,Math.round(roi.h*scale));
+
+      const canvas = document.createElement("canvas");
+      canvas.width = outW;
+      canvas.height = outH;
+      const ctx = canvas.getContext("2d",{willReadFrequently:true});
+
+      ctx.drawImage(
+        video,
+        roi.x,roi.y,roi.w,roi.h,
+        0,0,outW,outH
+      );
+
+      const img = ctx.getImageData(0,0,outW,outH);
+      const d = img.data;
+
+      for(let i=0;i<d.length;i+=4){
+        const gray = .299*d[i] + .587*d[i+1] + .114*d[i+2];
+        let v;
+
+        if(mode === "binary"){
+          v = gray > 145 ? 255 : 0;
+        }else if(mode === "invert"){
+          // Wichtig für 0708: weisse Schrift auf blau -> schwarz auf weiss.
+          const contrasted = Math.max(0,Math.min(255,(gray-128)*1.95+128));
+          v = 255-contrasted;
+        }else if(mode === "invertBinary"){
+          v = gray > 145 ? 0 : 255;
+        }else{
+          v = Math.max(0,Math.min(255,(gray-128)*1.9+128));
+        }
+
+        d[i]=d[i+1]=d[i+2]=v;
+      }
+      ctx.putImageData(img,0,0);
+
+      return await canvasToBlob(canvas,"image/jpeg",.96);
+    }
+
+    async function recognizeLiveFrame(target){
+      // Container: weisse Ziffern auf blauem Hintergrund -> Invertierung bevorzugen.
+      // CX: schwarze Schrift auf weissem Etikett -> normal/binary bevorzugen.
+      const modes = target === "container"
+        ? ["invert","invertBinary","gray","binary"]
+        : ["gray","binary","invert"];
+
+      for(const mode of modes){
+        const blob = await scannerFrameBlob(target,mode);
+        if(!blob) continue;
+
+        const worker = await getOcrWorker(()=>{});
+        const whitelist = target === "container"
+          ? "0123456789"
+          : "CXcxKk0123456789-";
+
+        await worker.setParameters({
+          tessedit_char_whitelist:whitelist,
+          tessedit_pageseg_mode:"7",
+          preserve_interword_spaces:"0",
+          user_defined_dpi:"300"
+        });
+
+        const result = await worker.recognize(blob);
+        const text = result?.data?.text || "";
+
+        let found = "";
+        if(target === "container"){
+          // Da im Rahmen nur die Nummer liegen soll, reicht exakt eine 4er-Zahl.
+          const digits = String(text).replace(/\D/g,"");
+          if(digits.length === 4) found = digits;
+          else found = extractContainerNumber(text);
+        }else{
+          found = extractCxNumber(text);
+        }
+
+        if(found) return {found,text,mode};
+      }
+      return {found:"",text:"",mode:""};
+    }
+
+    function acceptLiveValue(value){
+      if(scannerTarget === "container"){
+        state.containerNo = value;
+        el("containerNo").value = value;
+      }else{
+        state.cxNo = value;
+        el("cxNo").value = value;
+      }
+
+      Object.values(state.photos).forEach(photo=>{
+        const step=findStep(photo.stepId);
+        if(step) photo.filename=fileNameFor(step,photo.capturedAt,photo.blob.type);
+      });
+
+      renderOcrResult();
+      render();
+      scheduleSave();
+
+      el("scanFrame").classList.add("hit");
+      el("scannerValue").textContent = "✓ " + value;
+      el("scannerSubstatus").textContent = "Erkannt und übernommen";
+      navigator.vibrate?.([80,50,120]);
+
+      // Nach Container automatisch zum CX-Scan wechseln.
+      if(scannerTarget === "container" && !/^CX[0-9]{3}-[0-9]{8}$/.test(state.cxNo)){
+        setTimeout(()=>{
+          if(scannerActive){
+            scannerUiForTarget("cx");
+            positionScanFrame();
+            toast(`Container ${value} übernommen – jetzt CX scannen.`);
+          }
+        },700);
+        return;
+      }
+
+      // Wenn beide Werte vorhanden sind, Scanner schliessen und Foto 1 freigeben.
+      setTimeout(()=>{
+        if(scannerActive) closeLiveScanner();
+        renderOcrResult();
+        render();
+        toast("Identifikation vollständig. Foto 1 ist freigeschaltet.");
+      },750);
+    }
+
+    async function scannerLoop(ts){
+      if(!scannerActive) return;
+
+      // Nicht öfter als ca. alle 500 ms starten.
+      if(!scannerLoopBusy && ts - scannerLastRun > 650){
+        scannerLastRun = ts;
+        scannerLoopBusy = true;
+
+        try{
+          const result = await recognizeLiveFrame(scannerTarget);
+          const found = result.found;
+
+          if(found){
+            el("scannerValue").textContent = found;
+
+            if(found === scannerStableValue){
+              scannerStableCount++;
+            }else{
+              scannerStableValue = found;
+              scannerStableCount = 1;
+            }
+
+            setScannerDots(scannerStableCount);
+            el("scannerSubstatus").textContent = scannerStableCount >= 2
+              ? "Stabil erkannt"
+              : "Noch einmal bestätigen …";
+
+            if(scannerStableCount >= 2){
+              const finalValue = scannerStableValue;
+              scannerStableCount = 0;
+              setScannerDots(2);
+              acceptLiveValue(finalValue);
+            }
+          }else{
+            scannerStableCount = 0;
+            scannerStableValue = "";
+            setScannerDots(0);
+            el("scannerValue").textContent = "Suche …";
+            el("scannerSubstatus").textContent = scannerTarget === "container"
+              ? "4-stellige Nummer gross in den Rahmen halten"
+              : "CX-Nummer gross in den Rahmen halten";
+          }
+        }catch(err){
+          console.error("Live OCR:",err);
+          el("scannerSubstatus").textContent = "OCR wird neu versucht …";
+        }finally{
+          scannerLoopBusy = false;
+        }
+      }
+
+      if(scannerActive) requestAnimationFrame(scannerLoop);
+    }
+
+    async function toggleScannerTorch(){
+      if(!scannerStream) return;
+      const track = scannerStream.getVideoTracks()[0];
+      if(!track) return;
+
+      const caps = track.getCapabilities?.() || {};
+      if(!caps.torch){
+        toast("Taschenlampe wird von diesem Gerät/Browser nicht unterstützt.");
+        return;
+      }
+
+      scannerTorchOn = !scannerTorchOn;
+      try{
+        await track.applyConstraints({advanced:[{torch:scannerTorchOn}]});
+        el("scannerFlashBtn").textContent = scannerTorchOn ? "🔦 Licht aus" : "🔦 Licht";
+      }catch(err){
+        scannerTorchOn = false;
+        toast("Taschenlampe konnte nicht geschaltet werden.");
+      }
+    }
+
+    function liveScanPhotoFallback(){
+      const target = scannerTarget;
+      closeLiveScanner();
+      ocrTarget = target;
+      el("ocrInput").value = "";
+      el("ocrInput").click();
+    }
+
+
+    let deferredInstallPrompt = null;
+
+    function updateInstallUi(){
+      const available = !!deferredInstallPrompt;
+      el("installBtn")?.classList.toggle("hidden", !available);
+      el("installCard")?.classList.toggle("hidden", !available);
+    }
+
+    async function triggerInstall(){
+      if(!deferredInstallPrompt){
+        toast("Falls kein Installationsdialog erscheint: Browser-Menü öffnen und «App installieren» bzw. «Zum Startbildschirm hinzufügen» wählen.");
+        return;
+      }
+
+      deferredInstallPrompt.prompt();
+      try{
+        await deferredInstallPrompt.userChoice;
+      }catch(err){
+        console.warn(err);
+      }
+
+      deferredInstallPrompt = null;
+      updateInstallUi();
+    }
+
+    function initPwa(){
+      window.addEventListener("beforeinstallprompt", event=>{
+        event.preventDefault();
+        deferredInstallPrompt = event;
+        updateInstallUi();
+      });
+
+      window.addEventListener("appinstalled", ()=>{
+        deferredInstallPrompt = null;
+        updateInstallUi();
+        toast("ContainerTrack wurde installiert.");
+      });
+
+      if("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")){
+        window.addEventListener("load", ()=>{
+          navigator.serviceWorker.register("./sw.js").catch(err=>{
+            console.warn("Service Worker:",err);
+          });
+        });
+      }
+    }
+
+    function bind(){
+      el("containerNo").addEventListener("input",()=>{
+        state.containerNo = normalizeContainerNumber(el("containerNo").value);
+        el("containerNo").value = state.containerNo;
+
+        Object.values(state.photos).forEach(photo=>{
+          const step=findStep(photo.stepId);
+          if(step) photo.filename=fileNameFor(step,photo.capturedAt,photo.blob.type);
+        });
+
+        renderOcrResult();
+        scheduleSave();
+        render();
+      });
+
+      el("cxNo").addEventListener("input",()=>{
+        state.cxNo = normalizeCxNumber(el("cxNo").value);
+        el("cxNo").value = state.cxNo;
+        renderOcrResult();
+        scheduleSave();
+        render();
+      });
+
+      el("ocrContainerBtn").addEventListener("click",()=>{
+        openLiveScanner("container");
+      });
+
+      el("ocrCxBtn").addEventListener("click",()=>{
+        openLiveScanner("cx");
+      });
+
+      el("ocrInput").addEventListener("change",e=>runOcr(e.target.files?.[0],ocrTarget));
+
+      el("ocrEditBtn").addEventListener("click",()=>{
+        const area = el("ocrEditArea");
+        area.style.display = area.style.display === "none" ? "grid" : "none";
+      });
+
+      window.addEventListener("resize",()=>{ if(scannerActive) positionScanFrame(); });
+      window.addEventListener("orientationchange",()=>setTimeout(()=>{ if(scannerActive) positionScanFrame(); },250));
+            el("scannerCloseBtn").addEventListener("click",closeLiveScanner);
+      el("scannerFlashBtn").addEventListener("click",toggleScannerTorch);
+      el("scannerPhotoFallbackBtn").addEventListener("click",liveScanPhotoFallback);
+      el("cameraInput").addEventListener("change",e=>handleFile(e.target.files?.[0]));
+      el("checkBtn").addEventListener("click",()=>checkWorkflow(true));
+      el("exportBtn").addEventListener("click",exportZip);
+      el("modalExportBtn").addEventListener("click",exportZip);
+      el("deletePhotoBtn").addEventListener("click",deletePreviewPhoto);
+      el("downloadPhotoBtn").addEventListener("click",downloadPreviewPhoto);
+      el("historyBtn").addEventListener("click",renderHistory);
+      el("installBtn")?.addEventListener("click",triggerInstall);
+      el("installCardBtn")?.addEventListener("click",triggerInstall);
+
+      el("newBtn").addEventListener("click",()=>{
+        if(completedCount() && !confirm("Neuen Container starten? Der aktuelle Verlauf bleibt lokal gespeichert.")) return;
+        newSession();
+      });
+
+      document.querySelectorAll("[data-close]").forEach(btn=>{
+        btn.addEventListener("click",()=>closeModal(btn.dataset.close));
+      });
+
+      document.querySelectorAll(".sheet,.modal").forEach(backdrop=>{
+        backdrop.addEventListener("click",e=>{
+          if(e.target===backdrop) closeModal(backdrop.id);
+        });
+      });
+    }
+
+    async function init(){
+      bind();
+      initPwa();
+      renderOcrResult();
+      try{
+        const sessions=await dbGetAll();
+        if(sessions.length){
+          await loadSession(sessions[0].sessionId);
+        }else{
+          newSession();
+        }
+      }catch(err){
+        console.error(err);
+        newSession();
+        toast("Lokaler Speicher konnte nicht geladen werden.");
+      }
+    }
+
+    init();
+  })();
+  </script>
+</body>
+</html>
