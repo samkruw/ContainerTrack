@@ -1,4 +1,4 @@
-const CACHE_NAME = "containertrack-v8-shell";
+const CACHE_NAME = "containertrack-v10-shell";
 
 const APP_SHELL = [
   "./",

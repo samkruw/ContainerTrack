@@ -4,7 +4,6 @@ GitHub Pages speichert KEINE Container-Daten und KEINE Fotos.
 
 Gespeichert wird lokal im Browser:
 - Container-Nummer
-- CX-Nummer
 - Fotos
 - Verläufe
 
@@ -18,3 +17,6 @@ Installation:
 2. GitHub Pages aktivieren.
 3. HTTPS-Seite auf Android in Chrome öffnen.
 4. "Installieren" drücken oder Browser-Menü > "App installieren".
+
+V10 Speed-Workflow:
+Container-Nummer live scannen -> erster gültiger Treffer sofort übernehmen -> Foto 1 -> Foto 2 -> Foto 3 -> Foto 4 -> Foto 5 -> Foto 6 -> Export

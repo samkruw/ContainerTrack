@@ -12,7 +12,7 @@
   <meta name="application-name" content="ContainerTrack" />
   <meta name="apple-mobile-web-app-title" content="ContainerTrack" />
   <meta name="mobile-web-app-capable" content="yes" />
-  <title>ContainerTrack</title>
+  <title>ContainerTrack V10</title>
   <style>
     :root{
       --bg:#050811;
@@ -592,17 +592,6 @@
             </div>
             <button class="primary" id="ocrContainerBtn" type="button" style="width:100%;min-height:50px">▣ Container live scannen</button>
           </div>
-
-          <div style="border:1px solid var(--line);border-radius:16px;padding:14px;background:rgba(3,8,18,.62)">
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px">
-              <div>
-                <strong>2. CX-Nummer</strong>
-                <div style="font-size:12px;color:var(--muted);margin-top:3px">Nur die CX-Zeile gross und gerade in den Scanrahmen halten, z. B. CX405-21015672</div>
-              </div>
-              <strong id="ocrCx" style="color:var(--cyan);font-size:16px;text-align:right">–</strong>
-            </div>
-            <button class="primary" id="ocrCxBtn" type="button" style="width:100%;min-height:50px">▣ CX live scannen</button>
-          </div>
         </div>
 
         <div id="ocrResultCard" style="display:none;margin-top:12px;border:1px solid var(--line);border-radius:16px;padding:14px;background:rgba(3,8,18,.62)">
@@ -620,15 +609,11 @@
             <label for="containerNo">Container-Nummer (4-stellig)</label>
             <input id="containerNo" class="container-input" inputmode="numeric" maxlength="4" placeholder="z. B. 0708" autocomplete="off" />
           </div>
-          <div class="field">
-            <label for="cxNo">CX-Nummer</label>
-            <input id="cxNo" class="container-input" placeholder="z. B. CX405-21015672" autocomplete="off" />
-          </div>
         </div>
 
-        <div class="hint">Der Live-Scanner liest ausschliesslich <strong>Container-Nummer</strong> und <strong>CX-Nummer</strong>. Halte wirklich nur die gesuchte Nummer gross und gerade im Rahmen. Zwei identische Treffer werden automatisch übernommen. Der sichtbare Rahmen entspricht in V7 exakt dem OCR-Bildausschnitt. Datum und andere Angaben werden ignoriert. Erst wenn beide Werte vorhanden sind, wird Foto 1 freigeschaltet. Die 6 Dokumentationsfotos müssen danach zwingend in der vorgegebenen Reihenfolge aufgenommen werden.</div>
+        <div class="hint">Der Live-Scanner liest ausschliesslich <strong>Container-Nummer</strong> und <strong>Container-Nummer</strong>. Halte wirklich nur die gesuchte Nummer gross und gerade im Rahmen. Der erste gültige 4-stellige Treffer wird sofort übernommen. Der sichtbare Rahmen entspricht in V7 exakt dem OCR-Bildausschnitt. Datum und andere Angaben werden ignoriert. Erst wenn beide Werte vorhanden sind, wird Foto 1 freigeschaltet. Die 6 Dokumentationsfotos müssen danach zwingend in der vorgegebenen Reihenfolge aufgenommen werden.</div>
         <div style="margin-top:12px;padding:10px 12px;border-radius:11px;background:#f4f8f7;border:1px solid rgba(8,31,40,.08);font-size:11px;color:#607078;line-height:1.45">
-          🔒 <strong>Local-only:</strong> Container-Daten, CX-Nummern und Fotos bleiben ausschliesslich auf diesem Gerät. GitHub Pages hostet nur die App selbst.
+          🔒 <strong>Local-only:</strong> Container-Daten und Fotos bleiben ausschliesslich auf diesem Gerät. GitHub Pages hostet nur die App selbst.
         </div>
       </section>
 
@@ -796,7 +781,7 @@
     const state = {
       sessionId:null,
       containerNo:"",
-      cxNo:"",
+
       ocrComplete:false,
       createdAt:null,
       updatedAt:null,
@@ -869,7 +854,7 @@
     function newSession(){
       state.sessionId = (crypto.randomUUID ? crypto.randomUUID() : "s-"+Date.now()+"-"+Math.random().toString(16).slice(2));
       state.containerNo = "";
-      state.cxNo = "";
+
       state.ocrComplete = false;
       state.createdAt = Date.now();
       state.updatedAt = Date.now();
@@ -878,7 +863,7 @@
       state.previewStepId = null;
       state.completionShown = false;
       el("containerNo").value = "";
-      el("cxNo").value = "";
+
       el("ocrResultCard").style.display = "none";
       el("ocrEditArea").style.display = "none";
       el("ocrWarning").style.display = "none";
@@ -890,7 +875,7 @@
       return {
         sessionId:state.sessionId,
         containerNo:state.containerNo,
-        cxNo:state.cxNo,
+
         ocrComplete:state.ocrComplete,
         createdAt:state.createdAt,
         updatedAt:Date.now(),
@@ -1047,7 +1032,7 @@
     }
 
     function beginCapture(stepId){
-      if(!state.ocrComplete || !state.containerNo || !state.cxNo){
+      if(!state.ocrComplete || !state.containerNo){
         toast("Zuerst die Container-Beschriftung per OCR scannen.");
         return;
       }
@@ -1153,7 +1138,7 @@
     }
 
     function checkWorkflow(showComplete=true){
-      if(!state.ocrComplete || !state.containerNo || !state.cxNo){
+      if(!state.ocrComplete || !state.containerNo){
         toast("OCR-Identifikation ist noch nicht vollständig.");
         return false;
       }
@@ -1168,7 +1153,7 @@
     }
 
     async function exportZip(){
-      if(!state.ocrComplete || !state.containerNo || !state.cxNo){
+      if(!state.ocrComplete || !state.containerNo){
         toast("OCR-Identifikation ist noch nicht vollständig.");
         return;
       }
@@ -1195,9 +1180,9 @@
         }
         const metadata = {
           app:"Container FotoTrack",
-          version:"1.5",
+          version:"1.7",
           containerNumber:state.containerNo,
-          cxNumber:state.cxNo,
+
             createdAt:new Date(state.createdAt).toISOString(),
           exportedAt:new Date().toISOString(),
           requiredPhotos:TOTAL_REQUIRED,
@@ -1361,7 +1346,7 @@
         item.innerHTML=`
           <div>
             <strong>${session.containerNo || "Ohne Container-Nummer"}</strong>
-            <span>${session.cxNo ? session.cxNo+" · " : ""}${count}/${TOTAL_REQUIRED} Fotos · ${new Date(session.updatedAt).toLocaleString("de-CH")}</span>
+            <span>${count}/${TOTAL_REQUIRED} Fotos · ${new Date(session.updatedAt).toLocaleString("de-CH")}</span>
           </div>
           <div style="display:flex;gap:7px">
             <button class="ghost" type="button" data-load="${session.sessionId}">Öffnen</button>
@@ -1385,14 +1370,14 @@
       if(!session) return;
       state.sessionId = session.sessionId;
       state.containerNo = session.containerNo || "";
-      state.cxNo = session.cxNo || "";
-      state.ocrComplete = !!(state.containerNo && state.cxNo);
+
+      state.ocrComplete = /^[0-9]{4}$/.test(state.containerNo);
       state.createdAt = session.createdAt || Date.now();
       state.updatedAt = session.updatedAt || Date.now();
       state.photos = session.photos || {};
       state.completionShown = !!session.completionShown;
       el("containerNo").value = state.containerNo;
-      el("cxNo").value = state.cxNo;
+
       renderOcrResult();
       closeModal("historySheet");
       render();
@@ -1432,27 +1417,22 @@
     }
 
     function renderOcrResult(){
-      const hasAny = !!(state.containerNo || state.cxNo);
+      const hasAny = !!state.containerNo;
       el("ocrResultCard").style.display = hasAny ? "block" : "none";
       el("ocrContainer").textContent = state.containerNo || "–";
-      el("ocrCx").textContent = state.cxNo || "–";
 
       const warning = el("ocrWarning");
-      const missing = [];
-      if(!/^[0-9]{4}$/.test(state.containerNo)) missing.push("Container-Nummer");
-      if(!/^CX[0-9]{3}-[0-9]{8}$/.test(state.cxNo)) missing.push("CX-Nummer");
-
-      state.ocrComplete = missing.length === 0;
+      state.ocrComplete = /^[0-9]{4}$/.test(state.containerNo);
 
       if(state.ocrComplete){
-        el("ocrStatus").innerHTML = `✓ Identifiziert: <strong>${state.containerNo}</strong> · <strong>${state.cxNo}</strong>`;
-        el("ocrStatus").style.color = "#bbf7d0";
+        el("ocrStatus").innerHTML = `✓ Identifiziert: <strong>${state.containerNo}</strong>`;
+        el("ocrStatus").style.color = "#006a59";
         warning.style.display = "none";
       }else{
-        el("ocrStatus").textContent = "Identifikation noch unvollständig.";
+        el("ocrStatus").textContent = "Container noch nicht identifiziert.";
         el("ocrStatus").style.color = "var(--muted)";
         warning.style.display = "block";
-        warning.textContent = "Noch erforderlich: " + missing.join(" und ") + ".";
+        warning.textContent = "4-stellige Container-Nummer erforderlich.";
       }
     }
 
@@ -1697,7 +1677,7 @@
             toast(`CX erkannt: ${found}`);
           }else{
             el("ocrEditArea").style.display = "grid";
-            toast("CX-Nummer nicht erkannt. Bitte nur den CX-Aufkleber möglichst gross fotografieren.");
+            toast("Container-Nummer nicht erkannt. Bitte nur den CX-Aufkleber möglichst gross fotografieren.");
           }
         }
 
@@ -1738,23 +1718,16 @@
       el("stableDot2").classList.toggle("on", count >= 2);
     }
 
-    function scannerUiForTarget(target){
-      scannerTarget = target;
+    function scannerUiForTarget(target="container"){
+      scannerTarget = "container";
       scannerStableValue = "";
       scannerStableCount = 0;
       setScannerDots(0);
-      el("scanFrame").className = "scan-frame" + (target === "cx" ? " cx" : "");
+      el("scanFrame").className = "scan-frame";
       el("scannerValue").textContent = "Suche …";
-      el("scannerSubstatus").textContent = target === "container"
-        ? "Nur die 4 Ziffern in den Rahmen halten"
-        : "Nur CX###-######## in den Rahmen halten";
-      el("scannerTitle").textContent = target === "container"
-        ? "Container-Nummer live scannen"
-        : "CX-Nummer live scannen";
-      el("scannerHint").textContent = target === "container"
-        ? "z. B. 0708 · weisse Zahl auf blauem Schild"
-        : "z. B. CX405-21015672 · schwarze Zeile auf weissem Etikett";
-
+      el("scannerSubstatus").textContent = "4-stellige Nummer in den Rahmen halten";
+      el("scannerTitle").textContent = "Container-Nummer live scannen";
+      el("scannerHint").textContent = "z. B. 0708 · erster gültiger Treffer wird sofort übernommen";
       setTimeout(positionScanFrame, 80);
     }
 
@@ -1966,13 +1939,8 @@
     }
 
     function acceptLiveValue(value){
-      if(scannerTarget === "container"){
-        state.containerNo = value;
-        el("containerNo").value = value;
-      }else{
-        state.cxNo = value;
-        el("cxNo").value = value;
-      }
+      state.containerNo = value;
+      el("containerNo").value = value;
 
       Object.values(state.photos).forEach(photo=>{
         const step=findStep(photo.stepId);
@@ -1985,72 +1953,40 @@
 
       el("scanFrame").classList.add("hit");
       el("scannerValue").textContent = "✓ " + value;
-      el("scannerSubstatus").textContent = "Erkannt und übernommen";
-      navigator.vibrate?.([80,50,120]);
+      el("scannerSubstatus").textContent = "Übernommen";
+      navigator.vibrate?.(70);
 
-      // Nach Container automatisch zum CX-Scan wechseln.
-      if(scannerTarget === "container" && !/^CX[0-9]{3}-[0-9]{8}$/.test(state.cxNo)){
-        setTimeout(()=>{
-          if(scannerActive){
-            scannerUiForTarget("cx");
-            positionScanFrame();
-            toast(`Container ${value} übernommen – jetzt CX scannen.`);
-          }
-        },700);
-        return;
-      }
-
-      // Wenn beide Werte vorhanden sind, Scanner schliessen und Foto 1 freigeben.
       setTimeout(()=>{
         if(scannerActive) closeLiveScanner();
         renderOcrResult();
         render();
-        toast("Identifikation vollständig. Foto 1 ist freigeschaltet.");
-      },750);
+        toast("Container erkannt. Foto 1 ist freigeschaltet.");
+      },280);
     }
 
     async function scannerLoop(ts){
       if(!scannerActive) return;
 
-      // Nicht öfter als ca. alle 500 ms starten.
-      if(!scannerLoopBusy && ts - scannerLastRun > 650){
+      // Speed-Modus: ca. alle 400 ms prüfen, erster gültiger Treffer wird sofort akzeptiert.
+      if(!scannerLoopBusy && ts - scannerLastRun > 400){
         scannerLastRun = ts;
         scannerLoopBusy = true;
 
         try{
-          const result = await recognizeLiveFrame(scannerTarget);
+          const result = await recognizeLiveFrame("container");
           const found = result.found;
 
-          if(found){
+          if(found && /^[0-9]{4}$/.test(found)){
             el("scannerValue").textContent = found;
-
-            if(found === scannerStableValue){
-              scannerStableCount++;
-            }else{
-              scannerStableValue = found;
-              scannerStableCount = 1;
-            }
-
-            setScannerDots(scannerStableCount);
-            el("scannerSubstatus").textContent = scannerStableCount >= 2
-              ? "Stabil erkannt"
-              : "Noch einmal bestätigen …";
-
-            if(scannerStableCount >= 2){
-              const finalValue = scannerStableValue;
-              scannerStableCount = 0;
-              setScannerDots(2);
-              acceptLiveValue(finalValue);
-            }
-          }else{
-            scannerStableCount = 0;
-            scannerStableValue = "";
-            setScannerDots(0);
-            el("scannerValue").textContent = "Suche …";
-            el("scannerSubstatus").textContent = scannerTarget === "container"
-              ? "4-stellige Nummer gross in den Rahmen halten"
-              : "CX-Nummer gross in den Rahmen halten";
+            setScannerDots(2);
+            el("scannerSubstatus").textContent = "Erkannt";
+            acceptLiveValue(found);
+            return;
           }
+
+          setScannerDots(0);
+          el("scannerValue").textContent = "Suche …";
+          el("scannerSubstatus").textContent = "4-stellige Nummer gross in den Rahmen halten";
         }catch(err){
           console.error("Live OCR:",err);
           el("scannerSubstatus").textContent = "OCR wird neu versucht …";
@@ -2084,9 +2020,8 @@
     }
 
     function liveScanPhotoFallback(){
-      const target = scannerTarget;
       closeLiveScanner();
-      ocrTarget = target;
+      ocrTarget = "container";
       el("ocrInput").value = "";
       el("ocrInput").click();
     }
@@ -2154,20 +2089,8 @@
         render();
       });
 
-      el("cxNo").addEventListener("input",()=>{
-        state.cxNo = normalizeCxNumber(el("cxNo").value);
-        el("cxNo").value = state.cxNo;
-        renderOcrResult();
-        scheduleSave();
-        render();
-      });
-
       el("ocrContainerBtn").addEventListener("click",()=>{
         openLiveScanner("container");
-      });
-
-      el("ocrCxBtn").addEventListener("click",()=>{
-        openLiveScanner("cx");
       });
 
       el("ocrInput").addEventListener("change",e=>runOcr(e.target.files?.[0],ocrTarget));

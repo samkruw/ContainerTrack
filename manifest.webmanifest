@@ -1,7 +1,7 @@
 {
   "name": "ContainerTrack",
   "short_name": "ContainerTrack",
-  "description": "Geführte Container-Fotodokumentation mit Live-Scan und fester Fotoreihenfolge.",
+  "description": "Geführte Container-Fotodokumentation mit schnellem Live-Scan der Container-Nummer und fester Fotoreihenfolge.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
