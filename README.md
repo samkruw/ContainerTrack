@@ -1,10 +1,10 @@
-# ContainerTrack V17 — Final Local-only Workflow
+# ContainerTrack V18 — XLSX Export & KT Mapping
 
 ContainerTrack ist eine installierbare **Local-first PWA** für die geführte Dokumentation von **Lieferungen** und **Returns** mit mehreren Containern.
 
-Die App verwaltet die komplette Aufnahme lokal auf dem Smartphone, erzwingt den richtigen Ablauf und erzeugt am Ende ein strukturiertes ZIP inklusive Excel-kompatibler TXT-Datei.
+Die App verwaltet die komplette Aufnahme lokal auf dem Smartphone, erzwingt den richtigen Ablauf und erzeugt am Ende ein strukturiertes ZIP inklusive echter `.xlsx`-Excel-Datei.
 
-> **Local-only:** Order-/Return-Nummern, Container-Nummern, Fotos, Excel-Daten, Verläufe und Logger-Timer werden nicht an GitHub oder einen Cloud-Server übertragen. GitHub Pages hostet ausschliesslich die statischen App-Dateien.
+> **Local-only:** KT-/Order-Nummern, Container-Nummern, Fotos, Excel-Daten, Verläufe und Logger-Timer werden nicht an GitHub oder einen Cloud-Server übertragen. GitHub Pages hostet ausschliesslich die statischen App-Dateien.
 
 ---
 
@@ -14,9 +14,8 @@ Die App verwaltet die komplette Aufnahme lokal auf dem Smartphone, erzwingt den 
 
 Vor dem Start müssen ausgefüllt werden:
 
-- **Order Number** — Auftragsnummer und Name des obersten Export-Ordners
-- **ZRH Number / KT** — wird in der TXT-Spalte `KT` verwendet
-- **Order / Container-Typ** — wird manuell eingegeben und in der TXT-Spalte `Order` verwendet
+- **KT / Order Number** — Wert für die Excel-Spalte `KT` und Name des obersten Export-Ordners
+- **Order / Container-Typ** — Container-Typ und Wert für die Excel-Spalte `Order`
 - **Anzahl Container** — 1 bis 50
 - **Quick** — freies Pflicht-Textfeld
 - **additional Work** — freies Pflicht-Textfeld
@@ -38,7 +37,7 @@ Für jeden Container:
 
 Die Foto-Reihenfolge ist zwingend. Schritte können nicht übersprungen werden.
 
-### Delivery TXT
+### Delivery Excel (.xlsx)
 
 Spalten:
 
@@ -51,7 +50,7 @@ Mapping:
 ```text
 Datum             = aktuelles Datum
 In/Out            = OUT
-KT                = ZRH Number
+KT                = KT / Order Number
 Order             = manuell eingegebener Container-Typ
 Quantity          = ausgewählte Container-Anzahl
 additional Work   = Pflicht-Textfeld
@@ -59,12 +58,14 @@ Container Number  = alle Container-Nummern des Batches
 Quick             = Pflicht-Textfeld
 ```
 
+Die Excel-Datei enthält eine Kopfzeile und eine Datenzeile. `Container Number` enthält die aus den Scans übernommenen Container-Nummern des gesamten Batches, kommasepariert in einer Zelle.
+
 ### Export-Struktur
 
-Beispiel `ORDER-7845`:
+Beispiel `ZRH00459`:
 
 ```text
-ORDER-7845/
+ZRH00459/
 ├── 0708/
 │   ├── 0708_01.jpg
 │   ├── 0708_02.jpg
@@ -74,8 +75,8 @@ ORDER-7845/
 │   └── 0708_06.jpg
 ├── 0710/
 │   └── ...
-├── ORDER-7845_EXCEL.txt
-└── ORDER-7845_META.json
+├── ZRH00459_EXCEL.xlsx
+└── ZRH00459_META.json
 ```
 
 ---
@@ -147,7 +148,7 @@ Der genaue Zeitpunkt dieser Bestätigung wird lokal im Return-Vorgang gespeicher
 
 Danach müssen ausgefüllt werden:
 
-- **Return Number** — Name des Export-Ordners und Wert für `KT`
+- **KT / Order Number** — Wert für `KT` und Name des Export-Ordners
 - **Order / Container-Typ** — manuell
 - **Anzahl Container** — 1 bis 50
 - **Quick** — freies Pflicht-Textfeld
@@ -161,12 +162,12 @@ Für jeden Container:
 2. **ein Foto des Inhalts** aufnehmen
 3. nächsten Container erfassen
 
-### Return TXT
+### Return Excel (.xlsx)
 
 ```text
 Datum             = aktuelles Datum
 In/Out            = IN
-KT                = Return Number
+KT                = KT / Order Number
 Order             = manuell eingegebener Container-Typ
 Quantity          = ausgewählte Container-Anzahl
 additional Work   = Pflicht-Textfeld
@@ -174,16 +175,18 @@ Container Number  = alle Container-Nummern
 Quick             = Pflicht-Textfeld
 ```
 
+Die Excel-Datei enthält eine Kopfzeile und eine Datenzeile. `Container Number` enthält die aus den Scans übernommenen Container-Nummern des gesamten Batches, kommasepariert in einer Zelle.
+
 ### Export-Struktur
 
 ```text
-RETURN-194/
+ZRH00459/
 ├── 0708/
 │   └── 0708_01.jpg
 ├── 0710/
 │   └── 0710_01.jpg
-├── RETURN-194_EXCEL.txt
-└── RETURN-194_META.json
+├── ZRH00459_EXCEL.xlsx
+└── ZRH00459_META.json
 ```
 
 ---
@@ -247,11 +250,11 @@ ContainerTrack verhindert typische Fehler im Ablauf:
 Gespeichert werden lokal:
 
 - Delivery-/Return-Vorgänge
-- Order-/Return-Referenzen
+- KT-/Order-Referenzen
 - Container-Nummern
 - Fotos
 - Bearbeitungsstand
-- TXT-Felder
+- Excel-Felder
 - Logger-Stopp-Zeitpunkt beim Return
 
 ### localStorage
@@ -317,7 +320,7 @@ Keine Frameworks. Kein Build-Prozess. Kein Backend. Keine Cloud-Datenbank. Keine
 
 ---
 
-## 9. QA / Testloop V17
+## 9. QA / Testloop V18
 
 Der finale Build wurde in mehreren Testschleifen geprüft.
 
@@ -337,16 +340,16 @@ Der finale Build wurde in mehreren Testschleifen geprüft.
 - 6 Fotos in strikter Reihenfolge
 - Duplicate-Container-Schutz
 - Delivery-ZIP-Struktur
-- Delivery-TXT-Inhalt
-- Delivery-Mapping `OUT / KT=ZRH / Order=Container-Typ`
+- Delivery-XLSX-Inhalt
+- Delivery-Mapping `OUT / KT=KT-Order-Number / Order=Container-Typ`
 - Return-Logger-Gate
 - exakter Logger-Stopp-Zeitpunkt
 - Return-Pflichtfeld-Validierung
 - Return-Batch mit mehreren Containern
 - ein Inhaltsfoto pro Return-Container
 - Return-ZIP-Struktur
-- Return-TXT-Inhalt
-- Return-Mapping `IN / KT=Return Number / Order=Container-Typ`
+- Return-XLSX-Inhalt
+- Return-Mapping `IN / KT=KT-Order-Number / Order=Container-Typ`
 - lokaler Verlauf öffnen / wieder aufnehmen
 - 30-Minuten-Timer erzeugen
 - sichtbarer Countdown
@@ -374,7 +377,18 @@ Diese Funktionen hängen von Kamera, Chrome-Version und Android-Energiesparverha
 
 ## 10. Versionsübersicht
 
-### V17 — Final QA
+### V18 — XLSX Export & eindeutiges KT-Mapping
+
+- TXT-Export vollständig durch echte `.xlsx`-Datei ersetzt
+- Excel-Spalten exakt: `Datum | In/Out | KT | Order | Quantity | additional Work | Container Number | Quick`
+- `KT` = **KT / Order Number** bei Lieferung und Return
+- separaten Delivery-Wert `ZRH Number / KT` entfernt
+- `Order` = **Container-Typ** bei Lieferung und Return
+- `Container Number` wird automatisch aus den abgeschlossenen Container-Scans übernommen
+- oberster ZIP-Ordner wird nach `KT` benannt
+- Unterordner werden nach der jeweiligen Container-Nummer benannt
+
+### V17 — Final QA (vor XLSX-Umstellung)
 
 - Quick auf freies Pflicht-Textfeld geändert
 - Validierung vor Erzeugung eines Vorgangs
@@ -402,9 +416,8 @@ Diese Funktionen hängen von Kamera, Chrome-Version und Android-Energiesparverha
 
 ### V13
 
-- Excel-TXT auch für Delivery
-- ZRH Number → KT bei Delivery
-- Return Number → KT bei Return
+- damaliger Excel-TXT-Export (in V18 ersetzt)
+- frühere KT-Zuordnung (in V18 vereinheitlicht)
 
 ### V12
 

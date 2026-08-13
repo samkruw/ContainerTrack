@@ -363,7 +363,7 @@
         </button>
         <button class="mode-btn" id="returnModeBtn">
           <strong>← Return</strong>
-          <span>Return Number · mehrere Container · pro Container 1 Inhaltsfoto + Excel-Textdatei</span>
+          <span>KT / Order Number · mehrere Container · pro Container 1 Inhaltsfoto + Excel-Datei</span>
         </button>
       </div>
       <div class="privacy">🔒 <strong>Local-only:</strong> Auftragsnummern, Container-Nummern und Fotos bleiben ausschliesslich auf diesem Gerät. GitHub Pages hostet nur die App.</div>
@@ -393,12 +393,8 @@
       <div id="deliveryFields" class="hidden">
         <div class="grid-2">
           <div class="field">
-            <label for="orderNumber">Order Number *</label>
-            <input id="orderNumber" placeholder="Auftrags-/Ordnernummer" autocomplete="off">
-          </div>
-          <div class="field">
-            <label for="deliveryZrh">ZRH Number / KT *</label>
-            <input id="deliveryZrh" placeholder="z. B. ZRH123456" autocomplete="off">
+            <label for="orderNumber">KT / Order Number *</label>
+            <input id="orderNumber" placeholder="z. B. ZRH00459" autocomplete="off">
           </div>
           <div class="field">
             <label for="deliveryOrder">Order / Container-Typ *</label>
@@ -412,7 +408,7 @@
 
         <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)">
           <h3 style="margin-bottom:5px">Excel-Daten für Lieferung</h3>
-          <p style="margin:0 0 12px;color:var(--muted);font-size:11px">Datum, In/Out, KT, Quantity und Container Number setzt die App automatisch. Order entspricht dem Container-Typ und wird manuell eingetragen. Quick und additional Work müssen ebenfalls ausgefüllt werden.</p>
+          <p style="margin:0 0 12px;color:var(--muted);font-size:11px">Datum, In/Out, KT, Quantity und Container Number setzt die App automatisch. KT entspricht der KT / Order Number. Order entspricht dem Container-Typ. Die Container Number wird direkt aus den Scans übernommen. Quick und additional Work müssen ebenfalls ausgefüllt werden.</p>
           <div class="grid-2">
             <div class="field">
               <label for="deliveryQuick">Quick *</label>
@@ -432,7 +428,7 @@
             <div style="font-size:25px;line-height:1">⏹</div>
             <div style="flex:1">
               <strong style="display:block;font-size:14px">1. Logger stoppen</strong>
-              <p style="margin:5px 0 11px;color:#765500;font-size:11px;line-height:1.45">Bevor Return Number, Order und die restlichen Angaben erfasst werden können, muss der Logger gestoppt sein.</p>
+              <p style="margin:5px 0 11px;color:#765500;font-size:11px;line-height:1.45">Bevor KT / Order Number, Order und die restlichen Angaben erfasst werden können, muss der Logger gestoppt sein.</p>
               <button id="returnLoggerStoppedBtn" class="btn primary" type="button">Logger gestoppt – Eingaben freigeben</button>
             </div>
           </div>
@@ -441,8 +437,8 @@
         <div id="returnFormFields" class="hidden" style="margin-top:14px">
         <div class="grid-2">
           <div class="field">
-            <label for="returnNumber">Return Number *</label>
-            <input id="returnNumber" placeholder="z. B. RET-2026-0194" autocomplete="off">
+            <label for="returnNumber">KT / Order Number *</label>
+            <input id="returnNumber" placeholder="z. B. ZRH00459" autocomplete="off">
           </div>
           <div class="field">
             <label for="returnCount">Anzahl Container *</label>
@@ -452,7 +448,7 @@
 
         <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)">
           <h3 style="margin-bottom:5px">Excel-Daten für Return</h3>
-          <p style="margin:0 0 12px;color:var(--muted);font-size:11px">Datum, In/Out, KT, Quantity und Container Number erstellt die App automatisch. KT entspricht der Return Number. Order, Quick und additional Work müssen ausgefüllt werden.</p>
+          <p style="margin:0 0 12px;color:var(--muted);font-size:11px">Datum, In/Out, KT, Quantity und Container Number erstellt die App automatisch. KT entspricht der KT / Order Number. Order entspricht dem Container-Typ. Die Container Number wird direkt aus den Scans übernommen. Quick und additional Work müssen ausgefüllt werden.</p>
           <div class="grid-2">
             <div class="field">
               <label for="returnOrder">Order / Container-Typ *</label>
@@ -648,7 +644,7 @@
     containers:[],
     createdAt:null,
     updatedAt:null,
-    deliveryMeta:{zrh:"",order:"",additionalWork:"",quick:"",loggerReminderId:null,loggerTimerStartedAt:null,loggerDueAt:null},
+    deliveryMeta:{order:"",additionalWork:"",quick:"",loggerReminderId:null,loggerTimerStartedAt:null,loggerDueAt:null},
     returnMeta:{order:"",additionalWork:"",quick:"",loggerStoppedAt:null},
     activePhotoStep:null,
     previewStep:null,
@@ -818,9 +814,9 @@
     const ref=safeRef(isReturn ? $("returnNumber").value : $("orderNumber").value);
     const count=Math.max(1,Math.min(50,parseInt(isReturn ? $("returnCount").value : $("deliveryCount").value,10)||1));
 
-    if(!ref){toast(isReturn ? "Return Number fehlt." : "Order Number fehlt.");return}
+    if(!ref){toast("KT / Order Number fehlt.");return}
 
-    let nextDeliveryMeta={zrh:"",order:"",additionalWork:"",quick:"",loggerReminderId:null,loggerTimerStartedAt:null,loggerDueAt:null};
+    let nextDeliveryMeta={order:"",additionalWork:"",quick:"",loggerReminderId:null,loggerTimerStartedAt:null,loggerDueAt:null};
     let nextReturnMeta={order:"",additionalWork:"",quick:"",loggerStoppedAt:null};
 
     if(isReturn){
@@ -840,16 +836,13 @@
         loggerStoppedAt:returnLoggerStoppedAt
       };
     }else{
-      const zrh=$("deliveryZrh").value.trim();
       const deliveryOrder=$("deliveryOrder").value.trim();
       const deliveryAdditional=$("deliveryAdditional").value.trim();
       const deliveryQuick=$("deliveryQuick").value.trim();
-      if(!zrh){toast("ZRH Number / KT fehlt.");return}
       if(!deliveryOrder){toast("Order / Container-Typ fehlt.");return}
       if(!deliveryQuick){toast('Quick muss ausgefüllt werden – falls nichts anfällt z. B. "Nothing".');return}
       if(!deliveryAdditional){toast('additional Work muss ausgefüllt werden – falls nichts anfällt z. B. "Nothing".');return}
       nextDeliveryMeta={
-        zrh,
         order:deliveryOrder,
         additionalWork:deliveryAdditional,
         quick:deliveryQuick,
@@ -880,7 +873,7 @@
   function resetToHome(){
     state.jobId=null;state.mode=null;state.reference="";state.containerCount=1;state.currentIndex=0;
     state.containers=[];state.createdAt=null;state.updatedAt=null;
-    state.deliveryMeta={zrh:"",order:"",additionalWork:"",quick:"",loggerReminderId:null,loggerTimerStartedAt:null,loggerDueAt:null};
+    state.deliveryMeta={order:"",additionalWork:"",quick:"",loggerReminderId:null,loggerTimerStartedAt:null,loggerDueAt:null};
     state.returnMeta={order:"",additionalWork:"",quick:"",loggerStoppedAt:null};
     returnLoggerStoppedConfirmed=false;
     returnLoggerStoppedAt=null;
@@ -906,8 +899,8 @@
     $("jobModePill").className="pill "+(state.mode==="delivery"?"delivery":"return");
     $("jobReference").textContent=state.reference;
     $("jobSub").textContent=state.mode==="delivery"
-      ? `${state.containerCount} Container · KT ${state.deliveryMeta.zrh||"–"} · Order/Typ ${state.deliveryMeta.order||"–"} · 6 Fotos pro Container · Excel-TXT`
-      : `${state.containerCount} Container · KT ${state.reference} · Order ${state.returnMeta.order||"–"} · 1 Inhaltsfoto pro Container · Excel-TXT`;
+      ? `${state.containerCount} Container · KT ${state.reference} · Order/Typ ${state.deliveryMeta.order||"–"} · 6 Fotos pro Container · Excel-XLSX`
+      : `${state.containerCount} Container · KT ${state.reference} · Order/Typ ${state.returnMeta.order||"–"} · 1 Inhaltsfoto pro Container · Excel-XLSX`;
     $("jobCounter").textContent=`${state.currentIndex+1} / ${state.containerCount}`;
   }
 
@@ -1083,40 +1076,125 @@
     const d=new Date(ts);return `${String(d.getDate()).padStart(2,"0")}.${String(d.getMonth()+1).padStart(2,"0")}.${d.getFullYear()}`;
   }
 
-  function escapeTsv(value){
-    return String(value??"").replace(/\t/g," ").replace(/\r?\n/g," / ");
+  function xmlEscape(value){
+    return String(value??"")
+      .replace(/&/g,"&amp;")
+      .replace(/</g,"&lt;")
+      .replace(/>/g,"&gt;")
+      .replace(/"/g,"&quot;")
+      .replace(/'/g,"&apos;");
   }
 
-  function buildExcelText(){
-    const numbers=state.containers.map(c=>c.number).join(", ");
+  function excelValues(){
+    return [
+      localDate(),
+      state.mode==="delivery" ? "OUT" : "IN",
+      state.reference,
+      state.mode==="delivery" ? state.deliveryMeta.order : state.returnMeta.order,
+      state.containerCount,
+      state.mode==="delivery" ? state.deliveryMeta.additionalWork : state.returnMeta.additionalWork,
+      state.containers.map(c=>c.number).join(", "),
+      state.mode==="delivery" ? state.deliveryMeta.quick : state.returnMeta.quick
+    ];
+  }
+
+  function xlsxTextCell(ref,value,style=2){
+    return `<c r="${ref}" t="inlineStr" s="${style}"><is><t xml:space="preserve">${xmlEscape(value)}</t></is></c>`;
+  }
+
+  function xlsxNumberCell(ref,value,style=2){
+    const n=Number(value);
+    return `<c r="${ref}" s="${style}"><v>${Number.isFinite(n)?n:0}</v></c>`;
+  }
+
+  function buildExcelWorkbook(){
     const headers=["Datum","In/Out","KT","Order","Quantity","additional Work","Container Number","Quick"];
+    const values=excelValues();
+    const cols=["A","B","C","D","E","F","G","H"];
+    const now=new Date().toISOString();
 
-    let values;
-    if(state.mode==="delivery"){
-      values=[
-        localDate(),
-        "OUT",
-        state.deliveryMeta.zrh,
-        state.deliveryMeta.order,
-        state.containerCount,
-        state.deliveryMeta.additionalWork,
-        numbers,
-        state.deliveryMeta.quick
-      ];
-    }else{
-      values=[
-        localDate(),
-        "IN",
-        state.reference,
-        state.returnMeta.order,
-        state.containerCount,
-        state.returnMeta.additionalWork,
-        numbers,
-        state.returnMeta.quick
-      ];
-    }
+    const headerCells=headers.map((v,i)=>xlsxTextCell(`${cols[i]}1`,v,1)).join("");
+    const dataCells=values.map((v,i)=>i===4
+      ? xlsxNumberCell(`${cols[i]}2`,v,2)
+      : xlsxTextCell(`${cols[i]}2`,v,2)
+    ).join("");
 
-    return headers.map(escapeTsv).join("\t")+"\r\n"+values.map(escapeTsv).join("\t")+"\r\n";
+    const sheetXml=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <dimension ref="A1:H2"/>
+  <sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>
+  <sheetFormatPr defaultRowHeight="15"/>
+  <cols>
+    <col min="1" max="1" width="13" customWidth="1"/>
+    <col min="2" max="2" width="10" customWidth="1"/>
+    <col min="3" max="3" width="18" customWidth="1"/>
+    <col min="4" max="4" width="18" customWidth="1"/>
+    <col min="5" max="5" width="11" customWidth="1"/>
+    <col min="6" max="6" width="24" customWidth="1"/>
+    <col min="7" max="7" width="36" customWidth="1"/>
+    <col min="8" max="8" width="18" customWidth="1"/>
+  </cols>
+  <sheetData>
+    <row r="1" ht="24" customHeight="1">${headerCells}</row>
+    <row r="2" ht="30" customHeight="1">${dataCells}</row>
+  </sheetData>
+  <autoFilter ref="A1:H2"/>
+</worksheet>`;
+
+    const stylesXml=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <fonts count="2">
+    <font><sz val="11"/><name val="Calibri"/><family val="2"/><scheme val="minor"/></font>
+    <font><b/><color rgb="FFFFFFFF"/><sz val="11"/><name val="Calibri"/><family val="2"/><scheme val="minor"/></font>
+  </fonts>
+  <fills count="3">
+    <fill><patternFill patternType="none"/></fill>
+    <fill><patternFill patternType="gray125"/></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FF009688"/><bgColor indexed="64"/></patternFill></fill>
+  </fills>
+  <borders count="2">
+    <border><left/><right/><top/><bottom/><diagonal/></border>
+    <border><left style="thin"><color rgb="FFD9E1E5"/></left><right style="thin"><color rgb="FFD9E1E5"/></right><top style="thin"><color rgb="FFD9E1E5"/></top><bottom style="thin"><color rgb="FFD9E1E5"/></bottom><diagonal/></border>
+  </borders>
+  <cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
+  <cellXfs count="3">
+    <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
+    <xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+    <xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf>
+  </cellXfs>
+  <cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>
+</styleSheet>`;
+
+    const files=[
+      {name:"[Content_Types].xml",data:new TextEncoder().encode(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+  <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+  <Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
+  <Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>
+  <Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>
+</Types>`),date:new Date()},
+      {name:"_rels/.rels",data:new TextEncoder().encode(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/>
+  <Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/>
+</Relationships>`),date:new Date()},
+      {name:"docProps/core.xml",data:new TextEncoder().encode(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:dcmitype="http://purl.org/dc/dcmitype/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><dc:creator>ContainerTrack</dc:creator><cp:lastModifiedBy>ContainerTrack</cp:lastModifiedBy><dcterms:created xsi:type="dcterms:W3CDTF">${now}</dcterms:created><dcterms:modified xsi:type="dcterms:W3CDTF">${now}</dcterms:modified></cp:coreProperties>`),date:new Date()},
+      {name:"docProps/app.xml",data:new TextEncoder().encode(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes"><Application>ContainerTrack</Application><DocSecurity>0</DocSecurity><ScaleCrop>false</ScaleCrop><HeadingPairs><vt:vector size="2" baseType="variant"><vt:variant><vt:lpstr>Worksheets</vt:lpstr></vt:variant><vt:variant><vt:i4>1</vt:i4></vt:variant></vt:vector></HeadingPairs><TitlesOfParts><vt:vector size="1" baseType="lpstr"><vt:lpstr>ContainerTrack</vt:lpstr></vt:vector></TitlesOfParts><Company></Company><LinksUpToDate>false</LinksUpToDate><SharedDoc>false</SharedDoc><HyperlinksChanged>false</HyperlinksChanged><AppVersion>16.0000</AppVersion></Properties>`),date:new Date()},
+      {name:"xl/workbook.xml",data:new TextEncoder().encode(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><bookViews><workbookView xWindow="0" yWindow="0" windowWidth="24000" windowHeight="12000"/></bookViews><sheets><sheet name="ContainerTrack" sheetId="1" r:id="rId1"/></sheets><calcPr calcId="191029"/></workbook>`),date:new Date()},
+      {name:"xl/_rels/workbook.xml.rels",data:new TextEncoder().encode(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`),date:new Date()},
+      {name:"xl/styles.xml",data:new TextEncoder().encode(stylesXml),date:new Date()},
+      {name:"xl/worksheets/sheet1.xml",data:new TextEncoder().encode(sheetXml),date:new Date()}
+    ];
+
+    return makeZip(files,"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
   }
 
   async function exportJob(){
@@ -1141,15 +1219,16 @@
         }
       }
 
+      const excelBlob=buildExcelWorkbook();
       files.push({
-        name:`${root}/${root}_EXCEL.txt`,
-        data:new TextEncoder().encode(buildExcelText()),
+        name:`${root}/${root}_EXCEL.xlsx`,
+        data:new Uint8Array(await excelBlob.arrayBuffer()),
         date:new Date()
       });
 
       const meta={
         app:"ContainerTrack",
-        version:"2.5",
+        version:"2.6",
         type:state.mode,
         reference:state.reference,
         quantity:state.containerCount,
@@ -1157,7 +1236,7 @@
         excelRow: state.mode==="delivery" ? {
           date:localDate(),
           inOut:"OUT",
-          kt:state.deliveryMeta.zrh,
+          kt:state.reference,
           order:state.deliveryMeta.order,
           quantity:state.containerCount,
           additionalWork:state.deliveryMeta.additionalWork,
@@ -1237,7 +1316,7 @@
     return (c^0xFFFFFFFF)>>>0;
   }
 
-  function makeZip(files){
+  function makeZip(files,mimeType="application/zip"){
     const localParts=[],centralParts=[];let offset=0;
     files.forEach(file=>{
       const nameBytes=new TextEncoder().encode(file.name);
@@ -1262,7 +1341,7 @@
     const end=new Uint8Array(22),ev=new DataView(end.buffer);
     ev.setUint32(0,0x06054b50,true);ev.setUint16(4,0,true);ev.setUint16(6,0,true);ev.setUint16(8,files.length,true);ev.setUint16(10,files.length,true);
     ev.setUint32(12,centralSize,true);ev.setUint32(16,offset,true);ev.setUint16(20,0,true);
-    return new Blob([...localParts,...centralParts,end],{type:"application/zip"});
+    return new Blob([...localParts,...centralParts,end],{type:mimeType});
   }
 
   // ---------- Live OCR ----------
@@ -1435,7 +1514,7 @@
     Object.assign(state,{
       jobId:j.jobId,mode:j.mode,reference:j.reference,containerCount:j.containerCount,currentIndex:j.currentIndex||0,
       containers:j.containers||[],createdAt:j.createdAt,updatedAt:j.updatedAt,
-      deliveryMeta:j.deliveryMeta||{zrh:"",order:"",additionalWork:"",quick:"",loggerReminderId:null,loggerTimerStartedAt:null,loggerDueAt:null},
+      deliveryMeta:j.deliveryMeta||{order:"",additionalWork:"",quick:"",loggerReminderId:null,loggerTimerStartedAt:null,loggerDueAt:null},
       returnMeta:j.returnMeta||{order:"",additionalWork:"",quick:"",loggerStoppedAt:null}
     });
     $("deliveryModeBtn").classList.toggle("active",state.mode==="delivery");
