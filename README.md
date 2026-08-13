@@ -1,124 +1,196 @@
-<p align="center">
-  <img src="./readme-banner.svg" alt="ContainerTrack" width="100%">
-</p>
+# ContainerTrack V17 — Final Local-only Workflow
 
-<p align="center">
-  <img src="./badge-version.svg" alt="Version V10 Speed">
-  <img src="./badge-storage.svg" alt="Local-only">
-  <img src="./badge-pwa.svg" alt="Installierbare PWA">
-  <img src="./badge-photos.svg" alt="6 Pflichtfotos">
-  <img src="./badge-cost.svg" alt="0 API-Kosten">
-</p>
+ContainerTrack ist eine installierbare **Local-first PWA** für die geführte Dokumentation von **Lieferungen** und **Returns** mit mehreren Containern.
 
-# ContainerTrack
+Die App verwaltet die komplette Aufnahme lokal auf dem Smartphone, erzwingt den richtigen Ablauf und erzeugt am Ende ein strukturiertes ZIP inklusive Excel-kompatibler TXT-Datei.
 
-**ContainerTrack** ist eine browserbasierte, installierbare PWA für die geführte Fotodokumentation von Containern.  
-Die App wurde für einen möglichst schnellen mobilen Ablauf entwickelt: **Container-Nummer scannen → sechs Pflichtfotos in fester Reihenfolge → ZIP exportieren.**
-
-> 🔒 **Local-only:** Containerdaten, Fotos und Verläufe werden ausschliesslich lokal im Browser des Geräts gespeichert.  
-> GitHub Pages hostet nur die statischen App-Dateien und erhält keine Containerdaten oder Fotos.
+> **Local-only:** Order-/Return-Nummern, Container-Nummern, Fotos, Excel-Daten, Verläufe und Logger-Timer werden nicht an GitHub oder einen Cloud-Server übertragen. GitHub Pages hostet ausschliesslich die statischen App-Dateien.
 
 ---
 
-## Workflow
+## 1. Lieferung
+
+### Eingaben
+
+Vor dem Start müssen ausgefüllt werden:
+
+- **Order Number** — Auftragsnummer und Name des obersten Export-Ordners
+- **ZRH Number / KT** — wird in der TXT-Spalte `KT` verwendet
+- **Order / Container-Typ** — wird manuell eingegeben und in der TXT-Spalte `Order` verwendet
+- **Anzahl Container** — 1 bis 50
+- **Quick** — freies Pflicht-Textfeld
+- **additional Work** — freies Pflicht-Textfeld
+
+`Quick` und `additional Work` dürfen nicht leer bleiben. Falls nichts anfällt, kann z. B. `Nothing` oder `Empty` eingetragen werden.
+
+### Container-Ablauf
+
+Für jeden Container:
+
+1. 4-stellige Container-Nummer scannen oder manuell erfassen
+2. **Leerer Innenraum**
+3. **Aussenseite Front**
+4. **Aussenseite Rückseite / Türen**
+5. **Aussenseite links**
+6. **Aussenseite rechts**
+7. **Befüllter Innenraum**
+8. Nächster Container
+
+Die Foto-Reihenfolge ist zwingend. Schritte können nicht übersprungen werden.
+
+### Delivery TXT
+
+Spalten:
 
 ```text
-Container-Nummer live scannen
-          ↓
-Foto 1 – Leerer Innenraum
-          ↓
-Foto 2 – Aussenseite Front
-          ↓
-Foto 3 – Aussenseite Rückseite / Türen
-          ↓
-Foto 4 – Aussenseite links
-          ↓
-Foto 5 – Aussenseite rechts
-          ↓
-Foto 6 – Befüllter Innenraum / Kühlplatten
-          ↓
-Ablauf prüfen
-          ↓
-ZIP exportieren
+Datum | In/Out | KT | Order | Quantity | additional Work | Container Number | Quick
 ```
 
-Die Fotoreihenfolge ist **zwingend**. Ein späterer Schritt wird erst freigeschaltet, wenn der vorherige abgeschlossen wurde.
-
----
-
-## Funktionen
-
-| Bereich | Funktion |
-|---|---|
-| **LiveScan** | Container-Nummer direkt über die Smartphone-Kamera erfassen |
-| **Speed-Modus** | Der erste gültige 4-stellige OCR-Treffer wird sofort übernommen |
-| **Scanrahmen** | Die OCR wertet exakt den sichtbaren Scanbereich aus |
-| **Kontrast-OCR** | Optimiert für weisse Zahlen auf blauem Container-Schild |
-| **Fallback** | Foto-OCR bleibt als Alternative zum LiveScan vorhanden |
-| **Feste Reihenfolge** | Foto 1 bis Foto 6 können nicht übersprungen werden |
-| **Retake-Schutz** | Nur der zuletzt aufgenommene Schritt kann direkt zurückgesetzt werden |
-| **Automatische Benennung** | Bilder werden automatisch anhand der Container-Nummer benannt |
-| **Fortschritt** | Pflichtfotos, offene Fotos und lokaler Speicherverbrauch werden angezeigt |
-| **Vollständigkeitsprüfung** | Warnung, wenn beim Abschluss noch Aufnahmen fehlen |
-| **Lokale Verläufe** | Angefangene und abgeschlossene Container bleiben lokal gespeichert |
-| **Bildkomprimierung** | Aufnahmen werden für mobile Nutzung lokal optimiert |
-| **ZIP-Export** | Vollständige Dokumentation wird lokal als ZIP erzeugt |
-| **PWA** | App kann auf Android/Chrome und unterstützten Browsern installiert werden |
-| **Offline App-Shell** | Oberfläche wird über Service Worker lokal gecacht |
-| **Keine Cloud-Datenbank** | Kein Firebase, Firestore, Supabase oder Backend |
-| **Keine API-Kosten** | Keine kostenpflichtigen APIs erforderlich |
-| **GitHub Pages** | Vollständig als statische Web-App hostbar |
-
----
-
-## Pflichtfotos
-
-Die aktuelle Version verlangt genau **6 Fotos**:
-
-1. **Leerer Innenraum**  
-   Gesamtansicht des leeren Containers von der geöffneten Tür aus.
-
-2. **Aussenseite – Front**  
-   Frontseite möglichst vollständig und gerade im Bild.
-
-3. **Aussenseite – Rückseite / Türen**  
-   Türen, Verschlüsse und Rückseite vollständig dokumentieren.
-
-4. **Aussenseite – links**  
-   Linke Seitenwand inklusive Ecken.
-
-5. **Aussenseite – rechts**  
-   Rechte Seitenwand inklusive Ecken.
-
-6. **Befüllter Innenraum**  
-   Gesamtansicht des mit Kühlplatten befüllten Containers.
-
----
-
-## Dateinamen
-
-Die exportierten Bilder enthalten **nur die Container-Nummer** und die laufende Fotonummer.
-
-Beispiel für Container `0708`:
+Mapping:
 
 ```text
-0708_01.jpg
-0708_02.jpg
-0708_03.jpg
-0708_04.jpg
-0708_05.jpg
-0708_06.jpg
+Datum             = aktuelles Datum
+In/Out            = OUT
+KT                = ZRH Number
+Order             = manuell eingegebener Container-Typ
+Quantity          = ausgewählte Container-Anzahl
+additional Work   = Pflicht-Textfeld
+Container Number  = alle Container-Nummern des Batches
+Quick             = Pflicht-Textfeld
 ```
 
-Das ZIP wird ebenfalls anhand der Container-Nummer erzeugt.
+### Export-Struktur
+
+Beispiel `ORDER-7845`:
+
+```text
+ORDER-7845/
+├── 0708/
+│   ├── 0708_01.jpg
+│   ├── 0708_02.jpg
+│   ├── 0708_03.jpg
+│   ├── 0708_04.jpg
+│   ├── 0708_05.jpg
+│   └── 0708_06.jpg
+├── 0710/
+│   └── ...
+├── ORDER-7845_EXCEL.txt
+└── ORDER-7845_META.json
+```
 
 ---
 
-## LiveScan / OCR
+## 2. Logger nach Lieferung
 
-### Erwartetes Format
+Nach dem Delivery-Export startet ContainerTrack automatisch einen **30-Minuten-Timer**.
 
-ContainerTrack sucht beim LiveScan nach einer **4-stelligen Container-Nummer**:
+### Während die App offen ist
+
+Oben in der App wird dauerhaft angezeigt:
+
+- Delivery-/Order-Referenz
+- Countdown `MM:SS`
+- Fortschrittsbalken
+- Hinweis bei mehreren offenen Timern
+
+Nach Ablauf wechselt der Timer auf **JETZT** und wird deutlich hervorgehoben.
+
+### Nach 30 Minuten
+
+ContainerTrack fordert zum Starten des Loggers auf.
+
+Die Meldung in der App kann nicht einfach weggeklickt werden und muss mit:
+
+**`Logger gestartet – bestätigen`**
+
+abgeschlossen werden.
+
+Wenn Browser und Android es zulassen, versucht die PWA zusätzlich eine System-Notification anzuzeigen.
+
+### Standby-Verhalten
+
+ContainerTrack bleibt bewusst **Local-only** und verwendet keinen Push-Server.
+
+Android kann eine PWA im Standby pausieren. Deshalb wird nicht nur ein laufender JavaScript-Zähler gespeichert, sondern der **absolute Fälligkeitszeitpunkt**.
+
+Dadurch gilt:
+
+- der Zeitpunkt geht im Standby nicht verloren
+- beim Entsperren / erneuten Fokussieren wird sofort neu berechnet
+- sind 30 Minuten bereits vorbei, erscheint direkt die Logger-Meldung
+- eine exakte Notification bei komplett suspendierter PWA kann Android ohne Push-Server nicht garantiert werden
+
+### Schutz vor doppeltem Timer
+
+Ein erneuter Download desselben Delivery-Vorgangs:
+
+- startet **keinen zweiten Timer**
+- setzt den laufenden Timer **nicht zurück**
+
+---
+
+## 3. Return
+
+Beim Return ist der Logger-Schritt bewusst umgedreht.
+
+### Schritt 1 — Logger stoppen
+
+Nach Auswahl von **Return** sind die übrigen Eingaben zunächst gesperrt.
+
+Zuerst muss bestätigt werden:
+
+**`Logger gestoppt – Eingaben freigeben`**
+
+Der genaue Zeitpunkt dieser Bestätigung wird lokal im Return-Vorgang gespeichert.
+
+### Return-Eingaben
+
+Danach müssen ausgefüllt werden:
+
+- **Return Number** — Name des Export-Ordners und Wert für `KT`
+- **Order / Container-Typ** — manuell
+- **Anzahl Container** — 1 bis 50
+- **Quick** — freies Pflicht-Textfeld
+- **additional Work** — freies Pflicht-Textfeld
+
+### Return-Ablauf
+
+Für jeden Container:
+
+1. Container-Nummer scannen oder manuell erfassen
+2. **ein Foto des Inhalts** aufnehmen
+3. nächsten Container erfassen
+
+### Return TXT
+
+```text
+Datum             = aktuelles Datum
+In/Out            = IN
+KT                = Return Number
+Order             = manuell eingegebener Container-Typ
+Quantity          = ausgewählte Container-Anzahl
+additional Work   = Pflicht-Textfeld
+Container Number  = alle Container-Nummern
+Quick             = Pflicht-Textfeld
+```
+
+### Export-Struktur
+
+```text
+RETURN-194/
+├── 0708/
+│   └── 0708_01.jpg
+├── 0710/
+│   └── 0710_01.jpg
+├── RETURN-194_EXCEL.txt
+└── RETURN-194_META.json
+```
+
+---
+
+## 4. Container-Scan
+
+ContainerTrack erwartet eine **4-stellige Container-Nummer**, z. B.:
 
 ```text
 0708
@@ -130,58 +202,71 @@ Führende Nullen bleiben erhalten.
 
 ### Speed-Modus
 
-Seit **V10** gibt es keine Mehrfachbestätigung mehr.
+Der erste gültige 4-stellige OCR-Treffer wird sofort übernommen. Es gibt keine 2×- oder 3×-Kontrolle mehr.
 
-Früher:
+### OCR-Aufbereitung
 
-```text
-Treffer → nochmals prüfen → nochmals prüfen → übernehmen
-```
-
-Aktuell:
-
-```text
-Erster gültiger 4-stelliger Treffer → sofort übernehmen
-```
-
-Dadurch wird der Scan im Arbeitsablauf deutlich schneller.
-
-### Bildaufbereitung
-
-Der Scanner verwendet mehrere lokale Bildaufbereitungen:
+Für den LiveScan werden mehrere lokale Varianten verwendet:
 
 - Graustufen
 - Kontrastverstärkung
-- Schwarz/Weiss-Schwellenwert
-- invertierte Darstellung
-- Hochskalierung des Scanbereichs
-- OCR-Zeilenmodus
+- Schwarz/Weiss
+- invertiertes Bild
+- invertiertes Schwarz/Weiss
 - Ziffern-Whitelist `0–9`
 
-Besonders wichtig ist die invertierte Verarbeitung bei **weisser Schrift auf blauem Hintergrund**.
+Dies ist speziell für weisse Nummern auf blauem Schild optimiert.
+
+### Foto-OCR Fallback
+
+Wenn LiveScan nicht funktioniert, kann weiterhin ein Foto des Schildes aufgenommen und lokal per OCR ausgewertet werden.
+
+> Tesseract.js läuft im Browser. Die Fotos werden nicht an einen OCR-Server geschickt. Die Bibliothek wird aktuell über ein externes CDN geladen; beim ersten OCR-Start kann deshalb eine Internetverbindung notwendig sein.
 
 ---
 
-## Local-first Datenspeicherung
+## 5. Batch-Sicherheit
 
-ContainerTrack sendet **keine Containerdaten und keine Fotos an GitHub**.
+ContainerTrack verhindert typische Fehler im Ablauf:
 
-### Lokal gespeichert
+- Container-Anzahl wird vorab festgelegt
+- jeder Container erhält einen eigenen Unterordner
+- doppelte Container-Nummern im selben Batch werden blockiert
+- Delivery-Fotos müssen strikt `1 → 6` erfolgen
+- Return benötigt exakt ein Inhaltsfoto je Container
+- Export wird erst freigegeben, wenn alle Container vollständig sind
+- nur das zuletzt aufgenommene Foto kann direkt zurückgesetzt werden
+- angefangene Vorgänge können lokal wieder geöffnet werden
 
-Im Browser / in der installierten PWA:
+---
 
-- Container-Nummer
-- aufgenommene Fotos
-- Zeitpunkte
-- aktueller Fortschritt
-- Container-Verläufe
-- Abschlussstatus
+## 6. Lokale Speicherung
 
-Technisch erfolgt dies über **IndexedDB**.
+### IndexedDB
 
-### Auf GitHub Pages gespeichert
+Gespeichert werden lokal:
 
-Nur die App selbst:
+- Delivery-/Return-Vorgänge
+- Order-/Return-Referenzen
+- Container-Nummern
+- Fotos
+- Bearbeitungsstand
+- TXT-Felder
+- Logger-Stopp-Zeitpunkt beim Return
+
+### localStorage
+
+Der Delivery-Logger-Reminder speichert lokal:
+
+- Timer-ID
+- Delivery-Referenz
+- Startzeit
+- Fälligkeitszeit
+- Bestätigungsstatus
+
+### GitHub Pages
+
+GitHub enthält nur:
 
 ```text
 index.html
@@ -190,263 +275,147 @@ sw.js
 icon-192.png
 icon-512.png
 README.md
-README-Assets
 ```
 
-### Wichtig
-
-Wenn Browserdaten oder PWA-Daten auf dem Gerät gelöscht werden, gehen noch nicht exportierte lokale Container-Verläufe verloren.
-
-Deshalb abgeschlossene Container immer als ZIP exportieren.
+Keine operativen Containerdaten werden ins Repository geschrieben.
 
 ---
 
-## PWA Installation
+## 7. PWA
 
-### Android / Chrome
+ContainerTrack kann über GitHub Pages als PWA installiert werden.
 
-1. GitHub-Pages-Seite öffnen.
-2. Auf **Installieren** in ContainerTrack tippen.
-3. Falls der Button nicht erscheint:
-   - Chrome-Menü öffnen
-   - **App installieren** oder **Zum Startbildschirm hinzufügen** auswählen.
-4. ContainerTrack startet danach wie eine normale App im eigenen Fenster.
+Auf Android/Chrome:
 
-### Voraussetzungen
+1. GitHub-Pages-Seite öffnen
+2. **Installieren** wählen
+3. Kamera-Berechtigung erlauben
+4. optional Notifications erlauben
 
-Für Live-Kamera, OCR und Installation sollte die App über **HTTPS** laufen.
-
-GitHub Pages erfüllt diese Voraussetzung.
+Die App startet danach in einem eigenen App-Fenster.
 
 ---
 
-## Offline-Verhalten
-
-Der Service Worker cached nur die statischen Bestandteile der App.
-
-Dadurch können wesentliche Teile der Oberfläche nach dem ersten Laden auch ohne aktive Verbindung geöffnet werden.
-
-**Nicht in den Cache übertragen werden:**
-
-- Container-Fotos
-- Container-Nummern
-- Verläufe
-- IndexedDB-Inhalte
-
-Diese bleiben getrennt davon lokal auf dem Gerät.
-
-> Hinweis: Die OCR-Bibliothek wird aktuell extern geladen. Für vollständig autarke Offline-OCR müsste sie später direkt mit der PWA ausgeliefert werden.
-
----
-
-## Export
-
-Nach erfolgreichem Abschluss:
-
-1. **Ablauf prüfen**
-2. ContainerTrack kontrolliert alle sechs Pflichtfotos.
-3. Fehlende Schritte werden angezeigt.
-4. Bei vollständigem Ablauf wird der ZIP-Export freigegeben.
-5. Das ZIP wird vollständig lokal im Browser erstellt.
-
-Es ist kein Server für den Export erforderlich.
-
----
-
-## Bedienlogik
-
-### Vor dem Scan
-
-Foto 1 ist gesperrt.
-
-### Nach erfolgreichem Scan
-
-```text
-Container erkannt → Foto 1 freigeschaltet
-```
-
-### Während des Ablaufs
-
-Beispiel:
-
-```text
-Foto 1 erledigt
-Foto 2 freigeschaltet
-Foto 3–6 gesperrt
-```
-
-Nach Foto 2:
-
-```text
-Foto 1 erledigt
-Foto 2 erledigt
-Foto 3 freigeschaltet
-Foto 4–6 gesperrt
-```
-
-Dies setzt sich bis Foto 6 fort.
-
----
-
-# Update-Historie
-
-## V10 Speed — aktueller Stand
-
-- CX-Nummer vollständig aus dem Workflow entfernt
-- nur noch Container-Nummer wird gescannt
-- erster gültiger 4-stelliger Treffer wird sofort übernommen
-- keine 2×/3× OCR-Bestätigung mehr
-- direkte Freigabe von Foto 1
-- schnellere Scan-Schleife
-- PWA und Local-only bleiben erhalten
-
-## V9
-
-- Workflow auf **Container-Nummer → Fotos 1–6** reduziert
-- CX-Scan entfernt
-- lokale Speicherung unverändert
-
-## V8 PWA
-
-- installierbare PWA ergänzt
-- `manifest.webmanifest`
-- Service Worker
-- PWA-Icons 192 px und 512 px
-- Installationsbutton in der App
-- Local-only-Hinweis ergänzt
-- Service Worker cached nur die App-Shell
-- keine Nutzerdaten werden an GitHub geschrieben
-- Firmenname und Firmenlogo vollständig entfernt
-- nur die gewünschte Türkis/Weiss/Dunkel-Farbwelt beibehalten
-
-## V7
-
-- Scanrahmen und tatsächlicher OCR-Ausschnitt synchronisiert
-- Android-Hochformat korrigiert
-- OCR für weisse Zahlen auf blauem Schild verbessert
-- invertierte OCR-Varianten ergänzt
-- neue helle Logistik-Farbwelt eingeführt
-
-## V6 LiveScan
-
-- Live-Kamera-Scanner eingeführt
-- Scanrahmen
-- kontinuierliche OCR
-- automatische Übernahme erkannter Nummern
-- Kamera bleibt während des Scannens geöffnet
-- Taschenlampen-Unterstützung, sofern Browser/Gerät dies zulässt
-- Foto-OCR als Fallback
-
-## V5
-
-- Mehrfach-OCR ergänzt
-- mehrere Bildausschnitte
-- Hochskalierung
-- Graustufen und Kontrast
-- verschiedene OCR-Segmentierungsmodi
-- Diagnoseanzeige für OCR-Rohtext
-
-## V4
-
-- OCR auf Container-Nummer und CX-Nummer reduziert
-- Datum entfernt
-- Container-Nummer als 4-stelliger Wert erkannt
-- CX-Format gezielt ausgewertet
-
-## V3
-
-- OCR-Schritt vor der Fotodokumentation eingeführt
-- Containerdaten automatisch aus Beschriftungen übernommen
-- Fotoreihenfolge gesperrt
-- Dateinamen auf Container-Nummer reduziert
-
-## V2
-
-Pflichtfotos von ursprünglich 14 auf **6** reduziert:
-
-- 1× leerer Innenraum
-- 4× Aussenseiten
-- 1× befüllter Innenraum
-
-## V1
-
-Erste funktionsfähige Version mit:
-
-- geführtem Fotoablauf
-- Container-Nummer
-- automatischer Dateibenennung
-- IndexedDB
-- Fortschrittsanzeige
-- Vollständigkeitsprüfung
-- lokaler Bildoptimierung
-- ZIP-Export
-- Container-Verläufen
-
----
-
-## Projektstruktur
-
-```text
-/
-├── index.html
-├── manifest.webmanifest
-├── sw.js
-├── icon-192.png
-├── icon-512.png
-├── README.md
-├── readme-banner.svg
-├── badge-version.svg
-├── badge-storage.svg
-├── badge-pwa.svg
-├── badge-photos.svg
-└── badge-cost.svg
-```
-
----
-
-## Deployment auf GitHub Pages
-
-1. Inhalt des ZIP-Pakets in ein GitHub-Repository hochladen.
-2. Repository öffnen.
-3. **Settings → Pages**
-4. Quelle auf den gewünschten Branch setzen.
-5. Root-Verzeichnis `/` verwenden.
-6. GitHub-Pages-URL auf dem Smartphone öffnen.
-7. Kamera-Berechtigung erlauben.
-8. ContainerTrack installieren.
-
-Es ist kein Build-Prozess erforderlich.
-
----
-
-## Technischer Stack
+## 8. Technischer Stack
 
 ```text
 Vanilla HTML
 Vanilla CSS
 Vanilla JavaScript
 IndexedDB
+localStorage
 Tesseract.js
 MediaDevices / getUserMedia
 Canvas API
+Notifications API
 Service Worker
 Web App Manifest
 GitHub Pages
 ```
 
-Keine Frameworks.  
-Kein Build-System.  
-Kein Backend.  
-Keine Cloud-Datenbank.
+Keine Frameworks. Kein Build-Prozess. Kein Backend. Keine Cloud-Datenbank. Keine kostenpflichtige API.
 
 ---
 
-## Datenschutzprinzip
+## 9. QA / Testloop V17
 
-ContainerTrack ist bewusst als **Local-first Anwendung** aufgebaut.
+Der finale Build wurde in mehreren Testschleifen geprüft.
 
-Die zentrale Regel lautet:
+### Automatisch / browser-simuliert geprüft
 
-> **Die App darf auf GitHub liegen. Die Containerdaten nicht.**
+- JavaScript-Syntax `index.html`
+- JavaScript-Syntax `sw.js`
+- gültiges `manifest.webmanifest`
+- keine doppelten HTML-IDs
+- alle JavaScript-DOM-Referenzen vorhanden
+- alle Label-Ziele vorhanden
+- keine Optimo-/Firmenlogos oder Firmennamen
+- Delivery-Pflichtfeld-Validierung
+- `Quick` als freies Pflicht-Textfeld
+- `additional Work` als Pflicht-Textfeld
+- Delivery-Batch mit mehreren Containern
+- 6 Fotos in strikter Reihenfolge
+- Duplicate-Container-Schutz
+- Delivery-ZIP-Struktur
+- Delivery-TXT-Inhalt
+- Delivery-Mapping `OUT / KT=ZRH / Order=Container-Typ`
+- Return-Logger-Gate
+- exakter Logger-Stopp-Zeitpunkt
+- Return-Pflichtfeld-Validierung
+- Return-Batch mit mehreren Containern
+- ein Inhaltsfoto pro Return-Container
+- Return-ZIP-Struktur
+- Return-TXT-Inhalt
+- Return-Mapping `IN / KT=Return Number / Order=Container-Typ`
+- lokaler Verlauf öffnen / wieder aufnehmen
+- 30-Minuten-Timer erzeugen
+- sichtbarer Countdown
+- Fälligkeitsstatus `JETZT`
+- blockierende Logger-Bestätigung
+- Bestätigung entfernt offenen Reminder
+- Re-Export erzeugt keinen zweiten Timer
+- ZIP-Datei auf Beschädigung geprüft
+- PWA-Icons auf 192×192 und 512×512 geprüft
 
-Damit bleibt die statische Anwendung einfach deploybar, während die operative Dokumentation auf dem jeweiligen Arbeitsgerät verbleibt.
+### Hardwareabhängig
+
+Folgende Punkte sind technisch geprüft, benötigen für einen vollständigen Endtest aber weiterhin ein reales Android-Gerät:
+
+- reale Kamera / `getUserMedia`
+- Fokusqualität der Kamera
+- Taschenlampen-/Torch-Unterstützung
+- reale OCR-Erkennungsrate unter Lagerbedingungen
+- Installation über Chrome als PWA
+- Android-System-Notification im Standby
+
+Diese Funktionen hängen von Kamera, Chrome-Version und Android-Energiesparverhalten ab und können in einem Headless-Testbrowser nicht vollständig simuliert werden.
+
+---
+
+## 10. Versionsübersicht
+
+### V17 — Final QA
+
+- Quick auf freies Pflicht-Textfeld geändert
+- Validierung vor Erzeugung eines Vorgangs
+- exakter Return-Logger-Stopp-Zeitpunkt
+- Schutz vor doppeltem Delivery-Timer beim Re-Export
+- README vollständig bereinigt
+- kompletter Delivery-/Return-/Timer-Testloop
+
+### V16
+
+- sichtbarer Logger-Countdown in der App
+- Fortschrittsbalken
+- `JETZT`-Status nach Ablauf
+
+### V15
+
+- Delivery: 30-Minuten-Logger-Reminder
+- Return: Logger stoppen als erster Schritt
+- Quick und additional Work zu Pflichtfeldern gemacht
+
+### V14
+
+- Order Number und Excel-Spalte Order bei Delivery getrennt
+- Order = Container-Typ
+
+### V13
+
+- Excel-TXT auch für Delivery
+- ZRH Number → KT bei Delivery
+- Return Number → KT bei Return
+
+### V12
+
+- Delivery- und Return-Modus
+- Batch mit frei wählbarer Container-Anzahl
+- Container-Unterordner
+- Return mit nur einem Inhaltsfoto
+
+### V10
+
+- schneller Container-LiveScan
+- erster gültiger Treffer wird direkt übernommen
+- 6-Foto-Delivery-Ablauf
+- Local-only PWA-Grundlage

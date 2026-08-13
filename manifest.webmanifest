@@ -1,7 +1,7 @@
 {
   "name": "ContainerTrack",
   "short_name": "ContainerTrack",
-  "description": "Geführte Container-Fotodokumentation mit schnellem Live-Scan der Container-Nummer und fester Fotoreihenfolge.",
+  "description": "Finale Local-first Delivery- und Return-PWA mit Batch-Fotodokumentation, Excel-TXT und persistentem Logger-Timer.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
