@@ -1,0 +1,2086 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#009b84" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="application-name" content="ContainerTrack" />
+  <meta name="apple-mobile-web-app-title" content="ContainerTrack" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png" />
+  <link rel="apple-touch-icon" href="./icon-192.png" />
+  <title>Container Track V18</title>
+
+  <style>
+    :root{
+      --bg:#f2f5f4;
+      --panel:#fff;
+      --panel-soft:#f7faf9;
+      --line:rgba(8,31,40,.12);
+      --text:#091b25;
+      --muted:#687780;
+      --green:#009b84;
+      --green-dark:#007d6d;
+      --green-soft:#eaf8f4;
+      --amber:#c88b00;
+      --amber-soft:#fff8df;
+      --red:#c84646;
+      --red-soft:#fff0f0;
+      --shadow:0 10px 30px rgba(8,31,40,.08);
+      --radius:16px;
+    }
+
+    *{box-sizing:border-box}
+    html{background:var(--bg)}
+    body{
+      margin:0;min-height:100vh;color:var(--text);
+      font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      background:linear-gradient(145deg,rgba(0,155,132,.045),transparent 34%),var(--bg);
+    }
+    button,input,textarea,select{font:inherit}
+    button{cursor:pointer}
+    .hidden{display:none!important}
+    .app{max-width:1120px;margin:auto;padding:14px 14px 112px}
+    .topbar{
+      position:sticky;top:0;z-index:20;margin:-14px -14px 16px;padding:12px 14px;
+      display:flex;align-items:center;justify-content:space-between;gap:12px;
+      background:rgba(255,255,255,.96);backdrop-filter:blur(16px);
+      border-bottom:1px solid var(--line);box-shadow:0 4px 18px rgba(8,31,40,.04)
+    }
+    .brand{display:flex;align-items:center;gap:11px}
+    .brandmark{
+      width:40px;height:40px;border-radius:12px;display:grid;place-items:center;
+      background:var(--green);color:white;font-weight:900;
+      box-shadow:0 7px 16px rgba(0,155,132,.18)
+    }
+    .brand h1{margin:0;font-size:18px;letter-spacing:-.3px}
+    .brand span{display:block;margin-top:2px;color:var(--muted);font-size:11px}
+    .top-actions{display:flex;gap:7px}
+    .btn,.icon-btn{
+      min-height:42px;border-radius:10px;border:1px solid var(--line);
+      background:#fff;color:#17313b;padding:10px 13px;font-weight:700
+    }
+    .btn:hover,.icon-btn:hover{border-color:rgba(0,155,132,.4);background:#f1fbf8}
+    .btn.primary{background:var(--green);border-color:var(--green);color:#fff}
+    .btn.primary:hover{background:#008a76}
+    .btn.danger{color:#a92f2f;background:var(--red-soft);border-color:rgba(200,70,70,.22)}
+    .btn:disabled{opacity:.42;cursor:not-allowed}
+    .icon-btn{padding:9px 11px}
+    .hero,.card{
+      background:var(--panel);border:1px solid var(--line);border-radius:18px;
+      box-shadow:var(--shadow)
+    }
+    .hero{padding:19px;position:relative;overflow:hidden}
+    .hero:before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;background:var(--green)}
+    .eyebrow{font-size:11px;font-weight:900;letter-spacing:1.3px;color:var(--green-dark);text-transform:uppercase}
+    .hero h2{font-size:clamp(25px,5vw,40px);margin:7px 0;letter-spacing:-1px}
+    .hero p{margin:0;color:var(--muted);line-height:1.5;max-width:760px}
+    .privacy{
+      margin-top:13px;padding:10px 12px;border-radius:11px;background:#f4f8f7;
+      border:1px solid rgba(8,31,40,.08);font-size:11px;color:#607078;line-height:1.45
+    }
+    .mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:17px}
+    .mode-btn{
+      border:2px solid var(--line);background:#fff;border-radius:16px;padding:18px;text-align:left;
+      color:var(--text);transition:.16s
+    }
+    .mode-btn:hover{border-color:rgba(0,155,132,.42)}
+    .mode-btn.active{border-color:var(--green);background:var(--green-soft)}
+    .mode-btn strong{font-size:17px;display:block}
+    .mode-btn span{display:block;color:var(--muted);font-size:12px;margin-top:5px;line-height:1.35}
+    .setup{margin-top:14px;padding:17px}
+    .setup h3,.card h3{margin:0 0 13px;font-size:16px}
+    .grid-2,.grid-3{display:grid;gap:11px}
+    .grid-2{grid-template-columns:1fr 1fr}
+    .grid-3{grid-template-columns:1fr 1fr 1fr}
+    .field label{display:block;color:var(--muted);font-size:11px;margin:0 0 6px;font-weight:700}
+    .field input,.field textarea,.field select{
+      width:100%;padding:12px 13px;border:1px solid rgba(8,31,40,.16);
+      border-radius:11px;background:#fff;color:var(--text);outline:none
+    }
+    .field textarea{resize:vertical;min-height:72px}
+    .field input:focus,.field textarea:focus,.field select:focus{
+      border-color:var(--green);box-shadow:0 0 0 3px rgba(0,155,132,.09)
+    }
+    .setup-actions{display:flex;justify-content:flex-end;margin-top:13px}
+    .jobbar{
+      margin:14px 0;padding:15px 16px;display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center
+    }
+    .job-title{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+    .job-title strong{font-size:16px}
+    .pill{display:inline-flex;align-items:center;border-radius:999px;padding:5px 9px;font-size:10px;font-weight:900}
+    .pill.delivery{background:#e7f5ff;color:#12628a}
+    .pill.return{background:var(--green-soft);color:var(--green-dark)}
+    .job-sub{font-size:12px;color:var(--muted);margin-top:5px}
+    .counter{
+      min-width:82px;text-align:center;border-radius:12px;padding:9px 11px;
+      background:var(--green-soft);color:var(--green-dark);font-weight:900
+    }
+    .workflow{display:grid;gap:13px}
+    .scanner-card{padding:17px}
+    .scanner-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+    .scanner-head h3{margin:0}
+    .scanner-head p{margin:4px 0 0;color:var(--muted);font-size:12px}
+    .container-value{font-size:22px;font-weight:900;color:var(--green-dark);letter-spacing:1px}
+    .scan-actions{display:grid;grid-template-columns:1fr auto;gap:9px;margin-top:14px}
+    .manual{
+      display:none;margin-top:11px;padding-top:11px;border-top:1px solid var(--line)
+    }
+    .manual.show{display:block}
+    .progress-card{padding:15px 16px}
+    .progress-head{display:flex;justify-content:space-between;gap:12px;margin-bottom:9px}
+    .progress-head strong{font-size:13px}
+    .progress-head span{font-size:11px;color:var(--muted)}
+    .progress{height:9px;border-radius:999px;background:#e3ebe8;overflow:hidden}
+    .progress div{height:100%;width:0;background:var(--green);transition:.2s}
+    .steps{display:grid;gap:8px}
+    .step{
+      display:grid;grid-template-columns:38px 1fr auto;gap:11px;align-items:center;
+      padding:12px 13px;background:#fff;border:1px solid var(--line);border-radius:13px
+    }
+    .step.done{background:#eef9f6}
+    .step.locked{opacity:.56}
+    .num{
+      width:36px;height:36px;border-radius:10px;display:grid;place-items:center;
+      background:#f2f5f4;border:1px solid var(--line);font-weight:900;color:#61717a
+    }
+    .step.done .num{background:var(--green);color:#fff;border-color:var(--green)}
+    .step-copy strong{font-size:13px}
+    .step-copy span{display:block;margin-top:3px;color:var(--muted);font-size:11px}
+    .step-actions{display:flex;gap:7px;align-items:center}
+    .thumb{
+      width:56px;height:48px;border-radius:9px;object-fit:cover;border:1px solid var(--line);display:none
+    }
+    .step.done .thumb{display:block}
+    .photo-btn{min-width:98px}
+    .batch-card{padding:17px}
+    .container-list{display:grid;gap:7px}
+    .container-row{
+      display:flex;align-items:center;justify-content:space-between;gap:12px;
+      padding:10px 12px;border-radius:11px;background:var(--panel-soft);border:1px solid var(--line)
+    }
+    .container-row strong{font-size:13px}
+    .container-row span{font-size:11px;color:var(--muted)}
+    .status-ok{color:var(--green-dark)!important;font-weight:800}
+    .status-open{color:var(--amber)!important;font-weight:800}
+    .footerbar{
+      position:fixed;bottom:0;left:0;right:0;z-index:30;padding:11px 14px calc(11px + env(safe-area-inset-bottom));
+      background:rgba(255,255,255,.97);backdrop-filter:blur(16px);
+      border-top:1px solid var(--line);box-shadow:0 -4px 18px rgba(8,31,40,.05)
+    }
+    .footer-inner{max-width:1120px;margin:auto;display:grid;grid-template-columns:1fr 1fr;gap:9px}
+    .footer-inner .btn{min-height:49px}
+    .sheet,.modal{
+      position:fixed;inset:0;z-index:50;background:rgba(6,21,27,.58);backdrop-filter:blur(7px);
+      display:none;align-items:flex-end;justify-content:center;padding:13px
+    }
+    .modal{align-items:center}
+    .sheet.show,.modal.show{display:flex}
+    .sheet-card,.modal-card{
+      width:min(650px,100%);max-height:90vh;overflow:auto;background:#fff;border-radius:20px;
+      border:1px solid var(--line);box-shadow:0 24px 70px rgba(0,0,0,.25);padding:17px
+    }
+    .sheet-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:13px}
+    .sheet-head h3{margin:0}
+    .history{display:grid;gap:8px}
+    .history-item{
+      padding:12px;border:1px solid var(--line);border-radius:12px;background:#f8faf9;
+      display:flex;align-items:center;justify-content:space-between;gap:10px
+    }
+    .history-item strong{font-size:13px;display:block}
+    .history-item span{font-size:10px;color:var(--muted);display:block;margin-top:3px}
+    .modal-card{text-align:center}
+    .modal-icon{
+      width:66px;height:66px;border-radius:20px;margin:0 auto 13px;display:grid;place-items:center;
+      background:var(--green-soft);color:var(--green-dark);font-size:29px;font-weight:900
+    }
+    .modal-card h3{font-size:22px;margin:0 0 7px}
+    .modal-card p{color:var(--muted);line-height:1.45}
+    .modal-actions{display:grid;gap:8px;margin-top:15px}
+    .toast{
+      position:fixed;left:50%;bottom:84px;z-index:100;transform:translate(-50%,20px);opacity:0;
+      pointer-events:none;transition:.2s;background:#0b242d;color:white;padding:11px 14px;
+      border-radius:12px;box-shadow:var(--shadow);font-size:12px;max-width:calc(100% - 26px);text-align:center
+    }
+    .toast.show{opacity:1;transform:translate(-50%,0)}
+
+    .live-scanner{
+      position:fixed;inset:0;z-index:90;background:#000;display:none;flex-direction:column
+    }
+    .live-scanner.show{display:flex}
+    .scanner-top{
+      background:#071a21;color:#fff;padding:calc(11px + env(safe-area-inset-top)) 13px 11px;
+      display:flex;align-items:center;justify-content:space-between;gap:10px
+    }
+    .scanner-top strong{font-size:14px}
+    .scanner-top span{display:block;color:#a9bbc2;font-size:10px;margin-top:2px}
+    .scanner-stage{position:relative;flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden}
+    #scannerVideo{width:auto;height:auto;max-width:100%;max-height:100%;object-fit:contain}
+    .scan-frame{
+      position:absolute;border:2px solid #1dc8aa;border-radius:16px;
+      box-shadow:0 0 0 9999px rgba(0,0,0,.56),0 0 28px rgba(29,200,170,.3)
+    }
+    .scan-frame.hit{border-color:#50ebcb}
+    .scan-line{
+      position:absolute;left:3%;right:3%;height:2px;top:12%;
+      background:linear-gradient(90deg,transparent,#50ebcb,transparent);
+      animation:scan 1.6s linear infinite
+    }
+    @keyframes scan{0%{top:10%}50%{top:88%}100%{top:10%}}
+    .scanner-status{
+      position:absolute;left:12px;right:12px;bottom:12px;padding:12px;border-radius:15px;
+      background:rgba(4,17,22,.88);color:#fff;text-align:center
+    }
+    .scanner-status strong{font-size:20px;display:block}
+    .scanner-status span{font-size:10px;color:#b4c4ca}
+    .scanner-bottom{
+      background:#071a21;padding:10px 13px calc(10px + env(safe-area-inset-bottom));
+      display:grid;grid-template-columns:1fr 1fr;gap:8px
+    }
+    .scanner-bottom .btn{background:#102d36;color:#fff;border-color:rgba(255,255,255,.15)}
+    .preview-img{width:100%;max-height:65vh;object-fit:contain;background:#111;border-radius:13px}
+    .fileline{
+      margin-top:10px;padding:9px;border-radius:9px;background:var(--green-soft);
+      color:var(--green-dark);font-size:10px;word-break:break-all
+    }
+
+    @media(max-width:720px){
+      .grid-2,.grid-3{grid-template-columns:1fr}
+      .mode-grid{grid-template-columns:1fr}
+      .step{grid-template-columns:36px 1fr}
+      .step-actions{grid-column:2}
+      .jobbar{grid-template-columns:1fr auto}
+      .top-actions .label{display:none}
+    }
+  
+    .logger-livebar{
+      position:sticky;
+      top:68px;
+      z-index:18;
+      margin:12px 0 14px;
+      border:1px solid rgba(200,139,0,.28);
+      border-radius:14px;
+      background:#fff8df;
+      box-shadow:0 8px 24px rgba(8,31,40,.10);
+      overflow:hidden;
+    }
+    .logger-livebar-main{
+      display:grid;
+      grid-template-columns:auto 1fr auto;
+      gap:11px;
+      align-items:center;
+      padding:11px 13px 9px;
+    }
+    .logger-livebar-icon{
+      width:38px;height:38px;border-radius:11px;
+      display:grid;place-items:center;
+      background:#fff1b8;color:#7a5700;font-size:19px
+    }
+    .logger-livebar-copy{min-width:0}
+    .logger-livebar-label{
+      color:#8a6200;font-size:9px;font-weight:900;letter-spacing:1.2px
+    }
+    .logger-livebar-copy strong{
+      display:block;margin-top:2px;font-size:13px;color:#4e3a00
+    }
+    .logger-livebar-copy span{
+      display:block;margin-top:2px;color:#765500;font-size:10px;
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+    }
+    .logger-livebar-timewrap{text-align:right}
+    .logger-livebar-time{
+      min-width:76px;
+      padding:7px 9px;
+      border-radius:10px;
+      background:#fff;
+      color:#765500;
+      font-weight:950;
+      font-variant-numeric:tabular-nums;
+      font-size:18px;
+      box-shadow:inset 0 0 0 1px rgba(200,139,0,.15)
+    }
+    .logger-livebar-extra{
+      margin-top:3px;color:#8a6200;font-size:9px;font-weight:800
+    }
+    .logger-livebar-progress{
+      height:4px;background:rgba(200,139,0,.12)
+    }
+    .logger-livebar-progress div{
+      height:100%;width:0;background:#d19700;transition:width .8s linear
+    }
+    .logger-livebar.due{
+      border-color:rgba(200,70,70,.4);
+      background:#fff0f0;
+      animation:loggerPulse 1.3s ease-in-out infinite
+    }
+    .logger-livebar.due .logger-livebar-icon{background:#ffe0e0;color:#a82f2f}
+    .logger-livebar.due .logger-livebar-label,
+    .logger-livebar.due .logger-livebar-copy strong,
+    .logger-livebar.due .logger-livebar-copy span,
+    .logger-livebar.due .logger-livebar-extra{color:#a82f2f}
+    .logger-livebar.due .logger-livebar-time{color:#a82f2f}
+    .logger-livebar.due .logger-livebar-progress div{background:#c84646}
+    @keyframes loggerPulse{
+      0%,100%{box-shadow:0 8px 24px rgba(8,31,40,.10)}
+      50%{box-shadow:0 8px 28px rgba(200,70,70,.22)}
+    }
+    @media(max-width:560px){
+      .logger-livebar{top:64px;margin-left:-2px;margin-right:-2px}
+      .logger-livebar-main{grid-template-columns:auto 1fr auto;padding:9px 10px 8px;gap:8px}
+      .logger-livebar-icon{width:34px;height:34px;font-size:17px}
+      .logger-livebar-copy strong{font-size:12px}
+      .logger-livebar-copy span{font-size:9px;max-width:44vw}
+      .logger-livebar-time{min-width:68px;font-size:16px;padding:6px 7px}
+    }
+
+    /* =========================================================
+       V18 DARK NAVY / ELECTRIC BLUE UI SYSTEM
+       Inspired by the provided design reference, without logos.
+       ========================================================= */
+    :root{
+      --bg:#061426;
+      --panel:#0d2038;
+      --panel-soft:#122944;
+      --panel-2:#0a1b30;
+      --line:rgba(148,163,184,.16);
+      --text:#f8fafc;
+      --muted:#94a3b8;
+      --green:#10b981;
+      --green-dark:#34d399;
+      --green-soft:rgba(16,185,129,.13);
+      --amber:#f59e0b;
+      --amber-soft:rgba(245,158,11,.13);
+      --red:#ef4444;
+      --red-soft:rgba(239,68,68,.12);
+      --blue:#3882f6;
+      --blue-2:#60a5fa;
+      --blue-soft:rgba(56,130,246,.15);
+      --shadow:0 20px 55px rgba(0,0,0,.28);
+      --radius:18px;
+    }
+
+    html{background:#061426}
+    body{
+      color:var(--text);
+      background:
+        radial-gradient(circle at 15% -10%,rgba(56,130,246,.18),transparent 34%),
+        radial-gradient(circle at 95% 5%,rgba(96,165,250,.09),transparent 28%),
+        linear-gradient(180deg,#07172b 0%,#061426 42%,#061221 100%);
+    }
+
+    .app{max-width:1040px;padding:14px 14px 154px}
+    .topbar{
+      margin:-14px -14px 16px;
+      padding:calc(10px + env(safe-area-inset-top)) 14px 11px;
+      background:rgba(6,20,38,.94);
+      border-bottom:1px solid rgba(96,165,250,.14);
+      box-shadow:0 8px 28px rgba(0,0,0,.18)
+    }
+    .brandmark{
+      width:42px;height:42px;border-radius:12px;
+      background:linear-gradient(145deg,#1c6fff,#3882f6);
+      box-shadow:0 10px 25px rgba(56,130,246,.28);
+      display:flex;align-items:center;justify-content:center;gap:3px;
+      transform:skewY(-8deg)
+    }
+    .brandmark i{
+      display:block;width:4px;border-radius:2px;background:#061426;
+      box-shadow:8px 0 0 #061426
+    }
+    .brandmark i:nth-child(1){height:22px}
+    .brandmark i:nth-child(2){height:28px}
+    .brandmark i:nth-child(3){height:24px}
+    .brandmark i:nth-child(4){height:17px}
+    .brand h1{font-size:18px;color:#fff;font-weight:800;letter-spacing:-.35px}
+    .brand span{color:#8fa4bc;font-size:10px}
+
+    .btn,.icon-btn{
+      color:#dce7f6;background:#0f243d;border-color:rgba(148,163,184,.18);
+      box-shadow:none
+    }
+    .btn:hover,.icon-btn:hover{background:#142d49;border-color:rgba(96,165,250,.35)}
+    .btn.primary{
+      color:white;border-color:#3882f6;
+      background:linear-gradient(180deg,#3882f6,#1f6df0);
+      box-shadow:0 8px 22px rgba(56,130,246,.22)
+    }
+    .btn.primary:hover{background:linear-gradient(180deg,#4a91ff,#2879f4)}
+    .btn.danger{color:#ff8d8d;background:rgba(239,68,68,.09);border-color:rgba(239,68,68,.22)}
+    .btn:disabled{opacity:.34}
+
+    .hero,.card{
+      background:linear-gradient(180deg,rgba(16,38,64,.98),rgba(11,29,50,.98));
+      border:1px solid rgba(148,163,184,.14);
+      box-shadow:var(--shadow)
+    }
+    .hero{padding:21px 19px}
+    .hero:before{width:0;background:none}
+    .eyebrow{color:#75aaff;font-size:10px;letter-spacing:1.2px}
+    .hero h2{font-size:clamp(28px,6vw,42px);color:#fff;margin-top:8px}
+    .hero p{color:#9dafc4}
+
+    .mode-grid{gap:11px}
+    .mode-btn{
+      position:relative;min-height:116px;padding:18px 18px 18px 70px;
+      border:1px solid rgba(148,163,184,.15);
+      background:#102641;color:white;overflow:hidden
+    }
+    .mode-btn::before{
+      position:absolute;left:18px;top:21px;width:38px;height:38px;border-radius:11px;
+      display:grid;place-items:center;font-size:21px;font-weight:900;
+      background:#172f4c;color:#8db7f7;border:1px solid rgba(96,165,250,.16)
+    }
+    #deliveryModeBtn::before{content:"↗"}
+    #returnModeBtn::before{content:"↩"}
+    #deliveryModeBtn{
+      background:linear-gradient(145deg,#0f69ef,#2386ff);
+      border-color:#3c96ff;box-shadow:0 15px 32px rgba(35,134,255,.20)
+    }
+    #deliveryModeBtn::before{background:rgba(255,255,255,.13);color:#fff;border-color:rgba(255,255,255,.18)}
+    .mode-btn.active{border-color:#60a5fa;background:#163559;box-shadow:0 0 0 1px rgba(96,165,250,.25) inset}
+    #deliveryModeBtn.active{background:linear-gradient(145deg,#0f69ef,#2386ff)}
+    .mode-btn strong{font-size:17px}
+    .mode-btn span{color:#9db0c5}
+    #deliveryModeBtn span{color:#e5f0ff}
+
+    .privacy{
+      margin-top:13px;background:#0b1e34;border-color:rgba(96,165,250,.12);
+      color:#8ea2b9
+    }
+
+    .setup{margin-top:14px;padding:18px}
+    .setup h3,.card h3{color:#f8fafc}
+    .field label{color:#9fb0c5}
+    .field input,.field textarea,.field select{
+      color:#eaf2fb;background:#0a1b30;border-color:rgba(148,163,184,.17);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.015)
+    }
+    .field input::placeholder,.field textarea::placeholder{color:#596d86}
+    .field input:focus,.field textarea:focus,.field select:focus{
+      border-color:#3882f6;box-shadow:0 0 0 3px rgba(56,130,246,.13)
+    }
+    #returnLoggerGate{
+      background:rgba(245,158,11,.08)!important;
+      border-color:rgba(245,158,11,.24)!important
+    }
+    #returnLoggerGate p{color:#c69e55!important}
+
+    .jobbar{
+      background:linear-gradient(180deg,#102641,#0b1f36);
+      border-color:rgba(96,165,250,.16)
+    }
+    .pill.delivery{background:rgba(56,130,246,.18);color:#72aaff;border:1px solid rgba(56,130,246,.25)}
+    .pill.return{background:rgba(16,185,129,.13);color:#42d5a1;border:1px solid rgba(16,185,129,.22)}
+    .job-sub{color:#8fa4bc}
+    .counter{background:#0b1c31;color:#7db0ff;border:1px solid rgba(56,130,246,.20)}
+
+    .scanner-card{background:linear-gradient(180deg,#0d223c,#0a1c31)}
+    .scanner-head p{color:#8ea2ba}
+    .container-value{color:#60a5fa}
+
+    .progress-card{background:#0c2037}
+    .progress{background:#162d48}
+    .progress div{background:linear-gradient(90deg,#2978ff,#5fa7ff)}
+
+    .step{
+      background:#0e223b;border-color:rgba(148,163,184,.14);
+      min-height:72px
+    }
+    .step:not(.done):not(.locked){
+      border-color:#3882f6;
+      box-shadow:0 0 0 1px rgba(56,130,246,.22) inset,0 8px 24px rgba(56,130,246,.08)
+    }
+    .step.done{background:#0c2b2c;border-color:rgba(16,185,129,.20)}
+    .step.locked{opacity:.48}
+    .num{background:#142b46;border-color:rgba(148,163,184,.14);color:#8ca1b9}
+    .step:not(.done):not(.locked) .num{background:#0e62d9;color:#fff;border-color:#3d91ff}
+    .step.done .num{background:#10b981;color:#05251b;border-color:#34d399}
+    .step-copy strong{color:#f2f7fc}
+    .step-copy span{color:#879ab1}
+    .thumb{border-color:rgba(96,165,250,.22);background:#071626}
+
+    .batch-card{background:#0c2037}
+    .container-row{
+      background:#0a1b30;border-color:rgba(148,163,184,.13)
+    }
+    .container-row:hover{border-color:rgba(96,165,250,.28);background:#0d223b}
+    .container-row strong{color:#edf4fb}
+    .container-row span{color:#8195ad}
+    .status-ok{color:#34d399!important}
+    .status-open{color:#fbbf24!important}
+
+    .sheet,.modal{background:rgba(1,8,18,.76)}
+    .sheet-card,.modal-card{
+      background:linear-gradient(180deg,#102641,#091a2e);
+      border-color:rgba(148,163,184,.18);color:#fff
+    }
+    .history-item{background:#0a1b30;border-color:rgba(148,163,184,.14)}
+    .history-item strong{color:#f4f8fc}
+    .history-item span{color:#8498b0}
+    .modal-card p{color:#91a5bc}
+    .modal-icon{background:rgba(16,185,129,.12);color:#36d7a0}
+
+    .fileline{background:rgba(56,130,246,.10);color:#7fb1ff;border:1px solid rgba(56,130,246,.14)}
+    .toast{background:#102944;border:1px solid rgba(96,165,250,.18);color:#f8fafc}
+
+    .live-scanner{background:#020914}
+    .scanner-top,.scanner-bottom{background:#061426;border-color:rgba(96,165,250,.12)}
+    .scan-frame{border-color:#3882f6;box-shadow:0 0 0 9999px rgba(0,0,0,.60),0 0 32px rgba(56,130,246,.34)}
+    .scan-frame.hit{border-color:#10b981}
+    .scan-line{background:linear-gradient(90deg,transparent,#60a5fa,transparent)}
+    .scanner-status{background:rgba(4,18,32,.90);border:1px solid rgba(96,165,250,.16)}
+    .scanner-status span{color:#94a3b8}
+    .scanner-bottom .btn{background:#0d223b;color:#e9f2fc;border-color:rgba(148,163,184,.16)}
+
+    .logger-livebar{
+      top:66px;background:#0f2440;border-color:rgba(245,158,11,.24);
+      box-shadow:0 12px 30px rgba(0,0,0,.20)
+    }
+    .logger-livebar-icon{background:rgba(245,158,11,.13);color:#fbbf24}
+    .logger-livebar-label,.logger-livebar-copy strong,.logger-livebar-copy span,.logger-livebar-extra{color:#eab84e}
+    .logger-livebar-time{background:#081b2f;color:#fbbf24;box-shadow:inset 0 0 0 1px rgba(245,158,11,.18)}
+    .logger-livebar-progress{background:#1d2f43}
+    .logger-livebar-progress div{background:#f59e0b}
+    .logger-livebar.due{background:#31191f;border-color:rgba(239,68,68,.35)}
+    .logger-livebar.due .logger-livebar-icon{background:rgba(239,68,68,.14);color:#ff7373}
+    .logger-livebar.due .logger-livebar-label,
+    .logger-livebar.due .logger-livebar-copy strong,
+    .logger-livebar.due .logger-livebar-copy span,
+    .logger-livebar.due .logger-livebar-extra,
+    .logger-livebar.due .logger-livebar-time{color:#ff7878}
+    .logger-livebar.due .logger-livebar-time{background:#251016}
+
+    .footerbar{
+      bottom:70px;padding:8px 14px;
+      background:rgba(6,20,38,.94);border-top:1px solid rgba(96,165,250,.11)
+    }
+    .footer-inner .btn{min-height:46px}
+
+    .mobile-nav{
+      position:fixed;left:50%;bottom:0;z-index:42;transform:translateX(-50%);
+      width:min(100%,1040px);height:70px;padding:6px 10px calc(6px + env(safe-area-inset-bottom));
+      display:grid;grid-template-columns:repeat(5,1fr);align-items:end;
+      background:rgba(6,20,38,.98);backdrop-filter:blur(18px);
+      border-top:1px solid rgba(96,165,250,.13);
+      box-shadow:0 -10px 28px rgba(0,0,0,.22)
+    }
+    .nav-item{
+      border:0;background:transparent;color:#71869f;height:58px;
+      display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+      font-size:9px;font-weight:700
+    }
+    .nav-icon{font-size:20px;line-height:1}
+    .nav-item.active,.nav-item:hover{color:#3882f6}
+    .nav-scan .nav-icon{
+      width:40px;height:40px;margin-top:-17px;border-radius:14px;
+      display:grid;place-items:center;background:#3882f6;color:#fff;
+      box-shadow:0 8px 24px rgba(56,130,246,.34);font-size:22px
+    }
+    .nav-scan{color:#7faef7}
+
+    .more-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .more-tile{
+      min-height:116px;text-align:left;border-radius:14px;padding:14px;
+      border:1px solid rgba(148,163,184,.14);background:#0a1b30;color:#f8fafc
+    }
+    .more-tile span{font-size:22px;color:#60a5fa}
+    .more-tile strong{display:block;margin-top:10px;font-size:13px}
+    .more-tile small{display:block;color:#8195ad;margin-top:4px;line-height:1.35}
+    .more-tile.info{cursor:default}
+    .more-tile:hover:not(.info){border-color:rgba(96,165,250,.32);background:#0d223b}
+
+    @media(max-width:720px){
+      .app{padding:10px 10px 154px}
+      .topbar{margin:-10px -10px 12px;padding-left:11px;padding-right:11px}
+      .top-actions .label{display:none}
+      .hero{padding:17px 14px}
+      .hero h2{font-size:31px}
+      .mode-grid{grid-template-columns:1fr}
+      .mode-btn{min-height:96px}
+      .setup{padding:14px}
+      .step{grid-template-columns:34px 1fr}
+      .step-actions{grid-column:2}
+      .photo-btn{min-width:90px}
+    }
+
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand">
+      <div class="brandmark" aria-label="Container Track"><i></i><i></i><i></i><i></i></div>
+      <div><h1>Container Track</h1><span>Scannen · Dokumentieren · Exportieren</span></div>
+    </div>
+    <div class="top-actions">
+      <button id="installBtn" class="icon-btn hidden">↓ <span class="label">Installieren</span></button>
+      <button id="historyBtn" class="icon-btn">☰ <span class="label">Verläufe</span></button>
+      <button id="newBtn" class="icon-btn">＋ <span class="label">Neu</span></button>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="eyebrow">PWA · MOBILE FIRST · LOCAL ONLY</div>
+      <h2>Container erfassen.</h2>
+      <p>Lieferung oder Return wählen, Container scannen und den kompletten Fotoworkflow sicher abarbeiten.</p>
+      <div class="mode-grid" id="modeGrid">
+        <button class="mode-btn" id="deliveryModeBtn">
+          <strong>Lieferung</strong>
+          <span>Order Number · mehrere Container · pro Container 6 Pflichtfotos</span>
+        </button>
+        <button class="mode-btn" id="returnModeBtn">
+          <strong>Return</strong>
+          <span>Return Number · mehrere Container · pro Container 1 Inhaltsfoto + Excel-Textdatei</span>
+        </button>
+      </div>
+      <div class="privacy">🔒 <strong>Local-only:</strong> Auftragsnummern, Container-Nummern und Fotos bleiben ausschliesslich auf diesem Gerät. GitHub Pages hostet nur die App.</div>
+    </section>
+
+    <section id="loggerTimerCard" class="hidden logger-livebar">
+      <div class="logger-livebar-main">
+        <div class="logger-livebar-icon">⏱</div>
+        <div class="logger-livebar-copy">
+          <div class="logger-livebar-label">LOGGER TIMER</div>
+          <strong id="loggerTimerTitle">Logger starten</strong>
+          <span id="loggerTimerText">–</span>
+        </div>
+        <div class="logger-livebar-timewrap">
+          <div id="loggerTimerCountdown" class="logger-livebar-time">30:00</div>
+          <div id="loggerTimerExtra" class="logger-livebar-extra"></div>
+        </div>
+      </div>
+      <div class="logger-livebar-progress">
+        <div id="loggerTimerProgress"></div>
+      </div>
+    </section>
+
+    <section class="card setup hidden" id="setupCard">
+      <h3 id="setupTitle">Vorgang einrichten</h3>
+
+      <div id="deliveryFields" class="hidden">
+        <div class="grid-2">
+          <div class="field">
+            <label for="orderNumber">Order Number *</label>
+            <input id="orderNumber" placeholder="Auftrags-/Ordnernummer" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="deliveryZrh">ZRH Number / KT *</label>
+            <input id="deliveryZrh" placeholder="z. B. ZRH123456" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="deliveryOrder">Order / Container-Typ *</label>
+            <input id="deliveryOrder" placeholder="Container-Typ manuell eingeben" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="deliveryCount">Anzahl Container *</label>
+            <input id="deliveryCount" type="number" min="1" max="50" value="1" inputmode="numeric">
+          </div>
+        </div>
+
+        <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)">
+          <h3 style="margin-bottom:5px">Excel-Daten für Lieferung</h3>
+          <p style="margin:0 0 12px;color:var(--muted);font-size:11px">Datum, In/Out, KT, Quantity und Container Number setzt die App automatisch. Order entspricht dem Container-Typ und wird manuell eingetragen. Quick und additional Work müssen ebenfalls ausgefüllt werden.</p>
+          <div class="grid-2">
+            <div class="field">
+              <label for="deliveryQuick">Quick *</label>
+              <input id="deliveryQuick" placeholder="z. B. Nothing" autocomplete="off">
+            </div>
+            <div class="field">
+              <label for="deliveryAdditional">additional Work *</label>
+              <textarea id="deliveryAdditional" placeholder="z. B. Nothing"></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="returnFields" class="hidden">
+        <div id="returnLoggerGate" style="padding:15px;border:1px solid rgba(200,139,0,.24);background:var(--amber-soft);border-radius:13px">
+          <div style="display:flex;gap:12px;align-items:flex-start">
+            <div style="font-size:25px;line-height:1">⏹</div>
+            <div style="flex:1">
+              <strong style="display:block;font-size:14px">1. Logger stoppen</strong>
+              <p style="margin:5px 0 11px;color:#765500;font-size:11px;line-height:1.45">Bevor Return Number, Order und die restlichen Angaben erfasst werden können, muss der Logger gestoppt sein.</p>
+              <button id="returnLoggerStoppedBtn" class="btn primary" type="button">Logger gestoppt – Eingaben freigeben</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="returnFormFields" class="hidden" style="margin-top:14px">
+        <div class="grid-2">
+          <div class="field">
+            <label for="returnNumber">Return Number *</label>
+            <input id="returnNumber" placeholder="z. B. RET-2026-0194" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="returnCount">Anzahl Container *</label>
+            <input id="returnCount" type="number" min="1" max="50" value="1" inputmode="numeric">
+          </div>
+        </div>
+
+        <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)">
+          <h3 style="margin-bottom:5px">Excel-Daten für Return</h3>
+          <p style="margin:0 0 12px;color:var(--muted);font-size:11px">Datum, In/Out, KT, Quantity und Container Number erstellt die App automatisch. KT entspricht der Return Number. Order, Quick und additional Work müssen ausgefüllt werden.</p>
+          <div class="grid-2">
+            <div class="field">
+              <label for="returnOrder">Order / Container-Typ *</label>
+              <input id="returnOrder" placeholder="Container-Typ manuell eingeben">
+            </div>
+            <div class="field">
+              <label for="returnQuick">Quick *</label>
+              <input id="returnQuick" placeholder="z. B. Nothing" autocomplete="off">
+            </div>
+          </div>
+          <div class="field" style="margin-top:10px">
+            <label for="returnAdditional">additional Work *</label>
+            <textarea id="returnAdditional" placeholder="z. B. Nothing"></textarea>
+          </div>
+        </div>
+        </div>
+      </div>
+
+      <div class="setup-actions">
+        <button id="startJobBtn" class="btn primary">Vorgang starten</button>
+      </div>
+    </section>
+
+    <section id="jobArea" class="hidden">
+      <section class="card jobbar">
+        <div>
+          <div class="job-title">
+            <span id="jobModePill" class="pill delivery">Lieferung</span>
+            <strong id="jobReference">–</strong>
+          </div>
+          <div id="jobSub" class="job-sub">–</div>
+        </div>
+        <div id="jobCounter" class="counter">1 / 1</div>
+      </section>
+
+      <div class="workflow">
+        <section class="card scanner-card">
+          <div class="scanner-head">
+            <div>
+              <h3 id="currentContainerTitle">Container 1</h3>
+              <p>4-stellige Container-Nummer scannen. Der erste gültige Treffer wird sofort übernommen.</p>
+            </div>
+            <div id="currentContainerNo" class="container-value">–</div>
+          </div>
+          <div class="scan-actions">
+            <button id="scanBtn" class="btn primary">▣ Container live scannen</button>
+            <button id="manualBtn" class="btn">Manuell</button>
+          </div>
+          <div id="manualArea" class="manual">
+            <div class="field">
+              <label for="manualContainer">Container-Nummer (4-stellig)</label>
+              <input id="manualContainer" inputmode="numeric" maxlength="4" placeholder="0708">
+            </div>
+            <button id="manualApplyBtn" class="btn" style="margin-top:8px">Übernehmen</button>
+          </div>
+        </section>
+
+        <section class="card progress-card">
+          <div class="progress-head">
+            <strong id="photoProgressTitle">Container zuerst scannen</strong>
+            <span id="photoProgressText">0 / 0</span>
+          </div>
+          <div class="progress"><div id="photoProgressBar"></div></div>
+        </section>
+
+        <div id="steps" class="steps"></div>
+
+        <section class="card batch-card">
+          <h3 id="batchTitle">Container im Vorgang</h3>
+          <div id="containerList" class="container-list"></div>
+        </section>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="footerbar" id="jobActionBar">
+  <div class="footer-inner">
+    <button id="previousContainerBtn" class="btn" disabled>← Vorheriger</button>
+    <button id="exportBtn" class="btn primary" disabled>Vorgang exportieren</button>
+  </div>
+</div>
+
+<input id="cameraInput" class="hidden" type="file" accept="image/*" capture="environment">
+<input id="fallbackOcrInput" class="hidden" type="file" accept="image/*" capture="environment">
+
+<div id="photoSheet" class="sheet">
+  <div class="sheet-card">
+    <div class="sheet-head">
+      <h3 id="previewTitle">Foto</h3>
+      <button class="icon-btn" data-close="photoSheet">✕</button>
+    </div>
+    <img id="previewImage" class="preview-img" alt="Vorschau">
+    <div id="previewFilename" class="fileline"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">
+      <button id="retakePreviewBtn" class="btn">Neu aufnehmen</button>
+      <button id="deletePreviewBtn" class="btn danger">Löschen</button>
+    </div>
+  </div>
+</div>
+
+<div id="historySheet" class="sheet">
+  <div class="sheet-card">
+    <div class="sheet-head">
+      <h3>Lokale Vorgänge</h3>
+      <button class="icon-btn" data-close="historySheet">✕</button>
+    </div>
+    <div id="historyList" class="history"></div>
+  </div>
+</div>
+
+<div id="containerCompleteModal" class="modal">
+  <div class="modal-card">
+    <div class="modal-icon">✓</div>
+    <h3 id="containerCompleteTitle">Container vollständig</h3>
+    <p id="containerCompleteText"></p>
+    <div class="modal-actions">
+      <button id="nextContainerBtn" class="btn primary">Nächsten Container scannen</button>
+      <button class="btn" data-close="containerCompleteModal">Fotos ansehen</button>
+    </div>
+  </div>
+</div>
+
+<div id="jobCompleteModal" class="modal">
+  <div class="modal-card">
+    <div class="modal-icon">✓</div>
+    <h3>Vorgang vollständig</h3>
+    <p id="jobCompleteText"></p>
+    <div class="modal-actions">
+      <button id="modalExportBtn" class="btn primary">ZIP exportieren</button>
+      <button class="btn" data-close="jobCompleteModal">Nochmals prüfen</button>
+    </div>
+  </div>
+</div>
+
+<div id="loggerDueModal" class="modal">
+  <div class="modal-card" style="border:2px solid rgba(200,139,0,.36)">
+    <div class="modal-icon" style="background:var(--amber-soft);color:#8a6200">⏱</div>
+    <h3>Logger jetzt starten</h3>
+    <p id="loggerDueText">30 Minuten sind abgelaufen. Logger starten und anschliessend bestätigen.</p>
+    <div class="modal-actions">
+      <button id="confirmLoggerStartedBtn" class="btn primary">Logger gestartet – bestätigen</button>
+    </div>
+  </div>
+</div>
+
+<div id="liveScanner" class="live-scanner">
+  <div class="scanner-top">
+    <div><strong>Container-Nummer live scannen</strong><span>Nur die 4 Ziffern gross und gerade in den Rahmen halten</span></div>
+    <button id="scannerCloseBtn" class="btn">✕</button>
+  </div>
+  <div id="scannerStage" class="scanner-stage">
+    <video id="scannerVideo" autoplay playsinline muted></video>
+    <div id="scanFrame" class="scan-frame"><div class="scan-line"></div></div>
+    <div class="scanner-status">
+      <strong id="scannerValue">Suche …</strong>
+      <span id="scannerStatusText">Erster gültiger 4-stelliger Treffer wird sofort übernommen</span>
+    </div>
+  </div>
+  <div class="scanner-bottom">
+    <button id="torchBtn" class="btn">🔦 Licht</button>
+    <button id="fallbackOcrBtn" class="btn">📷 Foto-OCR</button>
+  </div>
+</div>
+
+
+<nav class="mobile-nav" aria-label="Hauptnavigation">
+  <button class="nav-item active" id="navStartBtn" type="button">
+    <span class="nav-icon">⌂</span><span>Start</span>
+  </button>
+  <button class="nav-item" id="navJobsBtn" type="button">
+    <span class="nav-icon">▣</span><span>Aufträge</span>
+  </button>
+  <button class="nav-item nav-scan" id="navScanBtn" type="button">
+    <span class="nav-icon">⌗</span><span>Scannen</span>
+  </button>
+  <button class="nav-item" id="navExportBtn" type="button">
+    <span class="nav-icon">⇧</span><span>Export</span>
+  </button>
+  <button class="nav-item" id="navMoreBtn" type="button">
+    <span class="nav-icon">•••</span><span>Mehr</span>
+  </button>
+</nav>
+
+
+<div id="moreSheet" class="sheet">
+  <div class="sheet-card">
+    <div class="sheet-head">
+      <h3>Mehr</h3>
+      <button class="icon-btn" data-close="moreSheet">✕</button>
+    </div>
+    <div class="more-grid">
+      <button class="more-tile" id="moreInstallBtn" type="button"><span>↓</span><strong>App installieren</strong><small>PWA auf dem Smartphone installieren</small></button>
+      <button class="more-tile" id="moreHistoryBtn" type="button"><span>▣</span><strong>Lokale Aufträge</strong><small>Gespeicherte Vorgänge öffnen</small></button>
+      <button class="more-tile" id="moreNewBtn" type="button"><span>＋</span><strong>Neuer Vorgang</strong><small>Neue Lieferung oder Return starten</small></button>
+      <div class="more-tile info"><span>⌁</span><strong>Local-only</strong><small>Fotos und Auftragsdaten bleiben auf diesem Gerät.</small></div>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script>
+(() => {
+  "use strict";
+
+  const DELIVERY_STEPS = [
+    {id:"empty", label:"Leerer Innenraum", hint:"Gesamtansicht des leeren Containers.", code:"01"},
+    {id:"front", label:"Aussenseite – Front", hint:"Frontseite vollständig aufnehmen.", code:"02"},
+    {id:"back", label:"Aussenseite – Rückseite / Türen", hint:"Türen und Rückseite vollständig aufnehmen.", code:"03"},
+    {id:"left", label:"Aussenseite – links", hint:"Linke Seitenwand inklusive Ecken.", code:"04"},
+    {id:"right", label:"Aussenseite – rechts", hint:"Rechte Seitenwand inklusive Ecken.", code:"05"},
+    {id:"filled", label:"Befüllter Innenraum", hint:"Gesamtansicht mit Kühlplatten.", code:"06"}
+  ];
+  const RETURN_STEPS = [
+    {id:"content", label:"Inhalt bei Return", hint:"Ein Gesamtfoto des Inhalts im zurückgekommenen Container.", code:"01"}
+  ];
+
+  const $ = id => document.getElementById(id);
+
+  const state = {
+    jobId:null,
+    mode:null,
+    reference:"",
+    containerCount:1,
+    currentIndex:0,
+    containers:[],
+    createdAt:null,
+    updatedAt:null,
+    deliveryMeta:{zrh:"",order:"",additionalWork:"",quick:"",loggerReminderId:null,loggerTimerStartedAt:null,loggerDueAt:null},
+    returnMeta:{order:"",additionalWork:"",quick:"",loggerStoppedAt:null},
+    activePhotoStep:null,
+    previewStep:null,
+    installPrompt:null
+  };
+
+  let saveTimer = null;
+  let toastTimer = null;
+  let scannerStream = null;
+  let scannerActive = false;
+  let scannerBusy = false;
+  let scannerLastRun = 0;
+  let torchOn = false;
+  let ocrWorker = null;
+  let returnLoggerStoppedConfirmed = false;
+  let returnLoggerStoppedAt = null;
+
+  const LOGGER_REMINDER_KEY = "containertrack-v15-logger-reminders";
+  let loggerReminderTimeout = null;
+  let loggerCountdownInterval = null;
+  let activeDueReminderId = null;
+
+  const dbPromise = openDB();
+
+  function openDB(){
+    return new Promise((resolve,reject)=>{
+      const req = indexedDB.open("containertrack-v12-db",1);
+      req.onupgradeneeded = () => {
+        const db=req.result;
+        if(!db.objectStoreNames.contains("jobs")){
+          const store=db.createObjectStore("jobs",{keyPath:"jobId"});
+          store.createIndex("updatedAt","updatedAt");
+        }
+      };
+      req.onsuccess=()=>resolve(req.result);
+      req.onerror=()=>reject(req.error);
+    });
+  }
+
+  async function dbPut(value){
+    const db=await dbPromise;
+    return new Promise((resolve,reject)=>{
+      const tx=db.transaction("jobs","readwrite");
+      tx.objectStore("jobs").put(value);
+      tx.oncomplete=resolve;
+      tx.onerror=()=>reject(tx.error);
+    });
+  }
+
+  async function dbGet(id){
+    const db=await dbPromise;
+    return new Promise((resolve,reject)=>{
+      const tx=db.transaction("jobs","readonly");
+      const req=tx.objectStore("jobs").get(id);
+      req.onsuccess=()=>resolve(req.result||null);
+      req.onerror=()=>reject(req.error);
+    });
+  }
+
+  async function dbAll(){
+    const db=await dbPromise;
+    return new Promise((resolve,reject)=>{
+      const tx=db.transaction("jobs","readonly");
+      const req=tx.objectStore("jobs").getAll();
+      req.onsuccess=()=>resolve((req.result||[]).sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0)));
+      req.onerror=()=>reject(req.error);
+    });
+  }
+
+  async function dbDelete(id){
+    const db=await dbPromise;
+    return new Promise((resolve,reject)=>{
+      const tx=db.transaction("jobs","readwrite");
+      tx.objectStore("jobs").delete(id);
+      tx.oncomplete=resolve;
+      tx.onerror=()=>reject(tx.error);
+    });
+  }
+
+  function snapshot(){
+    return {
+      jobId:state.jobId,
+      mode:state.mode,
+      reference:state.reference,
+      containerCount:state.containerCount,
+      currentIndex:state.currentIndex,
+      containers:state.containers,
+      createdAt:state.createdAt,
+      updatedAt:Date.now(),
+      deliveryMeta:state.deliveryMeta,
+      returnMeta:state.returnMeta
+    };
+  }
+
+  function scheduleSave(){
+    clearTimeout(saveTimer);
+    saveTimer=setTimeout(async()=>{
+      if(!state.jobId) return;
+      state.updatedAt=Date.now();
+      try{await dbPut(snapshot())}catch(err){console.error(err);toast("Lokales Speichern fehlgeschlagen.")}
+    },180);
+  }
+
+  function safeRef(v){
+    return String(v||"")
+      .trim().toUpperCase()
+      .replace(/[Ä]/g,"AE").replace(/[Ö]/g,"OE").replace(/[Ü]/g,"UE")
+      .replace(/[\/\\]+/g,"-")
+      .replace(/\s+/g,"_")
+      .replace(/[^A-Z0-9._-]/g,"")
+      .slice(0,60);
+  }
+
+  function cleanContainer(v){
+    return String(v||"")
+      .toUpperCase()
+      .replace(/[OQD]/g,"0").replace(/[IL]/g,"1").replace(/S/g,"5").replace(/B/g,"8")
+      .replace(/\D/g,"").slice(0,4);
+  }
+
+  function currentContainer(){return state.containers[state.currentIndex]||null}
+  function stepsForMode(){return state.mode==="return" ? RETURN_STEPS : DELIVERY_STEPS}
+  function completedContainers(){return state.containers.filter(c=>isContainerComplete(c)).length}
+
+  function isContainerComplete(c){
+    if(!c || !/^\d{4}$/.test(c.number||"")) return false;
+    return stepsForMode().every(s=>!!c.photos?.[s.id]);
+  }
+
+  function allComplete(){
+    return state.containers.length===state.containerCount &&
+      state.containers.every(c=>isContainerComplete(c));
+  }
+
+  function newBlankContainer(){
+    return {number:"",photos:{},completedAt:null};
+  }
+
+  function selectMode(mode){
+    if(state.jobId && state.mode && !confirm("Aktuellen Vorgang verlassen und einen neuen einrichten? Der aktuelle Stand bleibt lokal gespeichert.")) return;
+    state.mode=mode;
+    $("deliveryModeBtn").classList.toggle("active",mode==="delivery");
+    $("returnModeBtn").classList.toggle("active",mode==="return");
+    $("setupCard").classList.remove("hidden");
+    $("deliveryFields").classList.toggle("hidden",mode!=="delivery");
+    $("returnFields").classList.toggle("hidden",mode!=="return");
+
+    if(mode==="return"){
+      returnLoggerStoppedConfirmed=false;
+      returnLoggerStoppedAt=null;
+      $("returnLoggerGate").classList.remove("hidden");
+      $("returnFormFields").classList.add("hidden");
+      $("startJobBtn").disabled=true;
+      $("setupTitle").textContent="Return – Logger zuerst stoppen";
+    }else{
+      $("startJobBtn").disabled=false;
+      $("setupTitle").textContent="Lieferung einrichten";
+    }
+
+    window.scrollTo({top:$("setupCard").offsetTop-70,behavior:"smooth"});
+  }
+
+  function startJob(){
+    if(!state.mode){toast("Lieferung oder Return auswählen.");return}
+
+    const isReturn=state.mode==="return";
+    const ref=safeRef(isReturn ? $("returnNumber").value : $("orderNumber").value);
+    const count=Math.max(1,Math.min(50,parseInt(isReturn ? $("returnCount").value : $("deliveryCount").value,10)||1));
+
+    if(!ref){toast(isReturn ? "Return Number fehlt." : "Order Number fehlt.");return}
+
+    let nextDeliveryMeta={zrh:"",order:"",additionalWork:"",quick:"",loggerReminderId:null,loggerTimerStartedAt:null,loggerDueAt:null};
+    let nextReturnMeta={order:"",additionalWork:"",quick:"",loggerStoppedAt:null};
+
+    if(isReturn){
+      if(!returnLoggerStoppedConfirmed || !returnLoggerStoppedAt){
+        toast("Logger muss vor dem Return gestoppt und bestätigt werden.");return;
+      }
+      const returnOrder=$("returnOrder").value.trim();
+      const returnAdditional=$("returnAdditional").value.trim();
+      const returnQuick=$("returnQuick").value.trim();
+      if(!returnOrder){toast("Order fehlt beim Return.");return}
+      if(!returnQuick){toast('Quick muss ausgefüllt werden – falls nichts anfällt z. B. "Nothing".');return}
+      if(!returnAdditional){toast('additional Work muss ausgefüllt werden – falls nichts anfällt z. B. "Nothing".');return}
+      nextReturnMeta={
+        order:returnOrder,
+        additionalWork:returnAdditional,
+        quick:returnQuick,
+        loggerStoppedAt:returnLoggerStoppedAt
+      };
+    }else{
+      const zrh=$("deliveryZrh").value.trim();
+      const deliveryOrder=$("deliveryOrder").value.trim();
+      const deliveryAdditional=$("deliveryAdditional").value.trim();
+      const deliveryQuick=$("deliveryQuick").value.trim();
+      if(!zrh){toast("ZRH Number / KT fehlt.");return}
+      if(!deliveryOrder){toast("Order / Container-Typ fehlt.");return}
+      if(!deliveryQuick){toast('Quick muss ausgefüllt werden – falls nichts anfällt z. B. "Nothing".');return}
+      if(!deliveryAdditional){toast('additional Work muss ausgefüllt werden – falls nichts anfällt z. B. "Nothing".');return}
+      nextDeliveryMeta={
+        zrh,
+        order:deliveryOrder,
+        additionalWork:deliveryAdditional,
+        quick:deliveryQuick,
+        loggerReminderId:null,
+        loggerTimerStartedAt:null,
+        loggerDueAt:null
+      };
+    }
+
+    // Erst nach erfolgreicher Validierung den Vorgang erzeugen.
+    state.jobId=crypto.randomUUID ? crypto.randomUUID() : "j-"+Date.now();
+    state.reference=ref;
+    state.containerCount=count;
+    state.currentIndex=0;
+    state.containers=Array.from({length:count},()=>newBlankContainer());
+    state.createdAt=Date.now();
+    state.updatedAt=Date.now();
+    state.deliveryMeta=nextDeliveryMeta;
+    state.returnMeta=nextReturnMeta;
+
+    $("jobArea").classList.remove("hidden");
+    $("setupCard").classList.add("hidden");
+    render();
+    scheduleSave();
+    setTimeout(()=>openLiveScanner(),300);
+  }
+
+  function resetToHome(){
+    state.jobId=null;state.mode=null;state.reference="";state.containerCount=1;state.currentIndex=0;
+    state.containers=[];state.createdAt=null;state.updatedAt=null;
+    state.deliveryMeta={zrh:"",order:"",additionalWork:"",quick:"",loggerReminderId:null,loggerTimerStartedAt:null,loggerDueAt:null};
+    state.returnMeta={order:"",additionalWork:"",quick:"",loggerStoppedAt:null};
+    returnLoggerStoppedConfirmed=false;
+    returnLoggerStoppedAt=null;
+    $("jobArea").classList.add("hidden");
+    $("setupCard").classList.add("hidden");
+    $("deliveryModeBtn").classList.remove("active");
+    $("returnModeBtn").classList.remove("active");
+    render();
+    window.scrollTo({top:0,behavior:"smooth"});
+  }
+
+  function render(){
+    $("jobActionBar")?.classList.toggle("hidden",!state.jobId);
+    renderJobHeader();
+    renderCurrentContainer();
+    renderBatch();
+    $("exportBtn").disabled=!allComplete();
+    $("previousContainerBtn").disabled=!state.jobId || state.currentIndex===0;
+  }
+
+  function renderJobHeader(){
+    if(!state.jobId) return;
+    $("jobModePill").textContent=state.mode==="delivery" ? "Lieferung" : "Return";
+    $("jobModePill").className="pill "+(state.mode==="delivery"?"delivery":"return");
+    $("jobReference").textContent=state.reference;
+    $("jobSub").textContent=state.mode==="delivery"
+      ? `${state.containerCount} Container · KT ${state.deliveryMeta.zrh||"–"} · Order/Typ ${state.deliveryMeta.order||"–"} · 6 Fotos pro Container · Excel-TXT`
+      : `${state.containerCount} Container · KT ${state.reference} · Order ${state.returnMeta.order||"–"} · 1 Inhaltsfoto pro Container · Excel-TXT`;
+    $("jobCounter").textContent=`${state.currentIndex+1} / ${state.containerCount}`;
+  }
+
+  function renderCurrentContainer(){
+    if(!state.jobId) return;
+    const c=currentContainer();
+    const steps=stepsForMode();
+    const done=steps.filter(s=>c.photos?.[s.id]).length;
+    $("currentContainerTitle").textContent=`Container ${state.currentIndex+1} von ${state.containerCount}`;
+    $("currentContainerNo").textContent=c.number||"–";
+    $("photoProgressTitle").textContent=!c.number ? "Container zuerst scannen" :
+      isContainerComplete(c) ? "Container vollständig" : "Fotodokumentation";
+    $("photoProgressText").textContent=`${done} / ${steps.length}`;
+    $("photoProgressBar").style.width=`${steps.length ? Math.round(done/steps.length*100) : 0}%`;
+
+    const host=$("steps");host.innerHTML="";
+    steps.forEach((step,i)=>{
+      const photo=c.photos?.[step.id];
+      const nextIndex=done;
+      const allowed=!!c.number && (photo ? i===done-1 : i===nextIndex);
+      const row=document.createElement("div");
+      row.className="step"+(photo?" done":"")+(!allowed && !photo?" locked":"");
+      const url=photo ? URL.createObjectURL(photo.blob) : "";
+      row.innerHTML=`
+        <div class="num">${photo?"✓":i+1}</div>
+        <div class="step-copy"><strong>${step.label}</strong><span>${step.hint}</span></div>
+        <div class="step-actions">
+          <img class="thumb" ${photo?`src="${url}"`:""} alt="">
+          <button class="btn photo-btn" data-photo="${step.id}" ${allowed?"":"disabled"}>${photo?"↻ Neu":"📷 Foto"}</button>
+          ${photo?`<button class="icon-btn" data-preview="${step.id}">⋯</button>`:""}
+        </div>`;
+      host.appendChild(row);
+    });
+
+    host.querySelectorAll("[data-photo]").forEach(b=>b.addEventListener("click",()=>beginPhoto(b.dataset.photo)));
+    host.querySelectorAll("[data-preview]").forEach(b=>b.addEventListener("click",()=>openPreview(b.dataset.preview)));
+  }
+
+  function renderBatch(){
+    if(!state.jobId) return;
+    $("batchTitle").textContent=`Container im ${state.mode==="delivery"?"Order":"Return"} (${completedContainers()}/${state.containerCount} fertig)`;
+    const host=$("containerList");host.innerHTML="";
+    state.containers.forEach((c,i)=>{
+      const div=document.createElement("div");div.className="container-row";
+      const status=isContainerComplete(c)?"Vollständig":(c.number?"In Arbeit":"Noch offen");
+      div.innerHTML=`
+        <div><strong>${i+1}. ${c.number||"Container noch nicht gescannt"}</strong>
+        <span>${state.mode==="delivery"?"6 Pflichtfotos":"1 Inhaltsfoto"}</span></div>
+        <span class="${isContainerComplete(c)?"status-ok":"status-open"}">${status}</span>`;
+      div.addEventListener("click",()=>{
+        if(i>state.currentIndex && !isContainerComplete(state.containers[state.currentIndex])){
+          toast("Aktuellen Container zuerst abschliessen.");return;
+        }
+        state.currentIndex=i;render();scheduleSave();
+      });
+      host.appendChild(div);
+    });
+  }
+
+  function assignContainerNumber(value){
+    const no=cleanContainer(value);
+    if(!/^\d{4}$/.test(no)){toast("Container-Nummer muss 4-stellig sein.");return false}
+    const duplicate=state.containers.findIndex((c,i)=>i!==state.currentIndex && c.number===no);
+    if(duplicate>=0){toast(`Container ${no} ist in diesem Vorgang bereits erfasst.`);return false}
+    const c=currentContainer();
+    c.number=no;
+    $("manualContainer").value=no;
+    render();scheduleSave();
+    toast(`Container ${no} übernommen.`);
+    return true;
+  }
+
+  function beginPhoto(stepId){
+    const c=currentContainer();
+    if(!c?.number){toast("Container zuerst scannen.");return}
+    const steps=stepsForMode();
+    const index=steps.findIndex(s=>s.id===stepId);
+    const done=steps.filter(s=>c.photos?.[s.id]).length;
+    const existing=!!c.photos?.[stepId];
+    if(!existing && index!==done){toast(`Zuerst Foto ${done+1} aufnehmen.`);return}
+    if(existing && index!==done-1){toast("Nur das zuletzt aufgenommene Foto kann direkt wiederholt werden.");return}
+    state.activePhotoStep=stepId;
+    $("cameraInput").value="";
+    $("cameraInput").click();
+  }
+
+  async function handlePhoto(file){
+    if(!file || !state.activePhotoStep) return;
+    try{
+      toast("Foto wird gespeichert …");
+      const blob=await optimizeImage(file,2200,.88);
+      const c=currentContainer();
+      const step=stepsForMode().find(s=>s.id===state.activePhotoStep);
+      c.photos[step.id]={
+        stepId:step.id,
+        capturedAt:Date.now(),
+        filename:`${c.number}_${step.code}.jpg`,
+        blob
+      };
+      scheduleSave();render();
+
+      if(isContainerComplete(c)){
+        c.completedAt=Date.now();scheduleSave();
+        setTimeout(()=>showContainerCompletion(),240);
+      }else{
+        toast(`${step.label} gespeichert.`);
+      }
+    }catch(err){
+      console.error(err);toast("Foto konnte nicht verarbeitet werden.");
+    }finally{
+      state.activePhotoStep=null;
+    }
+  }
+
+  function showContainerCompletion(){
+    const c=currentContainer();
+    if(allComplete()){
+      $("jobCompleteText").textContent=`Alle ${state.containerCount} Container für ${state.reference} sind vollständig dokumentiert.`;
+      openModal("jobCompleteModal");
+      return;
+    }
+    $("containerCompleteTitle").textContent=`Container ${c.number} vollständig`;
+    $("containerCompleteText").textContent=`Container ${state.currentIndex+1} von ${state.containerCount} ist abgeschlossen.`;
+    $("nextContainerBtn").textContent="Nächsten Container scannen";
+    openModal("containerCompleteModal");
+  }
+
+  function nextContainer(){
+    closeModal("containerCompleteModal");
+    if(state.currentIndex<state.containerCount-1){
+      state.currentIndex++;
+      render();scheduleSave();
+      setTimeout(()=>openLiveScanner(),250);
+    }
+  }
+
+  async function optimizeImage(file,maxSide,quality){
+    const bitmap=await createImageBitmap(file);
+    const scale=Math.min(1,maxSide/Math.max(bitmap.width,bitmap.height));
+    const w=Math.max(1,Math.round(bitmap.width*scale));
+    const h=Math.max(1,Math.round(bitmap.height*scale));
+    const canvas=document.createElement("canvas");canvas.width=w;canvas.height=h;
+    const ctx=canvas.getContext("2d",{alpha:false});
+    ctx.fillStyle="#fff";ctx.fillRect(0,0,w,h);ctx.drawImage(bitmap,0,0,w,h);bitmap.close?.();
+    return await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error("Bildexport")),"image/jpeg",quality));
+  }
+
+  function openPreview(stepId){
+    const c=currentContainer();const p=c?.photos?.[stepId];if(!p)return;
+    state.previewStep=stepId;
+    const step=stepsForMode().find(s=>s.id===stepId);
+    $("previewTitle").textContent=step.label;
+    $("previewImage").src=URL.createObjectURL(p.blob);
+    $("previewFilename").textContent=p.filename;
+    openModal("photoSheet");
+  }
+
+  function deletePreview(){
+    const c=currentContainer();if(!c || !state.previewStep)return;
+    const steps=stepsForMode();const idx=steps.findIndex(s=>s.id===state.previewStep);
+    const done=steps.filter(s=>c.photos?.[s.id]).length;
+    if(idx!==done-1){toast("Nur das zuletzt aufgenommene Foto kann gelöscht werden.");return}
+    delete c.photos[state.previewStep];
+    c.completedAt=null;
+    closeModal("photoSheet");state.previewStep=null;render();scheduleSave();toast("Foto gelöscht.");
+  }
+
+  function retakePreview(){
+    const step=state.previewStep;closeModal("photoSheet");state.previewStep=null;beginPhoto(step);
+  }
+
+  function localDate(ts=Date.now()){
+    const d=new Date(ts);return `${String(d.getDate()).padStart(2,"0")}.${String(d.getMonth()+1).padStart(2,"0")}.${d.getFullYear()}`;
+  }
+
+  function escapeTsv(value){
+    return String(value??"").replace(/\t/g," ").replace(/\r?\n/g," / ");
+  }
+
+  function buildExcelText(){
+    const numbers=state.containers.map(c=>c.number).join(", ");
+    const headers=["Datum","In/Out","KT","Order","Quantity","additional Work","Container Number","Quick"];
+
+    let values;
+    if(state.mode==="delivery"){
+      values=[
+        localDate(),
+        "OUT",
+        state.deliveryMeta.zrh,
+        state.deliveryMeta.order,
+        state.containerCount,
+        state.deliveryMeta.additionalWork,
+        numbers,
+        state.deliveryMeta.quick
+      ];
+    }else{
+      values=[
+        localDate(),
+        "IN",
+        state.reference,
+        state.returnMeta.order,
+        state.containerCount,
+        state.returnMeta.additionalWork,
+        numbers,
+        state.returnMeta.quick
+      ];
+    }
+
+    return headers.map(escapeTsv).join("\t")+"\r\n"+values.map(escapeTsv).join("\t")+"\r\n";
+  }
+
+  async function exportJob(){
+    if(!allComplete()){toast("Vorgang ist noch nicht vollständig.");return}
+    $("exportBtn").disabled=true;$("exportBtn").textContent="ZIP wird erstellt …";
+    $("modalExportBtn").disabled=true;
+
+    try{
+      const root=safeRef(state.reference);
+      const files=[];
+
+      for(const c of state.containers){
+        for(const step of stepsForMode()){
+          const p=c.photos[step.id];
+          if(p){
+            files.push({
+              name:`${root}/${c.number}/${p.filename}`,
+              data:new Uint8Array(await p.blob.arrayBuffer()),
+              date:new Date(p.capturedAt)
+            });
+          }
+        }
+      }
+
+      files.push({
+        name:`${root}/${root}_EXCEL.txt`,
+        data:new TextEncoder().encode(buildExcelText()),
+        date:new Date()
+      });
+
+      const meta={
+        app:"ContainerTrack",
+        version:"2.5",
+        type:state.mode,
+        reference:state.reference,
+        quantity:state.containerCount,
+        containers:state.containers.map(c=>c.number),
+        excelRow: state.mode==="delivery" ? {
+          date:localDate(),
+          inOut:"OUT",
+          kt:state.deliveryMeta.zrh,
+          order:state.deliveryMeta.order,
+          quantity:state.containerCount,
+          additionalWork:state.deliveryMeta.additionalWork,
+          containerNumber:state.containers.map(c=>c.number).join(", "),
+          quick:state.deliveryMeta.quick,
+          loggerReminderId:state.deliveryMeta.loggerReminderId,
+          loggerTimerStartedAt:state.deliveryMeta.loggerTimerStartedAt ? new Date(state.deliveryMeta.loggerTimerStartedAt).toISOString() : null,
+          loggerDueAt:state.deliveryMeta.loggerDueAt ? new Date(state.deliveryMeta.loggerDueAt).toISOString() : null
+        } : {
+          date:localDate(),
+          inOut:"IN",
+          kt:state.reference,
+          order:state.returnMeta.order,
+          quantity:state.containerCount,
+          additionalWork:state.returnMeta.additionalWork,
+          containerNumber:state.containers.map(c=>c.number).join(", "),
+          quick:state.returnMeta.quick,
+          loggerStoppedAt:state.returnMeta.loggerStoppedAt ? new Date(state.returnMeta.loggerStoppedAt).toISOString() : null
+        },
+        createdAt:new Date(state.createdAt).toISOString(),
+        exportedAt:new Date().toISOString()
+      };
+      files.push({
+        name:`${root}/${root}_META.json`,
+        data:new TextEncoder().encode(JSON.stringify(meta,null,2)),
+        date:new Date()
+      });
+
+      const zip=makeZip(files);
+
+      if(state.mode==="delivery"){
+        await requestNotificationPermission();
+      }
+
+      downloadBlob(zip,`${root}.zip`);
+      closeModal("jobCompleteModal");
+
+      if(state.mode==="delivery"){
+        const loggerResult=addDeliveryLoggerReminder(root);
+        toast(loggerResult.created
+          ? `${root}.zip erstellt. Logger-Timer 30 Minuten gestartet.`
+          : `${root}.zip erneut erstellt. Der bestehende Logger-Timer läuft unverändert weiter.`);
+      }else{
+        toast(`${root}.zip erstellt.`);
+      }
+    }catch(err){
+      console.error(err);toast("Export fehlgeschlagen.");
+    }finally{
+      $("exportBtn").disabled=false;$("exportBtn").textContent="Vorgang exportieren";
+      $("modalExportBtn").disabled=false;
+    }
+  }
+
+  function downloadBlob(blob,name){
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a");a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1200);
+  }
+
+  function dateToDos(date){
+    const year=Math.max(1980,date.getFullYear());
+    return {
+      time:(date.getHours()<<11)|(date.getMinutes()<<5)|(date.getSeconds()>>1),
+      date:((year-1980)<<9)|((date.getMonth()+1)<<5)|date.getDate()
+    };
+  }
+
+  const CRC_TABLE=(()=>{
+    const t=new Uint32Array(256);
+    for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);t[n]=c>>>0}
+    return t;
+  })();
+
+  function crc32(bytes){
+    let c=0xFFFFFFFF;
+    for(let i=0;i<bytes.length;i++)c=CRC_TABLE[(c^bytes[i])&0xFF]^(c>>>8);
+    return (c^0xFFFFFFFF)>>>0;
+  }
+
+  function makeZip(files){
+    const localParts=[],centralParts=[];let offset=0;
+    files.forEach(file=>{
+      const nameBytes=new TextEncoder().encode(file.name);
+      const data=file.data instanceof Uint8Array?file.data:new Uint8Array(file.data);
+      const crc=crc32(data),dos=dateToDos(file.date||new Date());
+
+      const local=new Uint8Array(30+nameBytes.length),lv=new DataView(local.buffer);
+      lv.setUint32(0,0x04034b50,true);lv.setUint16(4,20,true);lv.setUint16(6,0,true);lv.setUint16(8,0,true);
+      lv.setUint16(10,dos.time,true);lv.setUint16(12,dos.date,true);lv.setUint32(14,crc,true);
+      lv.setUint32(18,data.length,true);lv.setUint32(22,data.length,true);lv.setUint16(26,nameBytes.length,true);lv.setUint16(28,0,true);
+      local.set(nameBytes,30);localParts.push(local,data);
+
+      const central=new Uint8Array(46+nameBytes.length),cv=new DataView(central.buffer);
+      cv.setUint32(0,0x02014b50,true);cv.setUint16(4,20,true);cv.setUint16(6,20,true);cv.setUint16(8,0,true);cv.setUint16(10,0,true);
+      cv.setUint16(12,dos.time,true);cv.setUint16(14,dos.date,true);cv.setUint32(16,crc,true);
+      cv.setUint32(20,data.length,true);cv.setUint32(24,data.length,true);cv.setUint16(28,nameBytes.length,true);
+      cv.setUint16(30,0,true);cv.setUint16(32,0,true);cv.setUint16(34,0,true);cv.setUint16(36,0,true);cv.setUint32(38,0,true);cv.setUint32(42,offset,true);
+      central.set(nameBytes,46);centralParts.push(central);
+      offset+=local.length+data.length;
+    });
+    const centralSize=centralParts.reduce((n,p)=>n+p.length,0);
+    const end=new Uint8Array(22),ev=new DataView(end.buffer);
+    ev.setUint32(0,0x06054b50,true);ev.setUint16(4,0,true);ev.setUint16(6,0,true);ev.setUint16(8,files.length,true);ev.setUint16(10,files.length,true);
+    ev.setUint32(12,centralSize,true);ev.setUint32(16,offset,true);ev.setUint16(20,0,true);
+    return new Blob([...localParts,...centralParts,end],{type:"application/zip"});
+  }
+
+  // ---------- Live OCR ----------
+  function scannerFramePosition(){
+    const video=$("scannerVideo"),stage=$("scannerStage"),frame=$("scanFrame");
+    if(!video.videoWidth||!video.videoHeight)return;
+    const sr=stage.getBoundingClientRect(),vr=video.getBoundingClientRect();
+    const fw=Math.max(150,vr.width*.58),fh=Math.max(60,vr.height*.18);
+    const left=(vr.left-sr.left)+(vr.width-fw)/2;
+    const top=(vr.top-sr.top)+vr.height*.45-fh/2;
+    frame.style.left=`${Math.max(6,left)}px`;frame.style.top=`${Math.max(6,top)}px`;
+    frame.style.width=`${Math.min(fw,sr.width-12)}px`;frame.style.height=`${Math.min(fh,sr.height-12)}px`;
+  }
+
+  async function openLiveScanner(){
+    if(!state.jobId){toast("Zuerst Vorgang starten.");return}
+    if(!navigator.mediaDevices?.getUserMedia){toast("Live-Kamera nicht unterstützt.");return}
+    $("liveScanner").classList.add("show");document.body.style.overflow="hidden";
+    $("scannerValue").textContent="Suche …";$("scanFrame").classList.remove("hit");
+    try{
+      scannerStream=await navigator.mediaDevices.getUserMedia({
+        video:{facingMode:{ideal:"environment"},width:{ideal:1920},height:{ideal:1080}},
+        audio:false
+      });
+      $("scannerVideo").srcObject=scannerStream;await $("scannerVideo").play();
+      scannerFramePosition();setTimeout(scannerFramePosition,250);
+      scannerActive=true;scannerLastRun=0;requestAnimationFrame(scannerLoop);
+    }catch(err){
+      console.error(err);closeLiveScanner();toast("Kamera konnte nicht geöffnet werden.");
+    }
+  }
+
+  function closeLiveScanner(){
+    scannerActive=false;scannerBusy=false;
+    if(scannerStream){scannerStream.getTracks().forEach(t=>t.stop());scannerStream=null}
+    $("scannerVideo").srcObject=null;$("liveScanner").classList.remove("show");document.body.style.overflow="";torchOn=false;
+  }
+
+  function roiFromFrame(){
+    const v=$("scannerVideo"),f=$("scanFrame");
+    if(!v.videoWidth||!v.videoHeight)return null;
+    const vr=v.getBoundingClientRect(),fr=f.getBoundingClientRect();
+    const left=Math.max(fr.left,vr.left),top=Math.max(fr.top,vr.top),right=Math.min(fr.right,vr.right),bottom=Math.min(fr.bottom,vr.bottom);
+    if(right<=left||bottom<=top)return null;
+    return {
+      x:Math.round((left-vr.left)/vr.width*v.videoWidth),
+      y:Math.round((top-vr.top)/vr.height*v.videoHeight),
+      w:Math.round((right-left)/vr.width*v.videoWidth),
+      h:Math.round((bottom-top)/vr.height*v.videoHeight)
+    };
+  }
+
+  function canvasBlob(canvas){
+    return new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error("Canvas")),"image/jpeg",.95));
+  }
+
+  async function liveFrameBlob(mode){
+    const roi=roiFromFrame();if(!roi)return null;
+    const v=$("scannerVideo"),scale=Math.min(4,2200/Math.max(roi.w,roi.h));
+    const w=Math.max(1,Math.round(roi.w*scale)),h=Math.max(1,Math.round(roi.h*scale));
+    const canvas=document.createElement("canvas");canvas.width=w;canvas.height=h;
+    const ctx=canvas.getContext("2d",{willReadFrequently:true});
+    ctx.drawImage(v,roi.x,roi.y,roi.w,roi.h,0,0,w,h);
+    const img=ctx.getImageData(0,0,w,h),d=img.data;
+    for(let i=0;i<d.length;i+=4){
+      const gray=.299*d[i]+.587*d[i+1]+.114*d[i+2];let val;
+      if(mode==="invert")val=255-Math.max(0,Math.min(255,(gray-128)*1.95+128));
+      else if(mode==="binary")val=gray>145?255:0;
+      else if(mode==="invertBinary")val=gray>145?0:255;
+      else val=Math.max(0,Math.min(255,(gray-128)*1.9+128));
+      d[i]=d[i+1]=d[i+2]=val;
+    }
+    ctx.putImageData(img,0,0);return await canvasBlob(canvas);
+  }
+
+  async function getWorker(){
+    if(ocrWorker)return ocrWorker;
+    if(!window.Tesseract)throw new Error("OCR nicht geladen");
+    ocrWorker=await Tesseract.createWorker("eng",1,{logger:()=>{}});
+    return ocrWorker;
+  }
+
+  async function recognizeLive(){
+    const worker=await getWorker();
+    for(const mode of ["invert","invertBinary","gray","binary"]){
+      const blob=await liveFrameBlob(mode);if(!blob)continue;
+      await worker.setParameters({
+        tessedit_char_whitelist:"0123456789",
+        tessedit_pageseg_mode:"7",
+        preserve_interword_spaces:"0",
+        user_defined_dpi:"300"
+      });
+      const res=await worker.recognize(blob);
+      const digits=String(res?.data?.text||"").replace(/\D/g,"");
+      if(digits.length===4)return digits;
+    }
+    return "";
+  }
+
+  async function scannerLoop(ts){
+    if(!scannerActive)return;
+    if(!scannerBusy && ts-scannerLastRun>400){
+      scannerLastRun=ts;scannerBusy=true;
+      try{
+        const found=await recognizeLive();
+        if(found && /^\d{4}$/.test(found)){
+          $("scannerValue").textContent=found;$("scanFrame").classList.add("hit");
+          if(assignContainerNumber(found)){
+            navigator.vibrate?.(70);
+            setTimeout(()=>closeLiveScanner(),240);
+            return;
+          }
+        }else{
+          $("scannerValue").textContent="Suche …";
+        }
+      }catch(err){console.error(err)}
+      finally{scannerBusy=false}
+    }
+    if(scannerActive)requestAnimationFrame(scannerLoop);
+  }
+
+  async function toggleTorch(){
+    const track=scannerStream?.getVideoTracks?.()[0];if(!track)return;
+    const caps=track.getCapabilities?.()||{};
+    if(!caps.torch){toast("Licht wird von diesem Gerät nicht unterstützt.");return}
+    torchOn=!torchOn;
+    try{await track.applyConstraints({advanced:[{torch:torchOn}]});$("torchBtn").textContent=torchOn?"🔦 Licht aus":"🔦 Licht"}
+    catch{torchOn=false}
+  }
+
+  async function fallbackOcr(file){
+    if(!file)return;
+    toast("Foto-OCR läuft …");
+    try{
+      const worker=await getWorker();
+      await worker.setParameters({tessedit_char_whitelist:"0123456789",tessedit_pageseg_mode:"11"});
+      const res=await worker.recognize(file);
+      const raw=String(res?.data?.text||"").toUpperCase().replace(/[OQD]/g,"0").replace(/[IL]/g,"1").replace(/S/g,"5").replace(/B/g,"8");
+      const candidates=[...raw.matchAll(/(?:^|\D)(\d{4})(?:\D|$)/g)].map(m=>m[1]);
+      const unique=[...new Set(candidates)];
+      const found=unique.length===1?unique[0]:(unique.filter(v=>v.startsWith("0")).length===1?unique.filter(v=>v.startsWith("0"))[0]:"");
+      if(found)assignContainerNumber(found);else toast("Nummer nicht eindeutig erkannt. Bitte manuell eingeben.");
+    }catch(err){console.error(err);toast("Foto-OCR fehlgeschlagen.")}
+  }
+
+  // ---------- History ----------
+  async function renderHistory(){
+    const jobs=await dbAll(),host=$("historyList");host.innerHTML="";
+    if(!jobs.length){host.innerHTML='<div style="padding:22px;text-align:center;color:var(--muted)">Noch keine lokalen Vorgänge.</div>';openModal("historySheet");return}
+    jobs.forEach(j=>{
+      const complete=(j.containers||[]).filter(c=>{
+        const req=j.mode==="return"?RETURN_STEPS:DELIVERY_STEPS;
+        return /^\d{4}$/.test(c.number||"") && req.every(s=>!!c.photos?.[s.id]);
+      }).length;
+      const item=document.createElement("div");item.className="history-item";
+      item.innerHTML=`<div><strong>${j.mode==="delivery"?"Lieferung":"Return"} · ${j.reference}</strong><span>${complete}/${j.containerCount} Container · ${new Date(j.updatedAt).toLocaleString("de-CH")}</span></div>
+        <div style="display:flex;gap:6px"><button class="btn" data-load="${j.jobId}">Öffnen</button><button class="btn danger" data-del="${j.jobId}">✕</button></div>`;
+      host.appendChild(item);
+    });
+    host.querySelectorAll("[data-load]").forEach(b=>b.addEventListener("click",()=>loadJob(b.dataset.load)));
+    host.querySelectorAll("[data-del]").forEach(b=>b.addEventListener("click",async()=>{
+      if(b.dataset.del===state.jobId){toast("Aktuell geöffneter Vorgang kann hier nicht gelöscht werden.");return}
+      await dbDelete(b.dataset.del);renderHistory();
+    }));
+    openModal("historySheet");
+  }
+
+  async function loadJob(id){
+    const j=await dbGet(id);if(!j)return;
+    Object.assign(state,{
+      jobId:j.jobId,mode:j.mode,reference:j.reference,containerCount:j.containerCount,currentIndex:j.currentIndex||0,
+      containers:j.containers||[],createdAt:j.createdAt,updatedAt:j.updatedAt,
+      deliveryMeta:j.deliveryMeta||{zrh:"",order:"",additionalWork:"",quick:"",loggerReminderId:null,loggerTimerStartedAt:null,loggerDueAt:null},
+      returnMeta:j.returnMeta||{order:"",additionalWork:"",quick:"",loggerStoppedAt:null}
+    });
+    $("deliveryModeBtn").classList.toggle("active",state.mode==="delivery");
+    $("returnModeBtn").classList.toggle("active",state.mode==="return");
+    $("setupCard").classList.add("hidden");$("jobArea").classList.remove("hidden");
+    closeModal("historySheet");render();toast("Vorgang geöffnet.");
+  }
+
+
+  // ---------- Logger Reminder ----------
+  function getLoggerReminders(){
+    try{
+      const parsed=JSON.parse(localStorage.getItem(LOGGER_REMINDER_KEY)||"[]");
+      return Array.isArray(parsed)?parsed:[];
+    }catch{return[]}
+  }
+
+  function setLoggerReminders(items){
+    localStorage.setItem(LOGGER_REMINDER_KEY,JSON.stringify(items));
+  }
+
+  function pendingLoggerReminders(){
+    return getLoggerReminders()
+      .filter(r=>!r.confirmedAt)
+      .sort((a,b)=>a.dueAt-b.dueAt);
+  }
+
+  async function requestNotificationPermission(){
+    if(!("Notification" in window))return;
+    if(Notification.permission==="default"){
+      try{await Notification.requestPermission()}catch{}
+    }
+  }
+
+  async function showLoggerSystemNotification(reminder){
+    if(!("Notification" in window) || Notification.permission!=="granted")return;
+    try{
+      if("serviceWorker" in navigator){
+        const reg=await navigator.serviceWorker.ready;
+        await reg.showNotification("Logger starten",{
+          body:`30 Minuten seit Lieferung ${reminder.reference} sind abgelaufen. Logger jetzt starten.`,
+          icon:"./icon-192.png",
+          badge:"./icon-192.png",
+          tag:`logger-${reminder.id}`,
+          requireInteraction:true,
+          data:{type:"logger",id:reminder.id}
+        });
+      }else{
+        new Notification("Logger starten",{
+          body:`30 Minuten seit Lieferung ${reminder.reference} sind abgelaufen.`
+        });
+      }
+    }catch(err){console.warn("Logger Notification:",err)}
+  }
+
+  function addDeliveryLoggerReminder(reference){
+    // Re-export desselben Delivery-Vorgangs darf den 30-Minuten-Timer nicht neu starten.
+    if(state.deliveryMeta.loggerReminderId){
+      const existing=getLoggerReminders().find(r=>r.id===state.deliveryMeta.loggerReminderId);
+      if(existing){
+        scheduleLoggerReminderChecks();
+        renderLoggerReminderCard();
+        return {reminder:existing,created:false};
+      }
+    }
+
+    const now=Date.now();
+    const reminder={
+      id:crypto.randomUUID?crypto.randomUUID():"lr-"+now,
+      jobId:state.jobId,
+      reference,
+      createdAt:now,
+      dueAt:now+(30*60*1000),
+      confirmedAt:null,
+      notificationSent:false
+    };
+    const items=getLoggerReminders();
+    items.push(reminder);
+    setLoggerReminders(items);
+
+    state.deliveryMeta.loggerReminderId=reminder.id;
+    state.deliveryMeta.loggerTimerStartedAt=reminder.createdAt;
+    state.deliveryMeta.loggerDueAt=reminder.dueAt;
+    scheduleSave();
+
+    scheduleLoggerReminderChecks();
+    renderLoggerReminderCard();
+    return {reminder,created:true};
+  }
+
+  function updateReminder(reminder){
+    const items=getLoggerReminders();
+    const idx=items.findIndex(r=>r.id===reminder.id);
+    if(idx>=0){items[idx]=reminder;setLoggerReminders(items)}
+  }
+
+  function renderLoggerReminderCard(){
+    const reminders=pendingLoggerReminders();
+    const card=$("loggerTimerCard");
+
+    if(!reminders.length){
+      card.classList.add("hidden");
+      card.classList.remove("due");
+      return;
+    }
+
+    const r=reminders[0];
+    const remaining=Math.max(0,r.dueAt-Date.now());
+    const totalDuration=30*60*1000;
+    const elapsed=Math.max(0,Math.min(totalDuration,Date.now()-r.createdAt));
+    const pct=Math.max(0,Math.min(100,(elapsed/totalDuration)*100));
+
+    card.classList.remove("hidden");
+    $("loggerTimerTitle").textContent=`Lieferung ${r.reference}`;
+    $("loggerTimerProgress").style.width=`${pct}%`;
+
+    const extraCount=reminders.length-1;
+    $("loggerTimerExtra").textContent=extraCount>0 ? `+${extraCount} weitere` : "";
+
+    if(remaining<=0){
+      card.classList.add("due");
+      $("loggerTimerText").textContent="30 Minuten abgelaufen – Logger jetzt starten";
+      $("loggerTimerCountdown").textContent="JETZT";
+      $("loggerTimerProgress").style.width="100%";
+    }else{
+      card.classList.remove("due");
+      $("loggerTimerText").textContent="Logger nach Ablauf starten";
+      const totalSec=Math.ceil(remaining/1000);
+      const min=Math.floor(totalSec/60);
+      const sec=totalSec%60;
+      $("loggerTimerCountdown").textContent=`${String(min).padStart(2,"0")}:${String(sec).padStart(2,"0")}`;
+    }
+  }
+
+  async function handleDueLoggerReminders(){
+    const reminders=pendingLoggerReminders();
+    if(!reminders.length){
+      activeDueReminderId=null;
+      closeModal("loggerDueModal");
+      renderLoggerReminderCard();
+      return;
+    }
+
+    const due=reminders.find(r=>r.dueAt<=Date.now());
+    if(!due){
+      renderLoggerReminderCard();
+      return;
+    }
+
+    activeDueReminderId=due.id;
+    $("loggerDueText").textContent=`Lieferung ${due.reference}: 30 Minuten sind abgelaufen. Logger jetzt starten. Diese Meldung muss bestätigt werden.`;
+    $("loggerDueModal").classList.add("show");
+
+    if(!due.notificationSent){
+      due.notificationSent=true;
+      updateReminder(due);
+      await showLoggerSystemNotification(due);
+    }
+
+    renderLoggerReminderCard();
+  }
+
+  function scheduleLoggerReminderChecks(){
+    clearTimeout(loggerReminderTimeout);
+    clearInterval(loggerCountdownInterval);
+
+    const reminders=pendingLoggerReminders();
+    if(!reminders.length){
+      renderLoggerReminderCard();
+      return;
+    }
+
+    const next=reminders[0];
+    const delay=Math.max(0,next.dueAt-Date.now());
+    loggerReminderTimeout=setTimeout(()=>{
+      handleDueLoggerReminders();
+      scheduleLoggerReminderChecks();
+    },Math.min(delay,2147483000));
+
+    loggerCountdownInterval=setInterval(()=>{
+      renderLoggerReminderCard();
+      if(pendingLoggerReminders().some(r=>r.dueAt<=Date.now())){
+        handleDueLoggerReminders();
+      }
+    },1000);
+
+    renderLoggerReminderCard();
+    handleDueLoggerReminders();
+  }
+
+  function confirmLoggerStarted(){
+    if(!activeDueReminderId)return;
+    const items=getLoggerReminders();
+    const idx=items.findIndex(r=>r.id===activeDueReminderId);
+    if(idx>=0){
+      items[idx].confirmedAt=Date.now();
+      setLoggerReminders(items);
+    }
+    const confirmed=items[idx];
+    activeDueReminderId=null;
+    closeModal("loggerDueModal");
+    toast(confirmed?`Logger für ${confirmed.reference} bestätigt.`:"Logger gestartet bestätigt.");
+    scheduleLoggerReminderChecks();
+  }
+
+
+  // ---------- PWA ----------
+  function initPwa(){
+    window.addEventListener("beforeinstallprompt",e=>{
+      e.preventDefault();state.installPrompt=e;$("installBtn").classList.remove("hidden");
+    });
+    $("installBtn").addEventListener("click",async()=>{
+      if(!state.installPrompt){toast("Browser-Menü → App installieren / Zum Startbildschirm hinzufügen.");return}
+      state.installPrompt.prompt();await state.installPrompt.userChoice.catch(()=>{});state.installPrompt=null;$("installBtn").classList.add("hidden");
+    });
+    if("serviceWorker" in navigator && (location.protocol==="https:"||location.hostname==="localhost")){
+      window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(console.warn));
+    }
+  }
+
+  function openModal(id){$(id).classList.add("show")}
+  function closeModal(id){$(id).classList.remove("show")}
+  function toast(msg){
+    const t=$("toast");t.textContent=msg;t.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove("show"),2100);
+  }
+
+  function bind(){
+    $("deliveryModeBtn").addEventListener("click",()=>selectMode("delivery"));
+    $("returnModeBtn").addEventListener("click",()=>selectMode("return"));
+    $("returnLoggerStoppedBtn").addEventListener("click",()=>{
+      returnLoggerStoppedConfirmed=true;
+      returnLoggerStoppedAt=Date.now();
+      $("returnLoggerGate").classList.add("hidden");
+      $("returnFormFields").classList.remove("hidden");
+      $("startJobBtn").disabled=false;
+      $("setupTitle").textContent="Return einrichten";
+      toast("Logger gestoppt bestätigt. Return-Angaben sind freigeschaltet.");
+    });
+    $("confirmLoggerStartedBtn").addEventListener("click",confirmLoggerStarted);
+    $("loggerTimerCard").addEventListener("click",()=>{
+      const due=pendingLoggerReminders().find(r=>r.dueAt<=Date.now());
+      if(due){
+        activeDueReminderId=due.id;
+        $("loggerDueText").textContent=`Lieferung ${due.reference}: 30 Minuten sind abgelaufen. Logger jetzt starten. Diese Meldung muss bestätigt werden.`;
+        $("loggerDueModal").classList.add("show");
+      }
+    });
+    $("startJobBtn").addEventListener("click",startJob);
+    $("scanBtn").addEventListener("click",openLiveScanner);
+    $("manualBtn").addEventListener("click",()=>$("manualArea").classList.toggle("show"));
+    $("manualApplyBtn").addEventListener("click",()=>assignContainerNumber($("manualContainer").value));
+    $("manualContainer").addEventListener("input",e=>e.target.value=cleanContainer(e.target.value));
+    $("cameraInput").addEventListener("change",e=>handlePhoto(e.target.files?.[0]));
+    $("nextContainerBtn").addEventListener("click",nextContainer);
+    $("previousContainerBtn").addEventListener("click",()=>{
+      if(state.currentIndex>0){state.currentIndex--;render();scheduleSave()}
+    });
+    $("exportBtn").addEventListener("click",exportJob);
+    $("modalExportBtn").addEventListener("click",exportJob);
+    $("historyBtn").addEventListener("click",renderHistory);
+
+    $("navStartBtn").addEventListener("click",()=>{
+      document.querySelector(".hero")?.scrollIntoView({behavior:"smooth",block:"start"});
+    });
+    $("navJobsBtn").addEventListener("click",renderHistory);
+    $("navScanBtn").addEventListener("click",()=>{
+      if(state.jobId){
+        openLiveScanner();
+      }else{
+        document.querySelector(".hero")?.scrollIntoView({behavior:"smooth",block:"start"});
+        toast("Zuerst Lieferung oder Return starten.");
+      }
+    });
+    $("navExportBtn").addEventListener("click",()=>{
+      if(state.jobId && allComplete()){
+        exportJob();
+      }else if(state.jobId){
+        $("jobArea")?.scrollIntoView({behavior:"smooth",block:"start"});
+        toast("Vorgang zuerst vollständig abschliessen.");
+      }else{
+        toast("Noch kein Vorgang aktiv.");
+      }
+    });
+    $("navMoreBtn").addEventListener("click",()=>openModal("moreSheet"));
+    $("moreHistoryBtn").addEventListener("click",()=>{
+      closeModal("moreSheet");renderHistory();
+    });
+    $("moreNewBtn").addEventListener("click",()=>{
+      closeModal("moreSheet");$("newBtn").click();
+    });
+    $("moreInstallBtn").addEventListener("click",()=>{
+      closeModal("moreSheet");$("installBtn").click();
+    });
+
+    $("newBtn").addEventListener("click",()=>{
+      if(state.jobId && !confirm("Neuen Vorgang starten? Der aktuelle Stand bleibt lokal gespeichert."))return;
+      resetToHome();
+    });
+    $("deletePreviewBtn").addEventListener("click",deletePreview);
+    $("retakePreviewBtn").addEventListener("click",retakePreview);
+    $("scannerCloseBtn").addEventListener("click",closeLiveScanner);
+    $("torchBtn").addEventListener("click",toggleTorch);
+    $("fallbackOcrBtn").addEventListener("click",()=>{
+      closeLiveScanner();$("fallbackOcrInput").value="";$("fallbackOcrInput").click();
+    });
+    $("fallbackOcrInput").addEventListener("change",e=>fallbackOcr(e.target.files?.[0]));
+    window.addEventListener("resize",()=>{if(scannerActive)scannerFramePosition()});
+    window.addEventListener("orientationchange",()=>setTimeout(()=>{if(scannerActive)scannerFramePosition()},250));
+
+    document.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click",()=>closeModal(b.dataset.close)));
+    document.querySelectorAll(".sheet,.modal").forEach(node=>node.addEventListener("click",e=>{
+      if(e.target!==node)return;
+      if(node.id==="loggerDueModal")return;
+      closeModal(node.id);
+    }));
+  }
+
+  async function init(){
+    bind();initPwa();render();
+    scheduleLoggerReminderChecks();
+    document.addEventListener("visibilitychange",()=>{
+      if(document.visibilityState==="visible"){
+        scheduleLoggerReminderChecks();
+      }
+    });
+    window.addEventListener("focus",scheduleLoggerReminderChecks);
+    try{
+      const jobs=await dbAll();
+      const active=jobs.find(j=>{
+        const req=j.mode==="return"?RETURN_STEPS:DELIVERY_STEPS;
+        return !(j.containers||[]).every(c=>/^\d{4}$/.test(c.number||"")&&req.every(s=>!!c.photos?.[s.id]));
+      });
+      if(active)await loadJob(active.jobId);
+    }catch(err){console.error(err)}
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>

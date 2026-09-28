@@ -1,0 +1,25 @@
+{
+  "name": "Container Track",
+  "short_name": "Container Track",
+  "description": "Local-first Container Track PWA im Dark-Navy/Electric-Blue Design für Lieferung und Return.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#061426",
+  "theme_color": "#061426",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "./icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
