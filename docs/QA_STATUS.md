@@ -1,5 +1,15 @@
 # Prüfstatus — 20.10.2026
 
+## Nachgewiesener GitHub-Build
+
+- Repository: [samkruw/ContainerTrack](https://github.com/samkruw/ContainerTrack), [Draft-PR #1](https://github.com/samkruw/ContainerTrack/pull/1).
+- [CI-Lauf 39426728286](https://github.com/samkruw/ContainerTrack/actions/runs/39426728286), Commit `cf1db39adef78c1515ccd6a560f1fe44eb4c22b7`: `test`, `lint`, `assembleDebug` und Merged-Manifest-Privacy-Prüfung erfolgreich.
+- 16 Emulatorprüfungen (5 Persistenz, 3 Navigation, 8 Screenshot-Aufnahmen) erfolgreich. Device-Job scheiterte anschliessend am Kopieren der Screenshots nach dem Testlauf. Die APK ist bereits als Artefakt vorhanden.
+- Korrekturen aus echten Compiler-/CI-Ausgaben: entferntes SDK-Paket `tools` ersetzt; Room-Gradle-Plugin koordiniert Schemaexport je Variante; Bitmap-Höhe und JSON-Erzeugung korrigiert.
+- Aktuelle Fortsetzung: Screenshot-Transfer, zwei Notification-/Receiver-Tests, ein Activity-Neustarttest, fünf Python-QA-Tests und APK-/Abhängigkeitsbericht.
+
+Die folgenden ursprünglichen Audit-/Blockadeangaben dokumentieren den lokalen Ausgangszustand; sie werden durch die obigen CI-Nachweise ergänzt.
+
 ## Tatsächlich ausgeführt
 
 - Workspace-/Werkzeug-Audit: kein Git-Repository, keine PWA, kein SDK, kein Compiler und keine Gradle-Distribution vorgefunden. Java 21 Runtime vorhanden.

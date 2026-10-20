@@ -18,7 +18,7 @@ class QualityToolsTest(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.fixture = Path(self.temp.name)
 
-    def privacy(self, extra_manifest='', extra_code=''):
+    def privacy(self, extra_manifest='', extra_code='', merged=False):
         main = self.fixture / 'app/src/main'
         main.mkdir(parents=True)
         source = (ROOT / 'app/src/main/AndroidManifest.xml').read_text()
@@ -29,13 +29,20 @@ class QualityToolsTest(unittest.TestCase):
         (kotlin / 'Example.kt').write_text('package test\n' + extra_code)
         (self.fixture / 'gradle').mkdir()
         shutil.copy(ROOT / 'gradle/libs.versions.toml', self.fixture / 'gradle/libs.versions.toml')
+        if merged:
+            target = self.fixture / 'app/build/intermediates/merged_manifests/debug/processDebugManifest'
+            target.mkdir(parents=True)
+            shutil.copy(main / 'AndroidManifest.xml', target / 'AndroidManifest.xml')
+            tests = self.fixture / 'app/build/intermediates/merged_manifests/debugAndroidTest/processDebugAndroidTestManifest'
+            tests.mkdir(parents=True)
+            (tests / 'AndroidManifest.xml').write_text('<manifest><application /></manifest>')
         spec = importlib.util.spec_from_file_location('privacy', ROOT / 'tools/check_privacy.py')
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
         module.ROOT = self.fixture
         original = sys.argv
         try:
-            sys.argv = ['check_privacy.py']
+            sys.argv = ['check_privacy.py'] + (['--merged'] if merged else [])
             with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
                 return module.main()
         finally:
@@ -49,6 +56,9 @@ class QualityToolsTest(unittest.TestCase):
 
     def test_production_network_call_is_rejected(self):
         self.assertEqual(1, self.privacy(extra_code='val url = "https://example.invalid"'))
+
+    def test_merged_gate_ignores_android_test_manifest(self):
+        self.assertEqual(0, self.privacy(merged=True))
 
     def test_screenshot_gate_checks_match_difference_and_missing(self):
         goldens, actual = self.fixture / 'goldens', self.fixture / 'actual'

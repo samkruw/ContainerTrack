@@ -44,4 +44,13 @@ class NavigationTest {
         compose.onNodeWithText("Start").performClick()
         compose.onNodeWithText("Erfassung").assertIsDisplayed()
     }
+
+    @Test fun activityRecreationPreservesReturnGateAndInput() {
+        compose.onNodeWithText("Return", useUnmergedTree = true).performClick()
+        compose.onNodeWithText("Logger gestoppt – bestätigen").performClick()
+        compose.onNodeWithText("Return Number").performTextInput("RETURN-0708")
+        compose.activityRule.scenario.recreate()
+        compose.onNodeWithText("Return Number").assertIsEnabled().assertTextContains("RETURN-0708")
+        compose.onNodeWithText("Logger gestoppt – bestätigen").assertDoesNotExist()
+    }
 }

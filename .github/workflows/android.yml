@@ -26,6 +26,15 @@ jobs:
       - run: chmod +x gradlew
       - run: ./gradlew test lint assembleDebug --no-daemon --stacktrace
       - run: python3 tools/check_privacy.py --merged
+      - name: Audit packaged permissions and runtime dependencies
+        run: |
+          apkanalyzer manifest permissions app/build/outputs/apk/debug/app-debug.apk > app/build/reports/apk-permissions.txt
+          python3 -c "from pathlib import Path; assert 'android.permission.INTERNET' not in Path('app/build/reports/apk-permissions.txt').read_text()"
+          ./gradlew :app:dependencies --configuration debugRuntimeClasspath > app/build/reports/runtime-dependencies.txt
+      - name: Test QA tools
+        run: |
+          python3 -m pip install Pillow==11.3.0
+          python3 -m unittest discover -s tools -p 'test_*.py' -v
       - uses: actions/upload-artifact@v4
         with:
           name: Container-Track-debug-APK
@@ -64,7 +73,7 @@ jobs:
           disable-animations: true
           script: |
             chmod +x gradlew
-            ./gradlew connectedDebugAndroidTest --no-daemon --stacktrace
+            ./gradlew connectedDebugAndroidTest --no-daemon --stacktrace -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true
             mkdir -p app/build/screenshots
             adb pull /sdcard/Android/data/ch.zerogen.containertrack/files/screenshots/. app/build/screenshots/
       - name: Compare reviewed screenshots when baselines exist

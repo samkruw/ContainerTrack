@@ -2,7 +2,7 @@
 
 Native Kotlin-App zur lokalen Erfassung von Lieferungen und Returns. Ein `:app`-Modul mit Compose, Room, CameraX und gebündeltem ML Kit. Kein WebView, kein Backend, keine Anmeldung.
 
-**Stand:** Quellcode implementiert. Android-Build, Kotlin-Tests, Emulator- und Hardwaretests sind in dieser Umgebung noch nicht ausgeführt: Android SDK und Gradle-Distribution fehlen; der Werkzeug-Download war nicht möglich. Es wird keine geprüfte APK mitgeliefert. Details: [QA_STATUS.md](docs/QA_STATUS.md).
+**Stand:** Native App implementiert. Build, Debug-/Release-Unit-Tests, Lint und Merged-Manifest-Prüfung haben über GitHub Actions bereits erfolgreich ausgeführt. Eine Debug-APK steht als Workflow-Artefakt zur Verfügung. Die ersten 16 Emulatorprüfungen sind bestanden; der Screenshot-Transfer im Workflow wird noch korrigiert und die zusätzliche Receiver-/Neustartabdeckung geprüft. Reale Kamera-, Flugmodus- und Standbytests bleiben offen. Aktueller Nachweisstand: [QA_STATUS.md](docs/QA_STATUS.md).
 
 ## Projekt öffnen und APK bauen
 

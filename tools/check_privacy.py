@@ -23,7 +23,7 @@ def main():
     manifests = [ROOT / 'app/src/main/AndroidManifest.xml']
     if args.merged:
         manifests = sorted(p for p in (ROOT / 'app/build/intermediates').rglob('AndroidManifest.xml')
-                           if 'merged_manifest' in str(p) and 'debug' in str(p) and 'androidTest' not in str(p))
+                           if 'merged_manifest' in str(p) and 'debug' in str(p).lower() and 'androidtest' not in str(p).lower())
         if not manifests:
             sys.exit('FAIL: No debug merged manifest. Run ./gradlew assembleDebug first.')
     failures = []
