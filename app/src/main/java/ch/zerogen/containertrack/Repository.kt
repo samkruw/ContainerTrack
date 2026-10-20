@@ -161,8 +161,24 @@ class TrackRepository(private val context: Context, val database: TrackDatabase)
         }
     }
 
-    private fun metadata(batch: JobWithContainers, preparedAt: Long): String = JSONObject().apply {
+    private fun metadata(batch: JobWithContainers, preparedAt: Long): String {
         val job = batch.job
+        val containers = JSONArray()
+        for (item in batch.ordered) {
+            val photos = JSONArray()
+            for (photo in item.photos.sortedBy { it.step }) {
+                photos.put(JSONObject()
+                    .put("step", photo.step)
+                    .put("fileName", photoName(item.container.containerNumber, photo.step))
+                    .put("capturedAt", photo.capturedAt))
+            }
+            containers.put(JSONObject()
+                .put("containerNumber", item.container.containerNumber)
+                .put("sequenceIndex", item.container.sequenceIndex)
+                .put("completedAt", item.container.completedAt ?: JSONObject.NULL)
+                .put("photos", photos))
+        }
+        return JSONObject().apply {
         put("schemaVersion", 1); put("id", job.id); put("type", job.draft.kind.name)
         put("referenceNumber", job.draft.referenceNumber); put("kt", job.draft.kt)
         put("orderValue", job.draft.orderValue); put("quantity", job.draft.quantity)
@@ -171,12 +187,7 @@ class TrackRepository(private val context: Context, val database: TrackDatabase)
         put("completedAt", job.completedAt ?: JSONObject.NULL)
         put("exportedAt", job.exportedAt ?: JSONObject.NULL); put("archiveCreatedAt", preparedAt)
         put("loggerStoppedAt", job.loggerStoppedAt ?: JSONObject.NULL)
-        put("containers", JSONArray().apply { batch.ordered.forEach { item -> put(JSONObject().apply {
-            put("containerNumber", item.container.containerNumber); put("sequenceIndex", item.container.sequenceIndex)
-            put("completedAt", item.container.completedAt ?: JSONObject.NULL)
-            put("photos", JSONArray().apply { item.photos.sortedBy { it.step }.forEach { photo -> put(JSONObject().apply {
-                put("step", photo.step); put("fileName", photoName(item.container.containerNumber, photo.step)); put("capturedAt", photo.capturedAt)
-            }) })
-        }) } })
-    }.toString(2)
+        put("containers", containers)
+        }.toString(2)
+    }
 }

@@ -16,6 +16,7 @@ import org.junit.runner.RunWith
 import java.io.File
 import java.util.UUID
 import java.util.zip.ZipInputStream
+import org.json.JSONObject
 
 @RunWith(AndroidJUnit4::class)
 class PersistenceTest {
@@ -108,9 +109,21 @@ class PersistenceTest {
             assertEquals(firstAt, db.dao().job(job)!!.job.exportedAt)
             assertEquals(1, db.dao().pendingReminders().size)
             val names = mutableListOf<String>()
-            ZipInputStream(export1.inputStream()).use { zip -> while (true) { val entry = zip.nextEntry ?: break; names += entry.name } }
+            var metadata: JSONObject? = null
+            ZipInputStream(export1.inputStream()).use { zip ->
+                while (true) {
+                    val entry = zip.nextEntry ?: break
+                    names += entry.name
+                    if (entry.name.endsWith("_META.json")) metadata = JSONObject(zip.readBytes().toString(Charsets.UTF_8))
+                }
+            }
             assertEquals(8, names.size)
             assertTrue(names.any { it.endsWith("/0708/0708_06.jpg") })
+            assertEquals(1, metadata!!.getInt("quantity"))
+            val archived = metadata!!.getJSONArray("containers").getJSONObject(0)
+            assertEquals("0708", archived.getString("containerNumber"))
+            assertEquals(6, archived.getJSONArray("photos").length())
+            assertEquals("0708_06.jpg", archived.getJSONArray("photos").getJSONObject(5).getString("fileName"))
         } finally { repo.deleteJob(job); db.close(); export1.delete(); export2.delete() }
     }
 
