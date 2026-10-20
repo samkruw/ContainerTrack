@@ -1,6 +1,7 @@
 name: Android
 on:
   push:
+    branches: [main]
   pull_request:
   workflow_dispatch:
 permissions:
@@ -23,7 +24,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
       - run: chmod +x gradlew
-      - run: ./gradlew test lint assembleDebug --no-daemon
+      - run: ./gradlew test lint assembleDebug --no-daemon --stacktrace
       - run: python3 tools/check_privacy.py --merged
       - uses: actions/upload-artifact@v4
         with:
@@ -34,7 +35,9 @@ jobs:
         if: always()
         with:
           name: Android-reports
-          path: app/build/reports/
+          path: |
+            app/build/reports/
+            app/schemas/
   device-tests:
     runs-on: ubuntu-latest
     steps:
@@ -61,7 +64,7 @@ jobs:
           disable-animations: true
           script: |
             chmod +x gradlew
-            ./gradlew connectedDebugAndroidTest --no-daemon
+            ./gradlew connectedDebugAndroidTest --no-daemon --stacktrace
             mkdir -p app/build/screenshots
             adb pull /sdcard/Android/data/ch.zerogen.containertrack/files/screenshots/. app/build/screenshots/
       - name: Compare reviewed screenshots when baselines exist
