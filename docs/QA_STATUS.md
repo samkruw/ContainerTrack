@@ -16,6 +16,8 @@ Repository: [samkruw/ContainerTrack](https://github.com/samkruw/ContainerTrack).
 
 Die abschliessende Änderung zentralisiert zusätzlich die Logger-Bestätigung und das Entfernen der Benachrichtigung in einem gegen Coroutine-Abbruch geschützten Repository-Aufruf. Der aktuelle PR-Check prüft auch diesen Stand; die Statusanzeige des PR ist für den jeweils neuesten Commit massgeblich.
 
+Ein zusätzlicher direkter ML-Kit-Instrumentationstest prüft das gebündelte Modell anhand eines Textbildes mit `0708` bei eingeschaltetem Flugmodus sowie die fehlende INTERNET-Berechtigung des installierten APK. Damit umfasst die Suite jetzt 20 Emulatorprüfungen; der Nachweis des jeweils neuesten Stands steht im PR-Check.
+
 ## Geprüftes Verhalten
 
 - Pflichtfelder, Quantity 1–50, Nothing/Empty und Return-Logger-Gate.

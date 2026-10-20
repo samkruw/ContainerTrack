@@ -77,7 +77,7 @@ Prozessabbruch kann vor bestätigter Speicherung eine Aufnahme verlieren. Bei ab
 python3 tools/check_privacy.py
 ```
 
-Unit: Validierung, OCR-Normalisierung, Duplikate, Fotofolge, TXT, ZIP-Pfade, Dateinamen und Timer. Android: Room-Wiederöffnung, Dateien/Löschen, Return-Gate, Fotozustände, Export/Re-Export, Navigation, Activity-Neustart, Alarm-Receiver und Benachrichtigungsaktion mit gesperrten/erlaubten Benachrichtigungen. ScreenshotCaptureTest erzeugt acht PNGs unter `Android/data/ch.zerogen.containertrack/files/screenshots`. CI lässt die Testinstallation zum Screenshot-Transfer bis zum Ende des Emulator-Jobs bestehen.
+Unit: Validierung, OCR-Normalisierung, Duplikate, Fotofolge, TXT, ZIP-Pfade, Dateinamen und Timer. Android: Room-Wiederöffnung, Dateien/Löschen, Return-Gate, Fotozustände, Export/Re-Export, Navigation, Activity-Neustart, Alarm-Receiver und Benachrichtigungsaktion mit gesperrten/erlaubten Benachrichtigungen. OfflineOcrTest schaltet den API-35-Emulator in den Flugmodus und prüft die Erkennung von `0708` durch das echte gebündelte ML-Kit-Modell. ScreenshotCaptureTest erzeugt acht PNGs unter `Android/data/ch.zerogen.containertrack/files/screenshots`. CI lässt die Testinstallation zum Screenshot-Transfer bis zum Ende des Emulator-Jobs bestehen.
 
 Nach Sichtprüfung auf festem Emulator die acht Bilder nach `design/goldens/` übernehmen. Danach prüft CI diese Baselines; lokale Prüfung mit `python3 tools/compare_screenshots.py design/goldens app/build/screenshots` (Pillow erforderlich). Ohne freigegebene Baselines ist Screenshot-Regression noch nicht abgenommen. Das im Auftrag erwähnte UI-Referenzbild wurde nicht mitgeliefert.
 
