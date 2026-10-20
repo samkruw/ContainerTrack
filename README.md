@@ -1,467 +1,84 @@
-# Container Track V18 — Dark Navy UI
+# Container Track — Android
 
-ContainerTrack ist eine installierbare **Local-first PWA** für die geführte Dokumentation von **Lieferungen** und **Returns** mit mehreren Containern.
+Native Kotlin-App zur lokalen Erfassung von Lieferungen und Returns. Ein `:app`-Modul mit Compose, Room, CameraX und gebündeltem ML Kit. Kein WebView, kein Backend, keine Anmeldung.
 
-Die App verwaltet die komplette Aufnahme lokal auf dem Smartphone, erzwingt den richtigen Ablauf und erzeugt am Ende ein strukturiertes ZIP inklusive Excel-kompatibler TXT-Datei.
+**Stand:** Quellcode implementiert. Android-Build, Kotlin-Tests, Emulator- und Hardwaretests sind in dieser Umgebung noch nicht ausgeführt: Android SDK und Gradle-Distribution fehlen; der Werkzeug-Download war nicht möglich. Es wird keine geprüfte APK mitgeliefert. Details: [QA_STATUS.md](docs/QA_STATUS.md).
 
-> **Local-only:** Order-/Return-Nummern, Container-Nummern, Fotos, Excel-Daten, Verläufe und Logger-Timer werden nicht an GitHub oder einen Cloud-Server übertragen. GitHub Pages hostet ausschliesslich die statischen App-Dateien.
+## Projekt öffnen und APK bauen
 
----
+1. Ordner in Android Studio öffnen.
+2. JDK 17 oder neuer, Android SDK Platform 36 und Build Tools 36.0.0 bereitstellen. Gradle 8.13 wird über den mitgelieferten Wrapper geladen. Nur der Entwicklungs-Build benötigt Internet für Werkzeuge und Abhängigkeiten.
+3. Gradle synchronisieren und ausführen:
 
-## 1. Lieferung
-
-### Eingaben
-
-Vor dem Start müssen ausgefüllt werden:
-
-- **Order Number** — Auftragsnummer und Name des obersten Export-Ordners
-- **ZRH Number / KT** — wird in der TXT-Spalte `KT` verwendet
-- **Order / Container-Typ** — wird manuell eingegeben und in der TXT-Spalte `Order` verwendet
-- **Anzahl Container** — 1 bis 50
-- **Quick** — freies Pflicht-Textfeld
-- **additional Work** — freies Pflicht-Textfeld
-
-`Quick` und `additional Work` dürfen nicht leer bleiben. Falls nichts anfällt, kann z. B. `Nothing` oder `Empty` eingetragen werden.
-
-### Container-Ablauf
-
-Für jeden Container:
-
-1. 4-stellige Container-Nummer scannen oder manuell erfassen
-2. **Leerer Innenraum**
-3. **Aussenseite Front**
-4. **Aussenseite Rückseite / Türen**
-5. **Aussenseite links**
-6. **Aussenseite rechts**
-7. **Befüllter Innenraum**
-8. Nächster Container
-
-Die Foto-Reihenfolge ist zwingend. Schritte können nicht übersprungen werden.
-
-### Delivery TXT
-
-Spalten:
-
-```text
-Datum | In/Out | KT | Order | Quantity | additional Work | Container Number | Quick
+```sh
+./gradlew test lint assembleDebug
+python3 tools/check_privacy.py --merged
 ```
 
-Mapping:
+Windows: `gradlew.bat test lint assembleDebug`.
+
+APK: `app/build/outputs/apk/debug/app-debug.apk`. Über Android Studio installieren oder mit `adb install -r app/build/outputs/apk/debug/app-debug.apk`. Android 8.0 / API 26 oder höher erforderlich. SDK 36 ist festgesetzt; die Vorgabe „aktuell stabil“ muss vor Freigabe gegen das dann verfügbare Android SDK geprüft werden.
+
+Bei Push/PR führt [android.yml](.github/workflows/android.yml) Build, Unit-Tests und Lint aus und lädt die Debug-APK bei Erfolg hoch. Ein weiterer Job startet einen API-35-Emulator für Integration, Navigation und Screenshot-Aufnahmen. Repository: [samkruw/ContainerTrack](https://github.com/samkruw/ContainerTrack), Umsetzung auf Branch `codex/native-android-app`. Aktueller Nachweisstand: [QA_STATUS.md](docs/QA_STATUS.md). Keine Release-Schlüssel enthalten.
+
+## Bedienung
+
+- **Start:** Lieferung oder Return anlegen. Alle Pflichtfelder ausfüllen; `Nothing` und `Empty` sind gültig. Quantity: 1–50.
+- **Return:** zuerst den gestoppten Logger bestätigen. Der Zeitstempel wird genau bei der Bestätigung gesetzt. Erst danach sind die Formularfelder aktiv.
+- **Scannen:** Auftrag auswählen; vierstellige Nummer in den Rahmen halten. Der erste gültige OCR-Treffer wird übernommen. Manuelle Eingabe und spätere Nummernkorrektur sind möglich. Führende Nullen bleiben erhalten; doppelte Nummern im Auftrag werden blockiert.
+- **Fotos:** Lieferung benötigt sechs Fotos in vorgeschriebener Reihenfolge, Return genau ein Inhaltsfoto. Foto prüfen und ausdrücklich verwenden. Neuaufnahme ersetzt erst nach Bestätigung das bisherige Foto. Löschen ab einem Schritt entfernt auch die folgenden Fotos und setzt den Abschlussstatus zurück.
+- **Aufträge:** lokal gespeicherte Vorgänge fortsetzen, ansehen oder nach gesonderter Bestätigung löschen. Exportierte Aufträge sind zur Ansicht und zum erneuten Export verfügbar.
+- **Export:** nur vollständige Aufträge exportieren. Androids Dateiauswahl legt den Speicherort fest. Für vollständigen Offline-Betrieb einen lokalen Ordner auswählen; externe Dokumentanbieter werden vom Benutzer gewählt und liegen ausserhalb der App.
+- **Mehr:** Kamera, Benachrichtigungen und genaue Alarme verwalten.
+
+## Exportformat
 
 ```text
-Datum             = aktuelles Datum
-In/Out            = OUT
-KT                = ZRH Number
-Order             = manuell eingegebener Container-Typ
-Quantity          = ausgewählte Container-Anzahl
-additional Work   = Pflicht-Textfeld
-Container Number  = alle Container-Nummern des Batches
-Quick             = Pflicht-Textfeld
+<Referenz>.zip
+└── <Referenz>/
+    ├── 0708/
+    │   ├── 0708_01.jpg
+    │   └── ...
+    ├── <Referenz>_EXCEL.txt
+    └── <Referenz>_META.json
 ```
 
-### Export-Struktur
+Lieferung: sechs JPEGs `01`–`06`. Return: nur `01`. Referenz ist Order Number bzw. Return Number. Nummern sind keine Ganzzahlen. Interne Dateien verwenden UUIDs; nur der Export bekommt die vorgegebenen Dateinamen.
 
-Beispiel `ORDER-7845`:
+TXT: UTF-8, tabgetrennt, eine Kopfzeile und eine Datenzeile mit allen Container-Nummern in Reihenfolge, kommagetrennt. Kopfzeile:
 
 ```text
-ORDER-7845/
-├── 0708/
-│   ├── 0708_01.jpg
-│   ├── 0708_02.jpg
-│   ├── 0708_03.jpg
-│   ├── 0708_04.jpg
-│   ├── 0708_05.jpg
-│   └── 0708_06.jpg
-├── 0710/
-│   └── ...
-├── ORDER-7845_EXCEL.txt
-└── ORDER-7845_META.json
+Datum\tIn/Out\tKT\tOrder\tQuantity\tadditional Work\tContainer Number\tQuick
 ```
 
----
+Lieferung: `OUT`, KT = ZRH Number. Return: `IN`, KT = Return Number. Order = manuell eingegebener Container-Typ. Datum = lokales Gerätedatum `dd.MM.yyyy`. Tabs werden zu Leerzeichen, Zeilenumbrüche zu ` / `. Die TXT-Datei kann beim Import als Tab-getrennt angegeben werden. In Tabellenprogrammen Container-Nummern als Text importieren, um führende Nullen zu bewahren.
 
-## 2. Logger nach Lieferung
+META enthält Auftragswerte, Fotozeitpunkte und relative Exportnamen, keine internen Dateipfade. `archiveCreatedAt` bezeichnet die Archiverstellung; `exportedAt` im Archiv ist der zuvor bekannte erste Exportzeitpunkt, beim ersten Archiv noch `null`. Der tatsächliche erfolgreiche Exportzeitpunkt wird erst nach dem Schliessen des Zielstreams in Room gespeichert.
 
-Nach dem Delivery-Export startet ContainerTrack automatisch einen **30-Minuten-Timer**.
+## Logger und Berechtigungen
 
-### Während die App offen ist
+Nach dem ersten erfolgreichen Delivery-Export wird genau eine Room-Erinnerung angelegt: erster Exportzeitpunkt + 30 Minuten. Erneuter Export erzeugt keine neue Frist. Countdown und Fortschritt bleiben in der App sichtbar; bei Fälligkeit erscheint ein nicht wegwischbarer Bestätigungsdialog. Eine Benachrichtigung bietet die Aktion „Logger gestartet“.
 
-Oben in der App wird dauerhaft angezeigt:
+`CAMERA` für Scan/Fotos, `POST_NOTIFICATIONS` ab Android 13, optionaler Zugriff `SCHEDULE_EXACT_ALARM` für zeitgenaue Standby-Alarme. Ohne genauen Alarmzugriff nutzt die App `setAndAllowWhileIdle`; Android darf die Zustellung verzögern. Ohne Benachrichtigungsfreigabe bleibt der Dialog beim Öffnen der App wirksam. `RECEIVE_BOOT_COMPLETED` stellt offene Alarme nach Neustart wieder her. Nach explizitem Android-„Beenden erzwingen“ muss die App erneut geöffnet werden; Android verhindert vorher Alarm-/Broadcast-Zustellung.
 
-- Delivery-/Order-Referenz
-- Countdown `MM:SS`
-- Fortschrittsbalken
-- Hinweis bei mehreren offenen Timern
+## Offline und Speicherung
 
-Nach Ablauf wechselt der Timer auf **JETZT** und wird deutlich hervorgehoben.
+Room und Fotos liegen intern, Fotos nicht als BLOB. Fotos werden als JPEG mit aufgelöster EXIF-Orientierung, maximal 2200 Pixel längster Kante und Qualität 85 gespeichert. Unbestätigte Vorschauen liegen ebenfalls intern; Pfad und Schritt werden für Android-Zustandswiederherstellung gesichert. Ein neuer Auftrag wird erst nach erfolgreicher Formularvalidierung gespeichert.
 
-### Nach 30 Minuten
+Netzwerk-, Standort-, Mikrofon- und breite Speicherrechte werden nicht angefordert. Manifest-Merger-Regeln entfernen Netzwerkberechtigungen aus Bibliotheksmanifesten. Android-Backup ist deaktiviert. Kein Analytics-/Cloud-SDK direkt eingebunden. Transitive ML-Kit-Abhängigkeiten müssen beim ersten erfolgreichen Build zusätzlich geprüft werden; der Quelltextcheck ersetzt keine APK-/Abhängigkeitsprüfung.
 
-ContainerTrack fordert zum Starten des Loggers auf.
+Prozessabbruch kann vor bestätigter Speicherung eine Aufnahme verlieren. Bei abruptem Prozessabbruch genau zwischen erfolgreichem Export und Room-Commit kann eine ZIP existieren, ohne dass ein Exportabschluss gespeichert ist. Innerhalb des laufenden Prozesses sind Fotoabschluss und Erinnerungsplanung gegen Coroutine-Abbruch geschützt. Offene Erinnerungen werden beim App-Start und Boot erneut geplant.
 
-Die Meldung in der App kann nicht einfach weggeklickt werden und muss mit:
+## Tests und Freigabe
 
-**`Logger gestartet – bestätigen`**
-
-abgeschlossen werden.
-
-Wenn Browser und Android es zulassen, versucht die PWA zusätzlich eine System-Notification anzuzeigen.
-
-### Standby-Verhalten
-
-ContainerTrack bleibt bewusst **Local-only** und verwendet keinen Push-Server.
-
-Android kann eine PWA im Standby pausieren. Deshalb wird nicht nur ein laufender JavaScript-Zähler gespeichert, sondern der **absolute Fälligkeitszeitpunkt**.
-
-Dadurch gilt:
-
-- der Zeitpunkt geht im Standby nicht verloren
-- beim Entsperren / erneuten Fokussieren wird sofort neu berechnet
-- sind 30 Minuten bereits vorbei, erscheint direkt die Logger-Meldung
-- eine exakte Notification bei komplett suspendierter PWA kann Android ohne Push-Server nicht garantiert werden
-
-### Schutz vor doppeltem Timer
-
-Ein erneuter Download desselben Delivery-Vorgangs:
-
-- startet **keinen zweiten Timer**
-- setzt den laufenden Timer **nicht zurück**
-
----
-
-## 3. Return
-
-Beim Return ist der Logger-Schritt bewusst umgedreht.
-
-### Schritt 1 — Logger stoppen
-
-Nach Auswahl von **Return** sind die übrigen Eingaben zunächst gesperrt.
-
-Zuerst muss bestätigt werden:
-
-**`Logger gestoppt – Eingaben freigeben`**
-
-Der genaue Zeitpunkt dieser Bestätigung wird lokal im Return-Vorgang gespeichert.
-
-### Return-Eingaben
-
-Danach müssen ausgefüllt werden:
-
-- **Return Number** — Name des Export-Ordners und Wert für `KT`
-- **Order / Container-Typ** — manuell
-- **Anzahl Container** — 1 bis 50
-- **Quick** — freies Pflicht-Textfeld
-- **additional Work** — freies Pflicht-Textfeld
-
-### Return-Ablauf
-
-Für jeden Container:
-
-1. Container-Nummer scannen oder manuell erfassen
-2. **ein Foto des Inhalts** aufnehmen
-3. nächsten Container erfassen
-
-### Return TXT
-
-```text
-Datum             = aktuelles Datum
-In/Out            = IN
-KT                = Return Number
-Order             = manuell eingegebener Container-Typ
-Quantity          = ausgewählte Container-Anzahl
-additional Work   = Pflicht-Textfeld
-Container Number  = alle Container-Nummern
-Quick             = Pflicht-Textfeld
+```sh
+./gradlew testDebugUnitTest
+./gradlew connectedDebugAndroidTest
+python3 tools/check_privacy.py
 ```
 
-### Export-Struktur
+Unit: Validierung, OCR-Normalisierung, Duplikate, Fotofolge, TXT, ZIP-Pfade, Dateinamen und Timer. Android: Room-Wiederöffnung, Dateien/Löschen, Return-Gate, Fotozustände, Export/Re-Export und Navigation. ScreenshotCaptureTest erzeugt acht PNGs unter `Android/data/ch.zerogen.containertrack/files/screenshots`.
 
-```text
-RETURN-194/
-├── 0708/
-│   └── 0708_01.jpg
-├── 0710/
-│   └── 0710_01.jpg
-├── RETURN-194_EXCEL.txt
-└── RETURN-194_META.json
-```
+Nach Sichtprüfung auf festem Emulator die acht Bilder nach `design/goldens/` übernehmen. Danach prüft CI diese Baselines; lokale Prüfung mit `python3 tools/compare_screenshots.py design/goldens app/build/screenshots` (Pillow erforderlich). Ohne freigegebene Baselines ist Screenshot-Regression noch nicht abgenommen. Das im Auftrag erwähnte UI-Referenzbild wurde nicht mitgeliefert.
 
----
-
-## 4. Container-Scan
-
-ContainerTrack erwartet eine **4-stellige Container-Nummer**, z. B.:
-
-```text
-0708
-1483
-0236
-```
-
-Führende Nullen bleiben erhalten.
-
-### Speed-Modus
-
-Der erste gültige 4-stellige OCR-Treffer wird sofort übernommen. Es gibt keine 2×- oder 3×-Kontrolle mehr.
-
-### OCR-Aufbereitung
-
-Für den LiveScan werden mehrere lokale Varianten verwendet:
-
-- Graustufen
-- Kontrastverstärkung
-- Schwarz/Weiss
-- invertiertes Bild
-- invertiertes Schwarz/Weiss
-- Ziffern-Whitelist `0–9`
-
-Dies ist speziell für weisse Nummern auf blauem Schild optimiert.
-
-### Foto-OCR Fallback
-
-Wenn LiveScan nicht funktioniert, kann weiterhin ein Foto des Schildes aufgenommen und lokal per OCR ausgewertet werden.
-
-> Tesseract.js läuft im Browser. Die Fotos werden nicht an einen OCR-Server geschickt. Die Bibliothek wird aktuell über ein externes CDN geladen; beim ersten OCR-Start kann deshalb eine Internetverbindung notwendig sein.
-
----
-
-## 5. Batch-Sicherheit
-
-ContainerTrack verhindert typische Fehler im Ablauf:
-
-- Container-Anzahl wird vorab festgelegt
-- jeder Container erhält einen eigenen Unterordner
-- doppelte Container-Nummern im selben Batch werden blockiert
-- Delivery-Fotos müssen strikt `1 → 6` erfolgen
-- Return benötigt exakt ein Inhaltsfoto je Container
-- Export wird erst freigegeben, wenn alle Container vollständig sind
-- nur das zuletzt aufgenommene Foto kann direkt zurückgesetzt werden
-- angefangene Vorgänge können lokal wieder geöffnet werden
-
----
-
-## 6. Lokale Speicherung
-
-### IndexedDB
-
-Gespeichert werden lokal:
-
-- Delivery-/Return-Vorgänge
-- Order-/Return-Referenzen
-- Container-Nummern
-- Fotos
-- Bearbeitungsstand
-- TXT-Felder
-- Logger-Stopp-Zeitpunkt beim Return
-
-### localStorage
-
-Der Delivery-Logger-Reminder speichert lokal:
-
-- Timer-ID
-- Delivery-Referenz
-- Startzeit
-- Fälligkeitszeit
-- Bestätigungsstatus
-
-### GitHub Pages
-
-GitHub enthält nur:
-
-```text
-index.html
-manifest.webmanifest
-sw.js
-icon-192.png
-icon-512.png
-README.md
-```
-
-Keine operativen Containerdaten werden ins Repository geschrieben.
-
----
-
-## 7. PWA
-
-ContainerTrack kann über GitHub Pages als PWA installiert werden.
-
-Auf Android/Chrome:
-
-1. GitHub-Pages-Seite öffnen
-2. **Installieren** wählen
-3. Kamera-Berechtigung erlauben
-4. optional Notifications erlauben
-
-Die App startet danach in einem eigenen App-Fenster.
-
----
-
-## 8. Technischer Stack
-
-```text
-Vanilla HTML
-Vanilla CSS
-Vanilla JavaScript
-IndexedDB
-localStorage
-Tesseract.js
-MediaDevices / getUserMedia
-Canvas API
-Notifications API
-Service Worker
-Web App Manifest
-GitHub Pages
-```
-
-Keine Frameworks. Kein Build-Prozess. Kein Backend. Keine Cloud-Datenbank. Keine kostenpflichtige API.
-
----
-
-## 9. QA / Testloop V17
-
-Der finale Build wurde in mehreren Testschleifen geprüft.
-
-### Automatisch / browser-simuliert geprüft
-
-- JavaScript-Syntax `index.html`
-- JavaScript-Syntax `sw.js`
-- gültiges `manifest.webmanifest`
-- keine doppelten HTML-IDs
-- alle JavaScript-DOM-Referenzen vorhanden
-- alle Label-Ziele vorhanden
-- keine Optimo-/Firmenlogos oder Firmennamen
-- Delivery-Pflichtfeld-Validierung
-- `Quick` als freies Pflicht-Textfeld
-- `additional Work` als Pflicht-Textfeld
-- Delivery-Batch mit mehreren Containern
-- 6 Fotos in strikter Reihenfolge
-- Duplicate-Container-Schutz
-- Delivery-ZIP-Struktur
-- Delivery-TXT-Inhalt
-- Delivery-Mapping `OUT / KT=ZRH / Order=Container-Typ`
-- Return-Logger-Gate
-- exakter Logger-Stopp-Zeitpunkt
-- Return-Pflichtfeld-Validierung
-- Return-Batch mit mehreren Containern
-- ein Inhaltsfoto pro Return-Container
-- Return-ZIP-Struktur
-- Return-TXT-Inhalt
-- Return-Mapping `IN / KT=Return Number / Order=Container-Typ`
-- lokaler Verlauf öffnen / wieder aufnehmen
-- 30-Minuten-Timer erzeugen
-- sichtbarer Countdown
-- Fälligkeitsstatus `JETZT`
-- blockierende Logger-Bestätigung
-- Bestätigung entfernt offenen Reminder
-- Re-Export erzeugt keinen zweiten Timer
-- ZIP-Datei auf Beschädigung geprüft
-- PWA-Icons auf 192×192 und 512×512 geprüft
-
-### Hardwareabhängig
-
-Folgende Punkte sind technisch geprüft, benötigen für einen vollständigen Endtest aber weiterhin ein reales Android-Gerät:
-
-- reale Kamera / `getUserMedia`
-- Fokusqualität der Kamera
-- Taschenlampen-/Torch-Unterstützung
-- reale OCR-Erkennungsrate unter Lagerbedingungen
-- Installation über Chrome als PWA
-- Android-System-Notification im Standby
-
-Diese Funktionen hängen von Kamera, Chrome-Version und Android-Energiesparverhalten ab und können in einem Headless-Testbrowser nicht vollständig simuliert werden.
-
----
-
-## 10. Versionsübersicht
-
-### V17 — Final QA
-
-- Quick auf freies Pflicht-Textfeld geändert
-- Validierung vor Erzeugung eines Vorgangs
-- exakter Return-Logger-Stopp-Zeitpunkt
-- Schutz vor doppeltem Delivery-Timer beim Re-Export
-- README vollständig bereinigt
-- kompletter Delivery-/Return-/Timer-Testloop
-
-### V16
-
-- sichtbarer Logger-Countdown in der App
-- Fortschrittsbalken
-- `JETZT`-Status nach Ablauf
-
-### V15
-
-- Delivery: 30-Minuten-Logger-Reminder
-- Return: Logger stoppen als erster Schritt
-- Quick und additional Work zu Pflichtfeldern gemacht
-
-### V14
-
-- Order Number und Excel-Spalte Order bei Delivery getrennt
-- Order = Container-Typ
-
-### V13
-
-- Excel-TXT auch für Delivery
-- ZRH Number → KT bei Delivery
-- Return Number → KT bei Return
-
-### V12
-
-- Delivery- und Return-Modus
-- Batch mit frei wählbarer Container-Anzahl
-- Container-Unterordner
-- Return mit nur einem Inhaltsfoto
-
-### V10
-
-- schneller Container-LiveScan
-- erster gültiger Treffer wird direkt übernommen
-- 6-Foto-Delivery-Ablauf
-- Local-only PWA-Grundlage
-
-
-## V18 UI Update
-
-Die komplette Oberfläche wurde auf das neue App-/UI-Designsystem umgestellt.
-
-### Design
-
-- Dark Navy Hintergrund
-- Graphite/Dark Cards
-- Electric Blue als Primäraktion
-- Light Blue als Akzent
-- Grün für abgeschlossene Schritte
-- Amber für Logger-/Warnstatus
-- Rot für Fehler und abgelaufene Logger-Reminder
-- Mobile-First Layout
-- neue feste Bottom-Navigation
-- Scanner mit blauem Fokusrahmen
-- Formulare, Statuskarten, Workflow-Schritte und Modals im gleichen Designsystem
-- neues neutrales Container-Track-App-Icon
-
-### Navigation
-
-Die mobile Navigation enthält:
-
-- Start
-- Aufträge
-- Scannen
-- Export
-- Mehr
-
-Alle bisherigen V17-Funktionen bleiben erhalten:
-
-- Delivery / Return
-- Batch mit mehreren Containern
-- Live-OCR
-- Pflichtfoto-Reihenfolge
-- Return nur 1 Inhaltsfoto
-- Excel-kompatible TXT-Datei
-- Local-only IndexedDB
-- sichtbarer 30-Minuten-Logger-Timer
-- Return-Logger-Stopp als Schritt 1
-- PWA Installation
-- lokaler ZIP-Export
-
-Keine Firmenlogos oder Firmennamen wurden übernommen. Es wurde ausschließlich das visuelle Designsystem aus der Referenz adaptiert.
+Vor produktiver Nutzung: beide Workflows mit realer Kamera im Flugmodus, Permission-Denial, Rotation/Prozesstod, Standby/Neustart, Benachrichtigungsaktion und tatsächliche ZIP/TXT-Dateien prüfen. Die [Acceptance Matrix](docs/ACCEPTANCE_MATRIX.md) bleibt bis zur Verifikation offen.
