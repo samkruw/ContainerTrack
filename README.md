@@ -2,7 +2,7 @@
 
 Native Kotlin-App zur lokalen Erfassung von Lieferungen und Returns. Ein `:app`-Modul mit Compose, Room, CameraX und gebündeltem ML Kit. Kein WebView, kein Backend, keine Anmeldung.
 
-**Stand:** Native App implementiert. Build, Debug-/Release-Unit-Tests, Lint und Merged-Manifest-Prüfung haben über GitHub Actions bereits erfolgreich ausgeführt. Eine Debug-APK steht als Workflow-Artefakt zur Verfügung. Die ersten 16 Emulatorprüfungen sind bestanden; der Screenshot-Transfer im Workflow wird noch korrigiert und die zusätzliche Receiver-/Neustartabdeckung geprüft. Reale Kamera-, Flugmodus- und Standbytests bleiben offen. Aktueller Nachweisstand: [QA_STATUS.md](docs/QA_STATUS.md).
+**Stand:** Native App implementiert. Build, Debug-/Release-Unit-Tests, Lint, Merged-Manifest-/APK-Berechtigungsprüfung und 19 Emulatorprüfungen sind über GitHub Actions bestanden. Debug-APK, acht Screenshots und Prüfberichte sind als Workflow-Artefakte verfügbar. Reale Kamera-, Flugmodus- und Standbytests sowie der Abgleich mit dem fehlenden Referenzbild bleiben offen. Aktueller Nachweisstand: [QA_STATUS.md](docs/QA_STATUS.md).
 
 ## Projekt öffnen und APK bauen
 
@@ -77,7 +77,7 @@ Prozessabbruch kann vor bestätigter Speicherung eine Aufnahme verlieren. Bei ab
 python3 tools/check_privacy.py
 ```
 
-Unit: Validierung, OCR-Normalisierung, Duplikate, Fotofolge, TXT, ZIP-Pfade, Dateinamen und Timer. Android: Room-Wiederöffnung, Dateien/Löschen, Return-Gate, Fotozustände, Export/Re-Export und Navigation. ScreenshotCaptureTest erzeugt acht PNGs unter `Android/data/ch.zerogen.containertrack/files/screenshots`.
+Unit: Validierung, OCR-Normalisierung, Duplikate, Fotofolge, TXT, ZIP-Pfade, Dateinamen und Timer. Android: Room-Wiederöffnung, Dateien/Löschen, Return-Gate, Fotozustände, Export/Re-Export, Navigation, Activity-Neustart, Alarm-Receiver und Benachrichtigungsaktion mit gesperrten/erlaubten Benachrichtigungen. ScreenshotCaptureTest erzeugt acht PNGs unter `Android/data/ch.zerogen.containertrack/files/screenshots`. CI lässt die Testinstallation zum Screenshot-Transfer bis zum Ende des Emulator-Jobs bestehen.
 
 Nach Sichtprüfung auf festem Emulator die acht Bilder nach `design/goldens/` übernehmen. Danach prüft CI diese Baselines; lokale Prüfung mit `python3 tools/compare_screenshots.py design/goldens app/build/screenshots` (Pillow erforderlich). Ohne freigegebene Baselines ist Screenshot-Regression noch nicht abgenommen. Das im Auftrag erwähnte UI-Referenzbild wurde nicht mitgeliefert.
 

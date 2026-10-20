@@ -113,6 +113,6 @@ class TrackViewModel(application: Application, private val saved: SavedStateHand
         done()
     }
     fun confirmStarted(id: Int) = runAction {
-        app.database.dao().confirmReminder(id, System.currentTimeMillis()); app.alarms.cancel(id)
+        app.repository.confirmReminder(id)
     }
 }

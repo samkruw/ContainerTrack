@@ -77,8 +77,7 @@ class ReminderReceiver : BroadcastReceiver() {
                 val reminder = app.database.dao().reminder(id) ?: return@launch
                 if (reminder.confirmedAt != null) return@launch
                 if (intent.action == ReminderAlarms.CONFIRM) {
-                    app.database.dao().confirmReminder(id, System.currentTimeMillis())
-                    app.alarms.cancel(id)
+                    app.repository.confirmReminder(id)
                 } else if (reminder.dueAt <= System.currentTimeMillis()) app.alarms.notifyDue(reminder)
                 else app.alarms.schedule(reminder)
             } finally { pending.finish() }

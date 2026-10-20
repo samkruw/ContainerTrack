@@ -161,6 +161,11 @@ class TrackRepository(private val context: Context, val database: TrackDatabase)
         }
     }
 
+    suspend fun confirmReminder(id: Int) = withContext(Dispatchers.IO + NonCancellable) {
+        dao.confirmReminder(id, System.currentTimeMillis())
+        alarms.cancel(id)
+    }
+
     private fun metadata(batch: JobWithContainers, preparedAt: Long): String {
         val job = batch.job
         val containers = JSONArray()
