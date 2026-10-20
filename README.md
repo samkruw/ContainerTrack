@@ -65,7 +65,9 @@ Nach dem ersten erfolgreichen Delivery-Export wird genau eine Room-Erinnerung an
 
 Room und Fotos liegen intern, Fotos nicht als BLOB. Fotos werden als JPEG mit aufgelöster EXIF-Orientierung, maximal 2200 Pixel längster Kante und Qualität 85 gespeichert. Unbestätigte Vorschauen liegen ebenfalls intern; Pfad und Schritt werden für Android-Zustandswiederherstellung gesichert. Ein neuer Auftrag wird erst nach erfolgreicher Formularvalidierung gespeichert.
 
-Netzwerk-, Standort-, Mikrofon- und breite Speicherrechte werden nicht angefordert. Manifest-Merger-Regeln entfernen Netzwerkberechtigungen aus Bibliotheksmanifesten. Android-Backup ist deaktiviert. Kein Analytics-/Cloud-SDK direkt eingebunden. Transitive ML-Kit-Abhängigkeiten müssen beim ersten erfolgreichen Build zusätzlich geprüft werden; der Quelltextcheck ersetzt keine APK-/Abhängigkeitsprüfung.
+Netzwerk-, Standort-, Mikrofon- und breite Speicherrechte werden nicht angefordert. Manifest-Merger-Regeln entfernen Netzwerkberechtigungen aus Bibliotheksmanifesten. Android-Backup ist deaktiviert. Der APK-Berechtigungscheck bestätigt das fehlende INTERNET-Recht.
+
+Der geprüfte Abhängigkeitsbericht enthält keine Firebase-Analytics-, Crashlytics- oder Cloud-Datenhaltungs-SDKs. Das vorgeschriebene gebündelte ML Kit bringt jedoch technische Hilfsbibliotheken `firebase-components`, `firebase-encoders`, `firebase-encoders-json`, `firebase-annotations` und Google DataTransport transitiv mit. Diese sind im Bericht ausgewiesen; eine völlige Abwesenheit aller Artefakte mit Firebase-Gruppennamen wird daher nicht behauptet. Ohne INTERNET-Berechtigung kann auch dieser Bibliothekscode keine Internetverbindung aufbauen. Es ist kein Firebase-Projekt konfiguriert.
 
 Prozessabbruch kann vor bestätigter Speicherung eine Aufnahme verlieren. Bei abruptem Prozessabbruch genau zwischen erfolgreichem Export und Room-Commit kann eine ZIP existieren, ohne dass ein Exportabschluss gespeichert ist. Innerhalb des laufenden Prozesses sind Fotoabschluss und Erinnerungsplanung gegen Coroutine-Abbruch geschützt. Offene Erinnerungen werden beim App-Start und Boot erneut geplant.
 

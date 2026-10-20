@@ -14,6 +14,10 @@ Repository: [samkruw/ContainerTrack](https://github.com/samkruw/ContainerTrack).
 - Acht Screenshots nach Testende erfolgreich vom Emulator übernommen.
 - Debug-APK, Android-Berichte, Room-Schema und Laufzeit-Abhängigkeitsbericht als Workflow-Artefakte gespeichert.
 
+Der nachfolgende vollständig erfolgreiche Lauf [39428951222](https://github.com/samkruw/ContainerTrack/actions/runs/39428951222), Commit `76d14d79335f7e11bb2097616787769b02c14587`, bestätigt auch die gegen Abbruch geschützte Logger-Bestätigung. Seine APK enthält nur CAMERA, POST_NOTIFICATIONS, SCHEDULE_EXACT_ALARM, RECEIVE_BOOT_COMPLETED und die app-eigene Signaturberechtigung für interne Receiver.
+
+**Abhängigkeitsbefund:** Das vorgegebene gebündelte ML Kit verwendet transitiv Firebase-Komponenten-/Encoder-/Annotations-Hilfsbibliotheken und Google DataTransport. Firebase Analytics, Crashlytics, Cloud-Datenhaltung, OkHttp, Retrofit und Supabase sind nicht enthalten. Es gibt kein Firebase-Projekt und keine INTERNET-Berechtigung. Die pauschale Vorgabe „kein Firebase“ ist deshalb bezüglich technischer Hilfsartefakte nicht wörtlich erfüllt; die verlangte ML-Kit-Engine wurde beibehalten und der Befund offengelegt.
+
 Die abschliessende Änderung zentralisiert zusätzlich die Logger-Bestätigung und das Entfernen der Benachrichtigung in einem gegen Coroutine-Abbruch geschützten Repository-Aufruf. Der aktuelle PR-Check prüft auch diesen Stand; die Statusanzeige des PR ist für den jeweils neuesten Commit massgeblich.
 
 Ein zusätzlicher direkter ML-Kit-Instrumentationstest prüft das gebündelte Modell anhand eines Textbildes mit `0708` bei eingeschaltetem Flugmodus sowie die fehlende INTERNET-Berechtigung des installierten APK. Damit umfasst die Suite jetzt 20 Emulatorprüfungen; der Nachweis des jeweils neuesten Stands steht im PR-Check.
