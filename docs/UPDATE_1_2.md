@@ -6,7 +6,7 @@ Inkrementelles Update von 1.1.0 auf `codex/native-android-app`; kein Neubau. `ve
 
 - Formulardaten und Exportzuordnung liegen jetzt auf derselben zentralen `GlassSurface` wie Aufträge und Logger. Top App Bar und Bottom Navigation verwenden sie mit gerader Kante; Navigation und Ziele bleiben erhalten.
 - Fotoabläufe erhalten eine gemeinsame Statusfläche. Scan-Hinweise verwenden dieselbe Oberfläche; Kamerabild, OCR-Rahmen und Fotoansicht bleiben ohne Blur.
-- Primäraktionen verwenden Electric Blue und kontrastreiche dunkle Beschriftung. Container-/Kamera-Vektormarke für Launcher und App Bar, angelehnt an die mitgelieferten visuellen Vorlagen. Kein fremdes Logo.
+- Primäraktionen verwenden Electric Blue und kontrastreiche dunkle Beschriftung (4,9:1). Container-/Kamera-Vektormarke für Launcher und App Bar, angelehnt an die mitgelieferten visuellen Vorlagen. Kein fremdes Logo.
 - Acceptance Matrix korrigiert: Delivery benötigt weder Quick noch additional Work; Return benötigt beide.
 - Unit-Test ergänzt: Return akzeptiert Nothing und Empty in beiden Feldern und Kombinationen.
 - Screenshot-Suite um Job Detail, History, Return-Fotos, Berechtigungen und aktiven Reminder erweitert: 13 Szenarien / 14 PNGs.

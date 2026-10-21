@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.sp
 val Navy = Color(0xFF061F3B)
 val Graphite = Color(0xFF1E293B)
 val ElectricBlue = Color(0xFF3882F6)
+val OnElectricBlue = Color(0xFF04172B)
 val LightBlue = Color(0xFF60A5FA)
 val Success = Color(0xFF10B981)
 val Warning = Color(0xFFF59E0B)
@@ -64,7 +65,7 @@ fun ScreenTitle(title: String, subtitle: String? = null) {
 @Composable
 fun PrimaryButton(text: String, enabled: Boolean = true, onClick: () -> Unit) {
     Button(onClick = onClick, enabled = enabled, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = ElectricBlue, contentColor = Navy)) { Text(text, fontWeight = FontWeight.SemiBold) }
+        colors = ButtonDefaults.buttonColors(containerColor = ElectricBlue, contentColor = OnElectricBlue)) { Text(text, fontWeight = FontWeight.SemiBold) }
 }
 
 @Composable
