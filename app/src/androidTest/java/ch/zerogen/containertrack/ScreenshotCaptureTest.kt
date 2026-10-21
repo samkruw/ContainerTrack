@@ -70,6 +70,8 @@ class ScreenshotCaptureTest {
     @Test fun exportReview() {
         compose.setContent { ContainerTheme { Surface(color = Color.Transparent) { ExportReviewScreen(snapshot(complete = true), false, {}) {} } } }
         capture("07-export")
+        compose.onNodeWithText("ZIP teilen").performScrollTo()
+        capture("07b-export-actions")
     }
     @Test fun loggerDue() {
         compose.setContent { ContainerTheme {

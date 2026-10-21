@@ -77,6 +77,10 @@ jobs:
             ./gradlew connectedDebugAndroidTest --no-daemon --stacktrace -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true
             mkdir -p app/build/screenshots
             adb pull /sdcard/Android/data/ch.zerogen.containertrack/files/screenshots/. app/build/screenshots/
+      - name: Preview fixture screenshots for visual review
+        run: |
+          python3 -m pip install Pillow==11.3.0
+          python3 tools/preview_screenshots.py
       - name: Compare reviewed screenshots when baselines exist
         if: hashFiles('design/goldens/*.png') != ''
         run: |

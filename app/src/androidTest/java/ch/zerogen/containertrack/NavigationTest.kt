@@ -30,7 +30,8 @@ class NavigationTest {
         compose.onNodeWithText("Quick").assertDoesNotExist()
         compose.onNodeWithText("additional Work").assertDoesNotExist()
         compose.onNodeWithText("Auftrag speichern").performScrollTo().performClick()
-        compose.waitUntil(10_000) { compose.onAllNodesWithText("TEST-UI").fetchSemanticsNodes().isNotEmpty() }
+        compose.waitUntil(10_000) { compose.onAllNodesWithText("Container 1 / 1 erfassen").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithText("Auftrag speichern").assertDoesNotExist()
         compose.onNodeWithText("TEST-UI").assertIsDisplayed()
     }
 
@@ -46,7 +47,8 @@ class NavigationTest {
         compose.onNodeWithText("Quick").performScrollTo().performTextInput("Nothing")
         compose.onNodeWithText("additional Work").performScrollTo().performTextInput("Empty")
         compose.onNodeWithText("Auftrag speichern").performScrollTo().performClick()
-        compose.waitUntil(10_000) { compose.onAllNodesWithText("RETURN-UI").fetchSemanticsNodes().isNotEmpty() }
+        compose.waitUntil(10_000) { compose.onAllNodesWithText("Container 1 / 1 erfassen").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithText("Auftrag speichern").assertDoesNotExist()
         compose.onNodeWithText("Quick · Nothing\nadditional Work · Empty").performScrollTo().assertIsDisplayed()
     }
 
