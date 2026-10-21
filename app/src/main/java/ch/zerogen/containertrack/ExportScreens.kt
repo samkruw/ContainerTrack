@@ -32,7 +32,7 @@ fun ExportJobsScreen(jobs: List<JobWithContainers>, onJob: (JobWithContainers) -
 }
 
 @Composable
-fun ExportReviewScreen(batch: JobWithContainers, busy: Boolean, onExport: () -> Unit) {
+fun ExportReviewScreen(batch: JobWithContainers, busy: Boolean, onShare: () -> Unit, onExport: () -> Unit) {
     val job = batch.job
     val draft = job.draft
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -41,9 +41,10 @@ fun ExportReviewScreen(batch: JobWithContainers, busy: Boolean, onExport: () -> 
         Text("Excel-Zuordnung", style = MaterialTheme.typography.titleMedium)
         val rows = listOf("In/Out" to if (draft.kind == JobKind.DELIVERY) "OUT" else "IN",
             "KT" to if (draft.kind == JobKind.DELIVERY) draft.kt else draft.referenceNumber,
-            "Order" to draft.orderValue, "Quantity" to draft.quantity.toString(),
-            "additional Work" to draft.additionalWork,
-            "Container Number" to batch.ordered.joinToString(",") { it.container.containerNumber }, "Quick" to draft.quick)
+            "Order" to draft.orderValue, "Quantity" to draft.quantity.toString()) +
+            (if (draft.kind == JobKind.RETURN) listOf("additional Work" to draft.additionalWork) else emptyList()) +
+            listOf("Container Number" to batch.ordered.joinToString(",") { it.container.containerNumber }) +
+            (if (draft.kind == JobKind.RETURN) listOf("Quick" to draft.quick) else emptyList())
         rows.forEach { (label, value) ->
             Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
                 Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -52,11 +53,15 @@ fun ExportReviewScreen(batch: JobWithContainers, busy: Boolean, onExport: () -> 
             HorizontalDivider(color = Graphite)
         }
         if (draft.kind == JobKind.DELIVERY) {
-            Information(if (job.exportedAt == null) "Nach erfolgreichem Export beginnt die 30-Minuten-Erinnerung zum Starten des Loggers. Benachrichtigungen unter Mehr erlauben."
+            Information(if (job.exportedAt == null) "Sobald die ZIP gespeichert oder zum Teilen erstellt ist, beginnt die 30-Minuten-Erinnerung zum Starten des Loggers. Sie läuft auch weiter, wenn Sie die App-Auswahl abbrechen. Benachrichtigungen unter Mehr erlauben."
                 else "Erster Export · ${localTime(job.exportedAt)}\nErneuter Export verändert die Logger-Erinnerung nicht.")
         }
-        Text("Speicherort selbst wählen. Für Offline-Betrieb einen lokalen Ordner auf dem Gerät verwenden.", style = MaterialTheme.typography.bodyMedium)
-        PrimaryButton(if (busy) "Export wird gespeichert …" else "ZIP speichern", batch.complete && !busy, onExport)
+        Text("ZIP direkt mit einer App teilen, zum Beispiel Ihrem E-Mail-Programm, oder auf dem Gerät speichern.", style = MaterialTheme.typography.bodyMedium)
+        PrimaryButton(if (busy) "ZIP wird erstellt …" else "ZIP teilen", batch.complete && !busy, onShare)
+        OutlinedButton(onClick = onExport, enabled = batch.complete && !busy,
+            modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) { Text("ZIP speichern") }
+        Text("Für Offline-Betrieb einen lokalen Speicherort wählen. Beim Teilen verarbeitet die ausgewählte App den Anhang.",
+            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
@@ -92,11 +97,11 @@ fun MoreScreen() {
         HorizontalDivider()
         Text("Offline und Datenschutz", style = MaterialTheme.typography.titleLarge)
         Text("Aufträge, OCR und Fotos werden auf diesem Gerät verarbeitet. Keine Anmeldung, keine Synchronisierung und kein Cloud-Upload durch die App. Fotos liegen im internen App-Speicher. Android-Backups sind deaktiviert.")
-        Text("ZIP-Dateien werden am selbst gewählten Speicherort abgelegt. Bei Deinstallation werden die internen Aufträge und Fotos gelöscht; exportierte Dateien bleiben erhalten.")
+        Text("ZIP-Dateien werden am selbst gewählten Speicherort abgelegt oder über Android an eine von Ihnen ausgewählte App übergeben. Beim Teilen kann diese App den Anhang versenden. Bei Deinstallation werden die internen Aufträge und Fotos gelöscht; separat gespeicherte Dateien bleiben erhalten.")
         Text("App-Berechtigungen", style = MaterialTheme.typography.titleMedium)
         OutlinedButton(modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp), onClick = {
             context.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${context.packageName}")))
         }) { Text("Kamera und App-Berechtigungen öffnen") }
-        Text("Container Track · Version 1.0.0", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text("Container Track · Version ${BuildConfig.VERSION_NAME}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }

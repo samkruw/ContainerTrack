@@ -1,12 +1,14 @@
 package ch.zerogen.containertrack
 
 import android.app.Application
+import android.content.Intent
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.channels.Channel
 import java.io.File
 import java.io.IOException
 import java.util.UUID
@@ -20,6 +22,8 @@ class TrackViewModel(application: Application, private val saved: SavedStateHand
     val busy = MutableStateFlow(false)
     val error = MutableStateFlow<String?>(null)
     val notice = MutableStateFlow<String?>(null)
+    private val shareRequests = Channel<Intent>(Channel.BUFFERED)
+    val shares = shareRequests.receiveAsFlow()
     val activeJob = saved.getStateFlow<String?>("activeJob", null)
     val now = MutableStateFlow(System.currentTimeMillis())
     var pendingExport: String?
@@ -106,6 +110,9 @@ class TrackViewModel(application: Application, private val saved: SavedStateHand
             app.repository.export(id, uri)
             notice.value = "ZIP erfolgreich gespeichert."
         }
+    }
+    fun share(jobId: String) = runAction {
+        shareRequests.send(app.repository.prepareShare(jobId))
     }
     fun deleteJob(id: String, done: () -> Unit) = runAction {
         app.repository.deleteJob(id)

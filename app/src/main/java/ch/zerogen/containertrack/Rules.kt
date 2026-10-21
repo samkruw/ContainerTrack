@@ -28,8 +28,8 @@ data class JobDraft(
         if (kind == JobKind.RETURN && loggerStoppedAt == null) put("loggerStoppedAt", "Logger zuerst stoppen und bestätigen.")
         if (orderValue.isBlank()) put("orderValue", "Pflichtfeld")
         if (quantity !in 1..50) put("quantity", "1 bis 50 Container")
-        if (quick.isBlank()) put("quick", "Pflichtfeld – Nothing und Empty sind erlaubt.")
-        if (additionalWork.isBlank()) put("additionalWork", "Pflichtfeld – Nothing und Empty sind erlaubt.")
+        if (kind == JobKind.RETURN && quick.isBlank()) put("quick", "Pflichtfeld – Nothing und Empty sind erlaubt.")
+        if (kind == JobKind.RETURN && additionalWork.isBlank()) put("additionalWork", "Pflichtfeld – Nothing und Empty sind erlaubt.")
     }
 }
 
@@ -71,7 +71,9 @@ fun excelText(draft: JobDraft, numbers: List<String>, date: LocalDate): String {
     val row = listOf(date.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")),
         if (draft.kind == JobKind.DELIVERY) "OUT" else "IN",
         if (draft.kind == JobKind.DELIVERY) draft.kt else draft.referenceNumber,
-        draft.orderValue, draft.quantity.toString(), draft.additionalWork, numbers.joinToString(","), draft.quick)
+        draft.orderValue, draft.quantity.toString(),
+        if (draft.kind == JobKind.RETURN) draft.additionalWork else "", numbers.joinToString(","),
+        if (draft.kind == JobKind.RETURN) draft.quick else "")
     return "$header\r\n${row.joinToString("\t") { cleanCell(it) }}\r\n"
 }
 

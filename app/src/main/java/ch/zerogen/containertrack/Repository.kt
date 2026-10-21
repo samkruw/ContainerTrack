@@ -1,6 +1,7 @@
 package ch.zerogen.containertrack
 
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import androidx.room.withTransaction
 import kotlinx.coroutines.Dispatchers
@@ -25,7 +26,9 @@ class TrackRepository(private val context: Context, val database: TrackDatabase)
     suspend fun createJob(draft: JobDraft, stoppedAt: Long?): String = withContext(Dispatchers.IO) {
         require(draft.errors(stoppedAt).isEmpty()) { "Bitte alle Pflichtfelder prüfen." }
         val normalized = draft.copy(referenceNumber = draft.referenceNumber.trim(),
-            kt = if (draft.kind == JobKind.RETURN) draft.referenceNumber.trim() else draft.kt.trim())
+            kt = if (draft.kind == JobKind.RETURN) draft.referenceNumber.trim() else draft.kt.trim(),
+            quick = if (draft.kind == JobKind.RETURN) draft.quick else "",
+            additionalWork = if (draft.kind == JobKind.RETURN) draft.additionalWork else "")
         val entity = JobEntity(draft = normalized, createdAt = System.currentTimeMillis(), loggerStoppedAt = stoppedAt)
         dao.insertJob(entity)
         entity.id
@@ -121,30 +124,69 @@ class TrackRepository(private val context: Context, val database: TrackDatabase)
             val preparedAt = System.currentTimeMillis()
             val zipFile = File(context.cacheDir, "${UUID.randomUUID()}.zip")
             try {
-                val containers = batch.ordered.map { item -> ExportContainer(item.container.containerNumber,
-                    item.photos.sortedBy { it.step }.map { ExportPhoto(it.step, File(it.localPath)) }) }
-                zipFile.outputStream().use { output ->
-                    writeExportZip(output, batch.job.draft, containers, metadata(batch, preparedAt),
-                        Instant.ofEpochMilli(preparedAt).atZone(ZoneId.systemDefault()).toLocalDate())
-                }
+                writeArchive(batch, zipFile, preparedAt)
                 val output = context.contentResolver.openOutputStream(uri, "wt") ?: error("Exportziel ist nicht verfügbar.")
                 output.use { target -> zipFile.inputStream().use { it.copyTo(target) }; target.flush() }
-                val now = System.currentTimeMillis()
-                withContext(NonCancellable) {
-                  val reminder = database.withTransaction {
-                    val job = requireNotNull(dao.job(jobId)).job
-                    dao.updateJob(job.copy(exportedAt = firstExportAt(job.exportedAt, now), updatedAt = now))
-                    if (job.draft.kind == JobKind.DELIVERY) {
-                        dao.insertReminder(LoggerReminder(jobId = job.id, referenceNumber = job.draft.referenceNumber,
-                            dueAt = reminderDueAt(firstExportAt(job.exportedAt, now))))
-                        dao.jobReminder(job.id)
-                    } else null
-                  }
-                  reminder?.let { alarms.schedule(it) }
-                  File(context.filesDir, "pending/$jobId").deleteRecursively()
-                  reminder
-                }
+                finishExport(jobId)
             } finally { zipFile.delete() }
+        }
+    }
+
+    /** The chooser may be cancelled; a successfully prepared ZIP still counts as an export. */
+    suspend fun prepareShare(jobId: String): Intent = withContext(Dispatchers.IO) {
+        mutations.withLock {
+            val batch = requireNotNull(dao.job(jobId))
+            check(batch.complete) { "Alle Container und Pflichtfotos müssen vollständig sein." }
+            pruneSharedExports(System.currentTimeMillis())
+            val directory = File(context.cacheDir, "shared-exports/$jobId/${UUID.randomUUID()}")
+            check(directory.mkdirs()) { "ZIP konnte nicht vorbereitet werden." }
+            val zipFile = File(directory, "${batch.job.draft.referenceNumber}.zip")
+            var committed = false
+            try {
+                writeArchive(batch, zipFile, System.currentTimeMillis())
+                val intent = zipShareIntent(context, zipFile)
+                withContext(NonCancellable) {
+                    finishExport(jobId)
+                    committed = true
+                }
+                // Keep the attachment after chooser dismissal: mail clients read it asynchronously.
+                intent
+            } finally {
+                if (!committed) directory.deleteRecursively()
+            }
+        }
+    }
+
+    private fun writeArchive(batch: JobWithContainers, file: File, preparedAt: Long) {
+        val containers = batch.ordered.map { item -> ExportContainer(item.container.containerNumber,
+            item.photos.sortedBy { it.step }.map { ExportPhoto(it.step, File(it.localPath)) }) }
+        file.outputStream().use { output ->
+            writeExportZip(output, batch.job.draft, containers, metadata(batch, preparedAt),
+                Instant.ofEpochMilli(preparedAt).atZone(ZoneId.systemDefault()).toLocalDate())
+        }
+    }
+
+    private suspend fun finishExport(jobId: String): LoggerReminder? = withContext(NonCancellable) {
+        val now = System.currentTimeMillis()
+        val reminder = database.withTransaction {
+            val job = requireNotNull(dao.job(jobId)).job
+            dao.updateJob(job.copy(exportedAt = firstExportAt(job.exportedAt, now), updatedAt = now))
+            if (job.draft.kind == JobKind.DELIVERY) {
+                dao.insertReminder(LoggerReminder(jobId = job.id, referenceNumber = job.draft.referenceNumber,
+                    dueAt = reminderDueAt(firstExportAt(job.exportedAt, now))))
+                dao.jobReminder(job.id)
+            } else null
+        }
+        reminder?.let { alarms.schedule(it) }
+        File(context.filesDir, "pending/$jobId").deleteRecursively()
+        reminder
+    }
+
+    private fun pruneSharedExports(now: Long) {
+        val cutoff = now - 7 * 24 * 60 * 60 * 1000L
+        File(context.cacheDir, "shared-exports").listFiles()?.forEach { jobDirectory ->
+            jobDirectory.listFiles()?.filter { it.lastModified() < cutoff }?.forEach { it.deleteRecursively() }
+            if (jobDirectory.listFiles()?.isEmpty() == true) jobDirectory.delete()
         }
     }
 
@@ -156,6 +198,7 @@ class TrackRepository(private val context: Context, val database: TrackDatabase)
                 reminder?.let { alarms.cancel(it.id) }
                 File(context.filesDir, "photos/$jobId").deleteRecursively()
                 File(context.filesDir, "pending/$jobId").deleteRecursively()
+                File(context.cacheDir, "shared-exports/$jobId").deleteRecursively()
             }
             reminder
         }
@@ -187,7 +230,8 @@ class TrackRepository(private val context: Context, val database: TrackDatabase)
         put("schemaVersion", 1); put("id", job.id); put("type", job.draft.kind.name)
         put("referenceNumber", job.draft.referenceNumber); put("kt", job.draft.kt)
         put("orderValue", job.draft.orderValue); put("quantity", job.draft.quantity)
-        put("quick", job.draft.quick); put("additionalWork", job.draft.additionalWork)
+        put("quick", if (job.draft.kind == JobKind.RETURN) job.draft.quick else "")
+        put("additionalWork", if (job.draft.kind == JobKind.RETURN) job.draft.additionalWork else "")
         put("createdAt", job.createdAt); put("updatedAt", job.updatedAt)
         put("completedAt", job.completedAt ?: JSONObject.NULL)
         put("exportedAt", job.exportedAt ?: JSONObject.NULL); put("archiveCreatedAt", preparedAt)

@@ -1,6 +1,7 @@
 package ch.zerogen.containertrack
 
 import android.Manifest
+import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -17,6 +18,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.Color
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import kotlinx.coroutines.flow.collect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.*
@@ -44,6 +50,19 @@ fun TrackApp(vm: TrackViewModel = viewModel()) {
     val active by vm.activeJob.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val app = context.applicationContext as ContainerTrackApp
+    val lifecycle = LocalLifecycleOwner.current
+    LaunchedEffect(vm, lifecycle) {
+        lifecycle.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            vm.shares.collect { intent ->
+                try { context.startActivity(Intent.createChooser(intent, "Auftrag teilen")) }
+                catch (_: android.content.ActivityNotFoundException) {
+                    vm.error.value = "Keine App zum Teilen gefunden. Bitte ZIP speichern oder eine E-Mail-App installieren."
+                } catch (_: SecurityException) {
+                    vm.error.value = "ZIP konnte nicht geteilt werden. Bitte erneut versuchen oder ZIP speichern."
+                }
+            }
+        }
+    }
     var notificationAsked by rememberSaveable { mutableStateOf(false) }
     val notifications = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
     val saveZip = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) { uri ->
@@ -63,12 +82,13 @@ fun TrackApp(vm: TrackViewModel = viewModel()) {
     }
     fun openJob(id: String) { vm.selectJob(id); nav.navigate("job/$id") { launchSingleTop = true } }
     val tabs = listOf("home" to "Start", "jobs" to "Aufträge", "scan" to "Scannen", "exports" to "Export", "more" to "Mehr")
-    Scaffold(topBar = {
-        TopAppBar(title = { Text("Container Track", style = MaterialTheme.typography.titleLarge) }, navigationIcon = {
+    Scaffold(containerColor = Color.Transparent, topBar = {
+        TopAppBar(colors = TopAppBarDefaults.topAppBarColors(containerColor = Navy.copy(alpha = .72f)),
+            title = { Text("Container Track", style = MaterialTheme.typography.titleLarge) }, navigationIcon = {
             if (route !in tabs.map { it.first }) IconButton(onClick = { if (!busy) nav.popBackStack() }, enabled = !busy) { Icon(Icons.Default.ArrowBack, "Zurück") }
         })
     }, bottomBar = {
-        NavigationBar(containerColor = Navy) {
+        NavigationBar(containerColor = Navy.copy(alpha = .78f)) {
             tabs.forEachIndexed { index, (path, label) ->
                 NavigationBarItem(selected = route == path, enabled = !busy,
                     onClick = { nav.navigate(path) { popUpTo(nav.graph.startDestinationId) { saveState = true }; launchSingleTop = true; restoreState = true } },
@@ -118,7 +138,9 @@ fun TrackApp(vm: TrackViewModel = viewModel()) {
                 }
                 composable("export/{jobId}") { back ->
                     val id = back.arguments?.getString("jobId") ?: return@composable
-                    jobs.find { it.job.id == id }?.let { ExportReviewScreen(it, busy) { exportJob(it) } }
+                    jobs.find { it.job.id == id }?.let { batch ->
+                        ExportReviewScreen(batch, busy, onShare = { vm.share(id) }, onExport = { exportJob(batch) })
+                    }
                 }
             }
         }
@@ -135,7 +157,7 @@ fun TrackApp(vm: TrackViewModel = viewModel()) {
 @Composable
 fun ReminderStrip(reminder: LoggerReminder, others: Int, now: Long) {
     val remaining = ((reminder.dueAt - now + 999) / 1000).coerceAtLeast(0)
-    Surface(color = Graphite) {
+    GlassSurface {
         Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text("Logger · ${reminder.referenceNumber} · ${if (remaining == 0L) "JETZT" else "%02d:%02d".format(remaining / 60, remaining % 60)}${if (others > 0) " · +$others weitere" else ""}",
                 color = if (remaining == 0L) Warning else LightBlue, style = MaterialTheme.typography.labelLarge)

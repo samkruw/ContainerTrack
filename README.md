@@ -2,7 +2,7 @@
 
 Native Kotlin-App zur lokalen Erfassung von Lieferungen und Returns. Ein `:app`-Modul mit Compose, Room, CameraX und gebündeltem ML Kit. Kein WebView, kein Backend, keine Anmeldung.
 
-**Stand:** Native App implementiert. Build, Debug-/Release-Unit-Tests, Lint, Merged-Manifest-/APK-Berechtigungsprüfung und 19 Emulatorprüfungen sind über GitHub Actions bestanden. Debug-APK, acht Screenshots und Prüfberichte sind als Workflow-Artefakte verfügbar. Reale Kamera-, Flugmodus- und Standbytests sowie der Abgleich mit dem fehlenden Referenzbild bleiben offen. Aktueller Nachweisstand: [QA_STATUS.md](docs/QA_STATUS.md).
+**Stand:** Update 1.1.0 implementiert; aktuelle Änderungs- und Prüfbeschreibung in [UPDATE_1_1.md](docs/UPDATE_1_1.md). Vorheriger Nachweisstand: Native App implementiert. Build, Debug-/Release-Unit-Tests, Lint, Merged-Manifest-/APK-Berechtigungsprüfung und 19 Emulatorprüfungen sind über GitHub Actions bestanden. Debug-APK, acht Screenshots und Prüfberichte sind als Workflow-Artefakte verfügbar. Reale Kamera-, Flugmodus- und Standbytests sowie der Abgleich mit dem fehlenden Referenzbild bleiben offen. Aktueller Nachweisstand: [QA_STATUS.md](docs/QA_STATUS.md).
 
 ## Projekt öffnen und APK bauen
 
@@ -23,12 +23,12 @@ Bei Push/PR führt [android.yml](.github/workflows/android.yml) Build, Unit-Test
 
 ## Bedienung
 
-- **Start:** Lieferung oder Return anlegen. Alle Pflichtfelder ausfüllen; `Nothing` und `Empty` sind gültig. Quantity: 1–50.
+- **Start:** Lieferung oder Return anlegen. Alle Pflichtfelder ausfüllen. `Quick` und `additional Work` werden ausschliesslich bei Return angegeben; `Nothing` und `Empty` sind dort gültig. Quantity: 1–50.
 - **Return:** zuerst den gestoppten Logger bestätigen. Der Zeitstempel wird genau bei der Bestätigung gesetzt. Erst danach sind die Formularfelder aktiv.
 - **Scannen:** Auftrag auswählen; vierstellige Nummer in den Rahmen halten. Der erste gültige OCR-Treffer wird übernommen. Manuelle Eingabe und spätere Nummernkorrektur sind möglich. Führende Nullen bleiben erhalten; doppelte Nummern im Auftrag werden blockiert.
 - **Fotos:** Lieferung benötigt sechs Fotos in vorgeschriebener Reihenfolge, Return genau ein Inhaltsfoto. Foto prüfen und ausdrücklich verwenden. Neuaufnahme ersetzt erst nach Bestätigung das bisherige Foto. Löschen ab einem Schritt entfernt auch die folgenden Fotos und setzt den Abschlussstatus zurück.
 - **Aufträge:** lokal gespeicherte Vorgänge fortsetzen, ansehen oder nach gesonderter Bestätigung löschen. Exportierte Aufträge sind zur Ansicht und zum erneuten Export verfügbar.
-- **Export:** nur vollständige Aufträge exportieren. Androids Dateiauswahl legt den Speicherort fest. Für vollständigen Offline-Betrieb einen lokalen Ordner auswählen; externe Dokumentanbieter werden vom Benutzer gewählt und liegen ausserhalb der App.
+- **Export:** nur vollständige Aufträge exportieren. Mit **ZIP teilen** die Android-Auswahl öffnen und beispielsweise ein E-Mail-Programm wählen. Mit **ZIP speichern** legt Androids Dateiauswahl den Speicherort fest. Für vollständigen Offline-Betrieb einen lokalen Ordner auswählen; externe Dokumentanbieter werden vom Benutzer gewählt und liegen ausserhalb der App.
 - **Mehr:** Kamera, Benachrichtigungen und genaue Alarme verwalten.
 
 ## Exportformat
@@ -51,19 +51,21 @@ TXT: UTF-8, tabgetrennt, eine Kopfzeile und eine Datenzeile mit allen Container-
 Datum\tIn/Out\tKT\tOrder\tQuantity\tadditional Work\tContainer Number\tQuick
 ```
 
-Lieferung: `OUT`, KT = ZRH Number. Return: `IN`, KT = Return Number. Order = manuell eingegebener Container-Typ. Datum = lokales Gerätedatum `dd.MM.yyyy`. Tabs werden zu Leerzeichen, Zeilenumbrüche zu ` / `. Die TXT-Datei kann beim Import als Tab-getrennt angegeben werden. In Tabellenprogrammen Container-Nummern als Text importieren, um führende Nullen zu bewahren.
+Lieferung: `OUT`, KT = ZRH Number; die TXT-Spalten `additional Work` und `Quick` bleiben leer, auch bei älteren Aufträgen mit gespeicherten Werten. Return: `IN`, KT = Return Number. Order = manuell eingegebener Container-Typ. Datum = lokales Gerätedatum `dd.MM.yyyy`. Tabs werden zu Leerzeichen, Zeilenumbrüche zu ` / `. Die TXT-Datei kann beim Import als Tab-getrennt angegeben werden. In Tabellenprogrammen Container-Nummern als Text importieren, um führende Nullen zu bewahren.
 
-META enthält Auftragswerte, Fotozeitpunkte und relative Exportnamen, keine internen Dateipfade. `archiveCreatedAt` bezeichnet die Archiverstellung; `exportedAt` im Archiv ist der zuvor bekannte erste Exportzeitpunkt, beim ersten Archiv noch `null`. Der tatsächliche erfolgreiche Exportzeitpunkt wird erst nach dem Schliessen des Zielstreams in Room gespeichert.
+META enthält Auftragswerte, Fotozeitpunkte und relative Exportnamen, keine internen Dateipfade. `archiveCreatedAt` bezeichnet die Archiverstellung; `exportedAt` im Archiv ist der zuvor bekannte erste Exportzeitpunkt, beim ersten Archiv noch `null`. Der erfolgreiche Exportzeitpunkt wird nach dem Schliessen des Zielstreams bzw. nach vollständiger Archiverstellung zum Teilen in Room gespeichert.
 
 ## Logger und Berechtigungen
 
-Nach dem ersten erfolgreichen Delivery-Export wird genau eine Room-Erinnerung angelegt: erster Exportzeitpunkt + 30 Minuten. Erneuter Export erzeugt keine neue Frist. Countdown und Fortschritt bleiben in der App sichtbar; bei Fälligkeit erscheint ein nicht wegwischbarer Bestätigungsdialog. Eine Benachrichtigung bietet die Aktion „Logger gestartet“.
+Nach dem ersten erfolgreichen Delivery-Export wird genau eine Room-Erinnerung angelegt: erster Exportzeitpunkt + 30 Minuten. Erneuter Export oder erneutes Teilen erzeugt keine neue Frist. Beim Teilen beginnt sie nach erfolgreicher ZIP-Erstellung, auch wenn die anschliessende Android-Auswahl abgebrochen wird; die App bestätigt keinen E-Mail-Versand. Countdown und Fortschritt bleiben in der App sichtbar; bei Fälligkeit erscheint ein nicht wegwischbarer Bestätigungsdialog. Eine Benachrichtigung bietet die Aktion „Logger gestartet“.
 
 `CAMERA` für Scan/Fotos, `POST_NOTIFICATIONS` ab Android 13, optionaler Zugriff `SCHEDULE_EXACT_ALARM` für zeitgenaue Standby-Alarme. Ohne genauen Alarmzugriff nutzt die App `setAndAllowWhileIdle`; Android darf die Zustellung verzögern. Ohne Benachrichtigungsfreigabe bleibt der Dialog beim Öffnen der App wirksam. `RECEIVE_BOOT_COMPLETED` stellt offene Alarme nach Neustart wieder her. Nach explizitem Android-„Beenden erzwingen“ muss die App erneut geöffnet werden; Android verhindert vorher Alarm-/Broadcast-Zustellung.
 
 ## Offline und Speicherung
 
 Room und Fotos liegen intern, Fotos nicht als BLOB. Fotos werden als JPEG mit aufgelöster EXIF-Orientierung, maximal 2200 Pixel längster Kante und Qualität 85 gespeichert. Unbestätigte Vorschauen liegen ebenfalls intern; Pfad und Schritt werden für Android-Zustandswiederherstellung gesichert. Ein neuer Auftrag wird erst nach erfolgreicher Formularvalidierung gespeichert.
+
+Zum Teilen liegen separate ZIP-Kopien im privaten Cache. FileProvider gibt nur diese Archive mit temporärem Lesezugriff an die gewählte App weiter. Jede Freigabe bekommt einen eigenen Pfad. Auftragslöschung entfernt die internen Kopien; weitere Freigaben bereinigen Kopien älter als sieben Tage. Android darf den Cache früher löschen. Das E-Mail-Programm verarbeitet und versendet den Anhang selbst.
 
 Netzwerk-, Standort-, Mikrofon- und breite Speicherrechte werden nicht angefordert. Manifest-Merger-Regeln entfernen Netzwerkberechtigungen aus Bibliotheksmanifesten. Android-Backup ist deaktiviert. Der APK-Berechtigungscheck bestätigt das fehlende INTERNET-Recht.
 

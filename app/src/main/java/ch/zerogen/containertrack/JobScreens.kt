@@ -29,7 +29,7 @@ fun HomeScreen(jobs: List<JobWithContainers>, onBegin: (JobKind) -> Unit, onJob:
     LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item { ScreenTitle("Erfassung", "Lokal auf diesem Gerät") }
         items(JobKind.entries) { kind ->
-            Surface(onClick = { onBegin(kind) }, color = Graphite, shape = MaterialTheme.shapes.medium) {
+            GlassSurface(onClick = { onBegin(kind) }) {
                 Row(Modifier.fillMaxWidth().padding(18.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(kind.label, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
@@ -49,7 +49,7 @@ fun HomeScreen(jobs: List<JobWithContainers>, onBegin: (JobKind) -> Unit, onJob:
 
 @Composable
 fun JobRow(batch: JobWithContainers, onClick: () -> Unit) {
-    Surface(color = Graphite, shape = MaterialTheme.shapes.medium, onClick = onClick) {
+    GlassSurface(onClick = onClick) {
         Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Text(batch.job.draft.referenceNumber, modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
@@ -110,9 +110,11 @@ fun SetupScreen(vm: TrackViewModel, busy: Boolean, onCreated: (String) -> Unit) 
             label = { Text("Quantity · 1 bis 50") }, enabled = !locked && !busy, modifier = Modifier.fillMaxWidth(), singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), isError = errors["quantity"] != null,
             supportingText = { errors["quantity"]?.let { Text(it) } })
-        FormField("Quick", quick, !locked && !busy, errors["quick"], multiline = true) { vm.field("formQuick", it) }
-        FormField("additional Work", work, !locked && !busy, errors["additionalWork"], multiline = true) { vm.field("formWork", it) }
-        Text("Nothing und Empty sind gültige Angaben.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        if (kind == JobKind.RETURN) {
+            FormField("Quick", quick, !locked && !busy, errors["quick"], multiline = true) { vm.field("formQuick", it) }
+            FormField("additional Work", work, !locked && !busy, errors["additionalWork"], multiline = true) { vm.field("formWork", it) }
+            Text("Nothing und Empty sind gültige Angaben.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
         PrimaryButton("Auftrag speichern", enabled = !locked && !busy) {
             attempted = true
             if (draft.errors(stopped).isEmpty()) vm.create(onCreated)
@@ -137,7 +139,7 @@ fun JobScreen(batch: JobWithContainers, vm: TrackViewModel, busy: Boolean, onSca
         item { ScreenTitle(job.draft.referenceNumber, "${job.draft.kind.label} · ${batch.status}") }
         item { Information("${job.draft.orderValue}\n${batch.completedCount} / ${job.draft.quantity} Container vollständig\n${if (job.draft.kind == JobKind.DELIVERY) "ZRH · ${job.draft.kt}" else "Logger gestoppt · ${job.loggerStoppedAt?.let(::localTime) ?: "–"}"}") }
         items(batch.ordered, key = { it.container.id }) { item ->
-            Surface(onClick = { if (!busy) onContainer(item.container.id) }, color = Graphite, shape = MaterialTheme.shapes.medium) {
+            GlassSurface(onClick = { if (!busy) onContainer(item.container.id) }) {
                 Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text("${item.container.sequenceIndex.toString().padStart(2, '0')} · ${item.container.containerNumber}", style = MaterialTheme.typography.titleMedium)
@@ -154,7 +156,7 @@ fun JobScreen(batch: JobWithContainers, vm: TrackViewModel, busy: Boolean, onSca
             PrimaryButton("Container ${batch.containers.size + 1} / ${job.draft.quantity} erfassen", !busy, onScan)
         }
         if (batch.complete) item { PrimaryButton(if (job.exportedAt == null) "Export prüfen" else "Erneut exportieren", !busy, onExport) }
-        item {
+        if (job.draft.kind == JobKind.RETURN) item {
             Text("Quick · ${job.draft.quick}\nadditional Work · ${job.draft.additionalWork}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         item { OutlinedButton(enabled = !busy, onClick = { deleting = true }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text("Auftrag löschen", color = MaterialTheme.colorScheme.error) } }

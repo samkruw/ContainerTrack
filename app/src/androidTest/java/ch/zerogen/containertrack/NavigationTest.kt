@@ -20,16 +20,34 @@ class NavigationTest {
         compose.onNodeWithText("Order / Container-Typ").assertIsEnabled()
     }
 
-    @Test fun deliveryShowsRequiredErrorsAndAcceptsNothingEmpty() {
+    @Test fun deliveryNeedsNoQuickOrAdditionalWork() {
         compose.onNodeWithText("Lieferung", useUnmergedTree = true).performClick()
         compose.onNodeWithText("Auftrag speichern").performScrollTo().performClick()
         compose.onAllNodesWithText("Pflichtfeld").assertCountEquals(3)
         compose.onNodeWithText("Order Number").performScrollTo().performTextInput("TEST-UI")
         compose.onNodeWithText("ZRH Number").performTextInput("ZRH-UI")
         compose.onNodeWithText("Order / Container-Typ").performTextInput("20 ft")
+        compose.onNodeWithText("Quick").assertDoesNotExist()
+        compose.onNodeWithText("additional Work").assertDoesNotExist()
+        compose.onNodeWithText("Auftrag speichern").performScrollTo().performClick()
+        compose.waitUntil(10_000) { compose.onAllNodesWithText("TEST-UI").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithText("TEST-UI").assertIsDisplayed()
+    }
+
+    @Test fun returnStillRequiresBothExtraFieldsAndAcceptsNothingEmpty() {
+        compose.onNodeWithText("Return", useUnmergedTree = true).performClick()
+        compose.onNodeWithText("Quick").assertIsNotEnabled()
+        compose.onNodeWithText("additional Work").assertIsNotEnabled()
+        compose.onNodeWithText("Logger gestoppt – bestätigen").performClick()
+        compose.onNodeWithText("Return Number").performTextInput("RETURN-UI")
+        compose.onNodeWithText("Order / Container-Typ").performTextInput("20 ft")
+        compose.onNodeWithText("Auftrag speichern").performScrollTo().performClick()
+        compose.onAllNodesWithText("Pflichtfeld – Nothing und Empty sind erlaubt.").assertCountEquals(2)
         compose.onNodeWithText("Quick").performScrollTo().performTextInput("Nothing")
         compose.onNodeWithText("additional Work").performScrollTo().performTextInput("Empty")
-        compose.onNodeWithText("Auftrag speichern").performScrollTo().assertIsEnabled()
+        compose.onNodeWithText("Auftrag speichern").performScrollTo().performClick()
+        compose.waitUntil(10_000) { compose.onAllNodesWithText("RETURN-UI").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithText("Quick · Nothing\nadditional Work · Empty").performScrollTo().assertIsDisplayed()
     }
 
     @Test fun bottomNavigationOpensAllDestinations() {

@@ -1,4 +1,6 @@
-# Prüfstatus — 20.10.2026
+# Prüfstatus — 21.10.2026
+
+Das Update 1.1.0 (Android-Teilen, Return-Zusatzfelder, Glasflächen) und seine ergänzenden Prüfungen stehen in [UPDATE_1_1.md](UPDATE_1_1.md). Die folgenden CI-Nachweise beziehen sich auf den Ausgangsstand; für das Update gilt der neueste PR-Check.
 
 ## Nachweise
 
