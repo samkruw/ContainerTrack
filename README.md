@@ -2,7 +2,7 @@
 
 Native Kotlin-App zur lokalen Erfassung von Lieferungen und Returns. Ein `:app`-Modul mit Compose, Room, CameraX und gebündeltem ML Kit. Kein WebView, kein Backend, keine Anmeldung.
 
-**Stand:** Update 1.1.0 implementiert; aktuelle Änderungs- und Prüfbeschreibung in [UPDATE_1_1.md](docs/UPDATE_1_1.md). Vorheriger Nachweisstand: Native App implementiert. Build, Debug-/Release-Unit-Tests, Lint, Merged-Manifest-/APK-Berechtigungsprüfung und 19 Emulatorprüfungen sind über GitHub Actions bestanden. Debug-APK, acht Screenshots und Prüfberichte sind als Workflow-Artefakte verfügbar. Reale Kamera-, Flugmodus- und Standbytests sowie der Abgleich mit dem fehlenden Referenzbild bleiben offen. Aktueller Nachweisstand: [QA_STATUS.md](docs/QA_STATUS.md).
+**Stand:** Update 1.2.0 / versionCode 3. Bestehende native Architektur, App-ID und Room-Schema bleiben erhalten. Änderungen und Kompatibilitätsgrenzen: [UPDATE_1_2.md](docs/UPDATE_1_2.md). Aktuelle Prüfnachweise: [QA_STATUS.md](docs/QA_STATUS.md).
 
 ## Projekt öffnen und APK bauen
 
@@ -19,7 +19,7 @@ Windows: `gradlew.bat test lint assembleDebug`.
 
 APK: `app/build/outputs/apk/debug/app-debug.apk`. Über Android Studio installieren oder mit `adb install -r app/build/outputs/apk/debug/app-debug.apk`. Android 8.0 / API 26 oder höher erforderlich. SDK 36 ist festgesetzt; die Vorgabe „aktuell stabil“ muss vor Freigabe gegen das dann verfügbare Android SDK geprüft werden.
 
-Bei Push/PR führt [android.yml](.github/workflows/android.yml) Build, Unit-Tests und Lint aus und lädt die Debug-APK bei Erfolg hoch. Ein weiterer Job startet einen API-35-Emulator für Integration, Navigation und Screenshot-Aufnahmen. Repository: [samkruw/ContainerTrack](https://github.com/samkruw/ContainerTrack), Umsetzung auf Branch `codex/native-android-app`. Aktueller Nachweisstand: [QA_STATUS.md](docs/QA_STATUS.md). Keine Release-Schlüssel enthalten.
+Bei Push/PR führt [android.yml](.github/workflows/android.yml) Build, Unit-Tests und Lint aus und lädt die Debug-APK bei Erfolg hoch. Ein weiterer Job startet einen API-35-Emulator für Integration, Navigation und Screenshot-Aufnahmen. Repository: [samkruw/ContainerTrack](https://github.com/samkruw/ContainerTrack), Umsetzung auf Branch `codex/native-android-app`. Aktueller Nachweisstand: [QA_STATUS.md](docs/QA_STATUS.md). Keine Signaturschlüssel enthalten. Für eine Installation als Update muss die APK mit demselben Schlüssel wie die bereits installierte App signiert sein. Der Standard-Debug-Schlüssel eines frischen GitHub-Runners garantiert das nicht. Eine Deinstallation würde lokale Daten löschen; sie ist kein Update-Verfahren.
 
 ## Bedienung
 
@@ -81,8 +81,8 @@ Prozessabbruch kann vor bestätigter Speicherung eine Aufnahme verlieren. Bei ab
 python3 tools/check_privacy.py
 ```
 
-Unit: Validierung, OCR-Normalisierung, Duplikate, Fotofolge, TXT, ZIP-Pfade, Dateinamen und Timer. Android: Room-Wiederöffnung, Dateien/Löschen, Return-Gate, Fotozustände, Export/Re-Export, Navigation, Activity-Neustart, Alarm-Receiver und Benachrichtigungsaktion mit gesperrten/erlaubten Benachrichtigungen. OfflineOcrTest schaltet den API-35-Emulator in den Flugmodus und prüft die Erkennung von `0708` durch das echte gebündelte ML-Kit-Modell. ScreenshotCaptureTest erzeugt acht PNGs unter `Android/data/ch.zerogen.containertrack/files/screenshots`. CI lässt die Testinstallation zum Screenshot-Transfer bis zum Ende des Emulator-Jobs bestehen.
+Unit: Validierung, OCR-Normalisierung, Duplikate, Fotofolge, TXT, ZIP-Pfade, Dateinamen und Timer. Android: Room-Wiederöffnung, Dateien/Löschen, Return-Gate, Fotozustände, Export/Re-Export, Navigation, Activity-Neustart, Alarm-Receiver und Benachrichtigungsaktion mit gesperrten/erlaubten Benachrichtigungen. OfflineOcrTest schaltet den API-35-Emulator in den Flugmodus und prüft die Erkennung von `0708` durch das echte gebündelte ML-Kit-Modell. ScreenshotCaptureTest erzeugt 14 PNGs unter `Android/data/ch.zerogen.containertrack/files/screenshots`. CI lässt die Testinstallation zum Screenshot-Transfer bis zum Ende des Emulator-Jobs bestehen.
 
-Nach Sichtprüfung auf festem Emulator die acht Bilder nach `design/goldens/` übernehmen. Danach prüft CI diese Baselines; lokale Prüfung mit `python3 tools/compare_screenshots.py design/goldens app/build/screenshots` (Pillow erforderlich). Ohne freigegebene Baselines ist Screenshot-Regression noch nicht abgenommen. Das im Auftrag erwähnte UI-Referenzbild wurde nicht mitgeliefert.
+Nach Sichtprüfung auf festem Emulator die Bilder nach `design/goldens/` übernehmen. Danach prüft CI diese Baselines; lokale Prüfung mit `python3 tools/compare_screenshots.py design/goldens app/build/screenshots` (Pillow erforderlich). Ohne freigegebene Baselines ist Screenshot-Regression noch nicht abgenommen. Die im Update-Auftrag mitgelieferte Navy-/Glas-Referenz und Container-/Kamera-Marke dienen als visuelle Richtung. Der App-Marker ist eine kompakte native Vektorumsetzung; die hochaufgelösten Vorlagen werden nicht als Screens eingebettet. Das Referenzbild liegt bislang nicht als `design/UI_REFERENCE.png` im Repository vor.
 
 Vor produktiver Nutzung: beide Workflows mit realer Kamera im Flugmodus, Permission-Denial, Rotation/Prozesstod, Standby/Neustart, Benachrichtigungsaktion und tatsächliche ZIP/TXT-Dateien prüfen. Die [Acceptance Matrix](docs/ACCEPTANCE_MATRIX.md) bleibt bis zur Verifikation offen.

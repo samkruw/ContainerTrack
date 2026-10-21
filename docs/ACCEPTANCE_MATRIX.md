@@ -5,10 +5,8 @@
 - [ ] ZRH Number Pflicht
 - [ ] Order / Container-Typ Pflicht
 - [ ] Quantity 1..50
-- [ ] Quick Pflicht, freies Textfeld
-- [ ] additional Work Pflicht, freies Textfeld
-- [ ] `Nothing` akzeptiert
-- [ ] `Empty` akzeptiert
+- [ ] Quick nicht erforderlich und im Delivery-Formular ausgeblendet
+- [ ] additional Work nicht erforderlich und im Delivery-Formular ausgeblendet
 - [ ] OCR exakt 4-stellig
 - [ ] führende Null bleibt
 - [ ] erster gültiger Treffer wird übernommen
@@ -26,6 +24,7 @@
 - [ ] mehrere Container
 - [ ] ZIP Root = Order Number
 - [ ] Container-Unterordner
+- [ ] TXT Quick und additional Work leer, auch bei historischen Werten
 - [ ] TXT OUT
 - [ ] TXT KT = ZRH Number
 - [ ] TXT Order = Container-Typ
@@ -47,6 +46,7 @@
 - [ ] Quantity 1..50
 - [ ] Quick Pflicht
 - [ ] additional Work Pflicht
+- [ ] `Nothing` und `Empty` in beiden Feldern akzeptiert
 - [ ] OCR 4-stellig
 - [ ] Duplicate Block
 - [ ] exakt 1 Inhaltsfoto pro Container
@@ -66,7 +66,7 @@
 - [ ] Export im Flugmodus
 - [ ] Logger im Flugmodus
 - [ ] kein INTERNET im merged manifest
-- [ ] kein Firebase/Analytics/Cloud SDK
+- [ ] keine Analytics-/Cloud-Datenhaltungs-SDKs; technische ML-Kit-Hilfsartefakte dokumentiert
 
 ## UI / Anti-Slop
 - [ ] Referenzbild verwendet
@@ -82,3 +82,14 @@
 - [ ] Permission-Denial sauber
 - [ ] Start, Aufträge, Scannen, Export, Mehr funktionieren
 - [ ] Screenshot-Regressionstests für Kern-Screens
+
+## Update 1.2 / Teilen und Kompatibilität
+- [ ] ZIP teilen ist Primäraktion, ZIP speichern bleibt unabhängig verfügbar
+- [ ] ACTION_SEND, application/zip, EXTRA_STREAM und ClipData enthalten lesbare FileProvider-URI
+- [ ] Nur temporärer Lesezugriff, keine internen Foto-/Datenbankdateien freigegeben
+- [ ] Android Chooser öffnet; Abbruch gilt nicht als Versandbestätigung
+- [ ] Re-Share/Re-Export verändert weder Reminder-ID noch Frist
+- [ ] bestehende Room-Daten, Fotos und Reminder nach Update mit identischem Signaturschlüssel erhalten
+- [ ] Glasflächen auf Formularen, Export, Statuskarten und Navigation konsistent
+
+Checkboxen sind die vollständige Abnahmeliste, keine automatischen Testresultate. Aktuelle Nachweise und verbleibende Geräteprüfungen: [QA_STATUS.md](QA_STATUS.md).

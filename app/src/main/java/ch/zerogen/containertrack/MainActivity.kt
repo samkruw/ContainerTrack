@@ -9,7 +9,10 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.Alignment
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -83,17 +86,26 @@ fun TrackApp(vm: TrackViewModel = viewModel()) {
     fun openJob(id: String) { vm.selectJob(id); nav.navigate("job/$id") { launchSingleTop = true } }
     val tabs = listOf("home" to "Start", "jobs" to "Aufträge", "scan" to "Scannen", "exports" to "Export", "more" to "Mehr")
     Scaffold(containerColor = Color.Transparent, topBar = {
-        TopAppBar(colors = TopAppBarDefaults.topAppBarColors(containerColor = Navy.copy(alpha = .72f)),
-            title = { Text("Container Track", style = MaterialTheme.typography.titleLarge) }, navigationIcon = {
-            if (route !in tabs.map { it.first }) IconButton(onClick = { if (!busy) nav.popBackStack() }, enabled = !busy) { Icon(Icons.Default.ArrowBack, "Zurück") }
-        })
+        GlassSurface(shape = androidx.compose.foundation.shape.RoundedCornerShape(0.dp)) {
+            TopAppBar(colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Image(painterResource(R.drawable.ic_container), contentDescription = null, modifier = Modifier.size(32.dp))
+                        Text("Container Track", style = MaterialTheme.typography.titleLarge)
+                    }
+                }, navigationIcon = {
+                if (route !in tabs.map { it.first }) IconButton(onClick = { if (!busy) nav.popBackStack() }, enabled = !busy) { Icon(Icons.Default.ArrowBack, "Zurück") }
+            })
+        }
     }, bottomBar = {
-        NavigationBar(containerColor = Navy.copy(alpha = .78f)) {
-            tabs.forEachIndexed { index, (path, label) ->
-                NavigationBarItem(selected = route == path, enabled = !busy,
-                    onClick = { nav.navigate(path) { popUpTo(nav.graph.startDestinationId) { saveState = true }; launchSingleTop = true; restoreState = true } },
-                    icon = { Icon(when (index) { 0 -> Icons.Default.Home; 1 -> Icons.Default.List; 2 -> Icons.Default.Search; 3 -> Icons.Default.Share; else -> Icons.Default.MoreVert }, label) },
-                    label = { Text(label, maxLines = 1) })
+        GlassSurface(shape = androidx.compose.foundation.shape.RoundedCornerShape(0.dp)) {
+            NavigationBar(containerColor = Color.Transparent) {
+                tabs.forEachIndexed { index, (path, label) ->
+                    NavigationBarItem(selected = route == path, enabled = !busy,
+                        onClick = { nav.navigate(path) { popUpTo(nav.graph.startDestinationId) { saveState = true }; launchSingleTop = true; restoreState = true } },
+                        icon = { Icon(when (index) { 0 -> Icons.Default.Home; 1 -> Icons.Default.List; 2 -> Icons.Default.Search; 3 -> Icons.Default.Share; else -> Icons.Default.MoreVert }, label) },
+                        label = { Text(label, maxLines = 1) })
+                }
             }
         }
     }) { insets ->

@@ -45,12 +45,16 @@ fun ExportReviewScreen(batch: JobWithContainers, busy: Boolean, onShare: () -> U
             (if (draft.kind == JobKind.RETURN) listOf("additional Work" to draft.additionalWork) else emptyList()) +
             listOf("Container Number" to batch.ordered.joinToString(",") { it.container.containerNumber }) +
             (if (draft.kind == JobKind.RETURN) listOf("Quick" to draft.quick) else emptyList())
-        rows.forEach { (label, value) ->
-            Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(value, style = MaterialTheme.typography.bodyLarge)
+        GlassSurface {
+            Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                rows.forEach { (label, value) ->
+                    Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                        Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(value, style = MaterialTheme.typography.bodyLarge)
+                    }
+                    HorizontalDivider(color = Graphite)
+                }
             }
-            HorizontalDivider(color = Graphite)
         }
         if (draft.kind == JobKind.DELIVERY) {
             Information(if (job.exportedAt == null) "Sobald die ZIP gespeichert oder zum Teilen erstellt ist, beginnt die 30-Minuten-Erinnerung zum Starten des Loggers. Sie läuft auch weiter, wenn Sie die App-Auswahl abbrechen. Benachrichtigungen unter Mehr erlauben."

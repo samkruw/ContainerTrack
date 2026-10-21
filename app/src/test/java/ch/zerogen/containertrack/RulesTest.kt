@@ -37,6 +37,12 @@ class RulesTest {
         assertTrue(draft(JobKind.RETURN).copy(kt = "").errors(123L).isEmpty())
     }
 
+    @Test fun returnAcceptsNothingAndEmptyInEitherExtraField() {
+        for (quick in listOf("Nothing", "Empty")) for (work in listOf("Nothing", "Empty")) {
+            assertTrue("$quick / $work", draft(JobKind.RETURN).copy(quick = quick, additionalWork = work).errors(123L).isEmpty())
+        }
+    }
+
     @Test fun unsafeReferenceIsRejected() {
         for (value in listOf("..", "a/b", "a\\b", "x\ny", "x\ty"))
             assertTrue(draft().copy(referenceNumber = value).errors().containsKey("referenceNumber"))

@@ -34,7 +34,7 @@ fun ScanScreen(batch: JobWithContainers, vm: TrackViewModel, busy: Boolean, onAd
     }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         ScreenTitle("Container scannen", "${batch.job.draft.referenceNumber} · Container ${batch.containers.size + 1} / ${batch.job.draft.quantity}")
-        Text("Die vierstellige Nummer vollständig in den Rahmen halten. Der erste gültige Treffer wird sofort übernommen.")
+        Information("Die vierstellige Nummer vollständig in den Rahmen halten. Der erste gültige Treffer wird sofort übernommen.")
         if (scanned == null) key(attempt) { CameraSurface(scan = true, enabled = !busy, onNumber = ::accept) }
         else {
             Information("Erkannt · $scanned", warning = error != null)
@@ -88,7 +88,14 @@ fun PhotoScreen(batch: JobWithContainers, containerId: String, selectedStep: Int
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         ScreenTitle("Container ${item.container.containerNumber}", "${batch.job.draft.referenceNumber} · ${item.photos.size} / ${kind.photoCount} Fotos")
         if (!readonly) TextButton(enabled = !busy, onClick = { renameValue = item.container.containerNumber; renameError = null; rename = true }) { Text("Container-Nummer bearbeiten") }
-        LinearProgressIndicator(progress = { item.photos.size.toFloat() / kind.photoCount }, modifier = Modifier.fillMaxWidth())
+        GlassSurface {
+            Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(if (item.photos.size == kind.photoCount) "Fotodokumentation vollständig" else "Pflichtfotos in der angegebenen Reihenfolge aufnehmen.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (item.photos.size == kind.photoCount) Success else MaterialTheme.colorScheme.onSurfaceVariant)
+                LinearProgressIndicator(progress = { item.photos.size.toFloat() / kind.photoCount }, modifier = Modifier.fillMaxWidth())
+            }
+        }
         val selected = item.photos.find { it.step == reviewStep }
         when {
             pendingPhoto != null && step != null -> {

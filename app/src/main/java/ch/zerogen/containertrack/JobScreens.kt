@@ -103,17 +103,21 @@ fun SetupScreen(vm: TrackViewModel, busy: Boolean, onCreated: (String) -> Unit) 
                 PrimaryButton("Logger gestoppt – bestätigen", enabled = !busy) { vm.confirmStopped() }
             } else Information("Logger gestoppt · ${localTime(stopped!!)}")
         }
-        FormField(if (kind == JobKind.DELIVERY) "Order Number" else "Return Number", reference, !locked && !busy, errors["referenceNumber"]) { vm.field("formReference", it) }
-        if (kind == JobKind.DELIVERY) FormField("ZRH Number", kt, !busy, errors["kt"]) { vm.field("formKt", it) }
-        FormField("Order / Container-Typ", order, !locked && !busy, errors["orderValue"]) { vm.field("formOrder", it) }
-        OutlinedTextField(value = quantity, onValueChange = { if (it.length <= 2 && it.all { c -> c in '0'..'9' }) vm.field("formQuantity", it) },
-            label = { Text("Quantity · 1 bis 50") }, enabled = !locked && !busy, modifier = Modifier.fillMaxWidth(), singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), isError = errors["quantity"] != null,
-            supportingText = { errors["quantity"]?.let { Text(it) } })
-        if (kind == JobKind.RETURN) {
-            FormField("Quick", quick, !locked && !busy, errors["quick"], multiline = true) { vm.field("formQuick", it) }
-            FormField("additional Work", work, !locked && !busy, errors["additionalWork"], multiline = true) { vm.field("formWork", it) }
-            Text("Nothing und Empty sind gültige Angaben.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        GlassSurface {
+            Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                FormField(if (kind == JobKind.DELIVERY) "Order Number" else "Return Number", reference, !locked && !busy, errors["referenceNumber"]) { vm.field("formReference", it) }
+                if (kind == JobKind.DELIVERY) FormField("ZRH Number", kt, !busy, errors["kt"]) { vm.field("formKt", it) }
+                FormField("Order / Container-Typ", order, !locked && !busy, errors["orderValue"]) { vm.field("formOrder", it) }
+                OutlinedTextField(value = quantity, onValueChange = { if (it.length <= 2 && it.all { c -> c in '0'..'9' }) vm.field("formQuantity", it) },
+                    label = { Text("Quantity · 1 bis 50") }, enabled = !locked && !busy, modifier = Modifier.fillMaxWidth(), singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), isError = errors["quantity"] != null,
+                    supportingText = { errors["quantity"]?.let { Text(it) } })
+                if (kind == JobKind.RETURN) {
+                    FormField("Quick", quick, !locked && !busy, errors["quick"], multiline = true) { vm.field("formQuick", it) }
+                    FormField("additional Work", work, !locked && !busy, errors["additionalWork"], multiline = true) { vm.field("formWork", it) }
+                    Text("Nothing und Empty sind gültige Angaben.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
         }
         PrimaryButton("Auftrag speichern", enabled = !locked && !busy) {
             attempted = true

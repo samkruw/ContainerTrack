@@ -1,56 +1,34 @@
-# Prüfstatus — 21.10.2026
+# Prüfstatus — Update 1.2.0 — 21.10.2026
 
-Das Update 1.1.0 (Android-Teilen, Return-Zusatzfelder, Glasflächen) und seine ergänzenden Prüfungen stehen in [UPDATE_1_1.md](UPDATE_1_1.md). Die folgenden CI-Nachweise beziehen sich auf den Ausgangsstand; für das Update gilt der neueste PR-Check.
+Repository: [samkruw/ContainerTrack](https://github.com/samkruw/ContainerTrack), Branch `codex/native-android-app`, [Draft-PR #1](https://github.com/samkruw/ContainerTrack/pull/1). Kein Merge und keine Release-Veröffentlichung. Änderungen: [UPDATE_1_2.md](UPDATE_1_2.md).
 
-## Nachweise
+## Lokal ausgeführt
 
-Repository: [samkruw/ContainerTrack](https://github.com/samkruw/ContainerTrack). Umsetzung auf `codex/native-android-app`, [Draft-PR #1](https://github.com/samkruw/ContainerTrack/pull/1). Kein Merge und keine Veröffentlichung.
+- `test lint assembleDebug assembleDebugAndroidTest`: erfolgreich. 14 Kernregeltests jeweils für Debug und Release, ohne Fehler oder übersprungene Tests. App- und Instrumentation-APK kompiliert.
+- Lint erfolgreich; Warnungen zu neueren Abhängigkeiten und bestehenden Plattform-/API-Hinweisen bleiben ausgewiesen.
+- Fünf Tests der Python-QA-Werkzeuge bestanden.
+- Room-Schema 1 stimmt als JSON vollständig mit dem Schema-Artefakt des GitHub-Builds von 1.1.0 überein.
+- Quell- und Merged-Manifest-Privacy-Gate bestanden. Auch das gebaute APK wurde geprüft: kein INTERNET-Recht, App-ID unverändert, Version 1.2.0 / versionCode 3.
+- Der vorhandene ShareChooserTest hatte einen nicht-void Rückgabetyp: Ursache des fehlgeschlagenen [CI-Laufs 39557005372](https://github.com/samkruw/ContainerTrack/actions/runs/39557005372). Mit explizitem Unit-Rückgabetyp kompiliert er als öffentliche void-Methode. Der neue CI-Lauf muss die tatsächliche Chooser-Interaktion bestätigen.
 
-[CI-Lauf 39427920313](https://github.com/samkruw/ContainerTrack/actions/runs/39427920313), Commit `11b56ece015ad0e60b4a8b20f2dbb4a228a54e64`, vollständig erfolgreich:
+## GitHub / Emulator
 
-- `./gradlew test lint assembleDebug`: erfolgreich. 11 Kernregeltests jeweils für Debug und Release ausgeführt.
-- Merged Manifest: keine unerlaubten Berechtigungen, Backup deaktiviert, keine Produktions-Netzaufrufe und keine direkten Cloud-/Analytics-Abhängigkeiten.
-- Gebautes APK: `apkanalyzer manifest permissions`, kein `android.permission.INTERNET`.
-- Fünf Python-Tests der QA-Werkzeuge erfolgreich, einschliesslich Ablehnung echter Netzwerkberechtigungen und Unterscheidung von App-/Test-Manifest.
-- 19 API-35-Emulatorprüfungen bestanden, keine übersprungen: fünf Persistenz-/Workflowtests, vier Navigation-/Neustarttests, zwei Notification-/Receiver-Tests und acht Screenshot-Aufnahmen.
-- Acht Screenshots nach Testende erfolgreich vom Emulator übernommen.
-- Debug-APK, Android-Berichte, Room-Schema und Laufzeit-Abhängigkeitsbericht als Workflow-Artefakte gespeichert.
+Der neue PR-Check ist für den aktualisierten Commit massgeblich. Die Suite umfasst 33 Instrumentationstests einschliesslich 13 Screenshot-Szenarien / 14 PNGs. Build-Artefakt: `Container-Track-debug-APK`; Gerätetests und Screenshots: `Android-device-reports-and-screenshots`.
 
-Der nachfolgende vollständig erfolgreiche Lauf [39428951222](https://github.com/samkruw/ContainerTrack/actions/runs/39428951222), Commit `76d14d79335f7e11bb2097616787769b02c14587`, bestätigt auch die gegen Abbruch geschützte Logger-Bestätigung. Seine APK enthält nur CAMERA, POST_NOTIFICATIONS, SCHEDULE_EXACT_ALARM, RECEIVE_BOOT_COMPLETED und die app-eigene Signaturberechtigung für interne Receiver.
+Lokale Emulatortests wurden nicht als bestanden gezählt: kein KVM; Software-Emulation wurde gestartet, ADB scheiterte an seinem schreibgeschützten Benutzer-Konfigurationspfad. Der selbst gestartete Emulator wurde wieder beendet. GitHub bietet den vorgesehenen KVM-Testweg.
 
-**Abhängigkeitsbefund:** Das vorgegebene gebündelte ML Kit verwendet transitiv Firebase-Komponenten-/Encoder-/Annotations-Hilfsbibliotheken und Google DataTransport. Firebase Analytics, Crashlytics, Cloud-Datenhaltung, OkHttp, Retrofit und Supabase sind nicht enthalten. Es gibt kein Firebase-Projekt und keine INTERNET-Berechtigung. Die pauschale Vorgabe „kein Firebase“ ist deshalb bezüglich technischer Hilfsartefakte nicht wörtlich erfüllt; die verlangte ML-Kit-Engine wurde beibehalten und der Befund offengelegt.
+## Geprüfte bestehende Regeln
 
-Die abschliessende Änderung zentralisiert zusätzlich die Logger-Bestätigung und das Entfernen der Benachrichtigung in einem gegen Coroutine-Abbruch geschützten Repository-Aufruf. Der aktuelle PR-Check prüft auch diesen Stand; die Statusanzeige des PR ist für den jeweils neuesten Commit massgeblich.
+Delivery ohne Quick/additional Work; historische Werte bleiben im Delivery-TXT/META leer. Return verlangt beide Felder und Logger-Stopp, akzeptiert Nothing/Empty. Nummern, Duplikate, Fotofolge, ZIP und Timer sind durch Unit- und Integrationstests abgedeckt. Re-Share/Re-Export darf Reminder-ID und Frist nicht verändern.
 
-Ein zusätzlicher direkter ML-Kit-Instrumentationstest prüft das gebündelte Modell anhand eines Textbildes mit `0708` bei eingeschaltetem Flugmodus sowie die fehlende INTERNET-Berechtigung des installierten APK. Damit umfasst die Suite jetzt 20 Emulatorprüfungen; der Nachweis des jeweils neuesten Stands steht im PR-Check.
+## Offen vor produktiver Freigabe
 
-## Geprüftes Verhalten
+- Update-Installation über der ersten APK mit identischem ursprünglichem Signaturschlüssel; lokale Daten, Fotos und Reminder danach prüfen. Signaturvergleich bestätigt: lokale 1.2.0 und bisherige GitHub-1.1.0-APK haben verschiedene Zertifikate. Der ursprüngliche private Schlüssel ist nicht verfügbar; GitHub verweigert dieser Integration zudem das Lesen der Secret-/Variablennamen (HTTP 403). Room/App-ID unverändert ist notwendig, beweist allein jedoch keine Installationskompatibilität.
+- Reale Kamera/OCR, Lichtverhältnisse, Torch, EXIF und Fotoqualität auf Android-Hardware.
+- Vollständige Lieferung/Return im Flugmodus; reale Mail-App mit ZIP-Anhang, Speichern über lokalen Dokumentanbieter und Chooser-Abbruch.
+- Standby, Neustart, genaue Alarme und verweigerte Berechtigungen auf Hardware; Android-Force-Stop-Grenze bleibt bestehen.
+- TalkBack, grosse Schrift und visuelle Freigabe der Screenshots anhand der mitgelieferten Referenzen. Noch keine freigegebenen Goldens.
 
-- Pflichtfelder, Quantity 1–50, Nothing/Empty und Return-Logger-Gate.
-- Vierstellige Nummern, führende Nullen, OCR-Normalisierung und Duplikatsperre.
-- Fotoreihenfolge 1–6 bzw. 1, Dateien intern, Datenbankwiederöffnung und Kaskadenlöschung.
-- TXT OUT/ZRH und IN/Return-Zuordnung, ZIP-Pfade und Foto-Dateinamen.
-- Erstexport + 30 Minuten, Re-Export ohne neue Frist, JSON-Metadaten mit Fotoangaben.
-- Receiver: fällige Notification, Bestätigung ohne Zeitstempel-Reset, gesperrte Benachrichtigungen lassen Reminder offen.
-- Activity-Neustart erhält Return-Freigabe und Formularinhalt; alle fünf Hauptziele erreichbar.
+Gebündeltes ML Kit bringt technische Firebase-Komponenten-/Encoder-/Annotations-Hilfsartefakte und Google DataTransport mit. Keine Firebase Analytics, Crashlytics, Cloud-Datenhaltung oder konfigurierte Firebase-Projekte; kein INTERNET im App-Manifest. Der CI-Abhängigkeitsbericht dokumentiert transitive Artefakte.
 
-## Offene Freigabeprüfungen
-
-| Bereich | Offen |
-|---|---|
-| Reale Kamera/OCR | Schilder, verschiedene Lichtverhältnisse, sichtbarer ROI, Torch und OCR-Erkennungsrate auf Hardware |
-| Fotos | reale JPEG-Qualität und EXIF-Orientierung auf mehreren Geräten |
-| Vollständiger Flugmodus-Test | Lieferung mit mindestens zwei Containern, Return und Export auf Hardware |
-| Standby und Reboot | reale Alarmzustellung bei erlaubten/verweigerten Benachrichtigungen und genauen Alarmen; Android-Force-Stop-Grenze |
-| Prozesstod | zusätzliche reale Prozess-/Geräteneustarts; die Room-Wiederöffnung ist automatisiert geprüft |
-| Visuelle Abnahme | Referenzbild wurde nicht mitgeliefert; acht Aufnahmen vorhanden, noch keine freigegebenen Goldens |
-| Accessibility | TalkBack, grosse Schrift und Touchziele auf Hardware |
-| SDK-Version | SDK 36 festgesetzt; neueste stabile SDK-Version vor produktiver Freigabe abgleichen |
-
-Die ursprüngliche Acceptance-Matrix bleibt bis zur vollständigen Abnahme unmarkiert. Bestätigte Fotoabschlüsse und die Alarm-/Bestätigungsfinalisierung sind gegen Coroutine-Abbruch geschützt; unbestätigte Kameraaufnahmen vor interner Ablage und ein abrupter Prozessabbruch zwischen externem ZIP-Schreiben und Room-Commit unterliegen den in der README beschriebenen Grenzen.
-
-Der Abbruch-Instrumentationstest reagiert auf sichtbar gewordene Room-Daten. Da Flow-Benachrichtigungen asynchron sind, beweist er nicht deterministisch jedes Zeitfenster direkt nach dem Commit.
-
-## Ausgangszustand
-
-Im lokalen Workspace fehlten SDK, JDK-Compiler und Gradle-Distribution. Der lokale Download war sandboxbedingt nicht ausführbar. Der lokale fehlgeschlagene Buildversuch ist in `verification.log` erhalten; er ist durch die erfolgreichen GitHub-Builds überholt. Die alte PWA wurde auf main-Stand `ce930e822cfd5d43cf9e6b1005e80bf0716ee1c4` gelesen und unter `legacy-pwa/` unverändert archiviert. Sie ist kein APK-Bestandteil.
+Historische vollständig erfolgreiche Baselines: [39427920313](https://github.com/samkruw/ContainerTrack/actions/runs/39427920313), [39428951222](https://github.com/samkruw/ContainerTrack/actions/runs/39428951222). Diese ersetzen keine Prüfung des neuen Commits.

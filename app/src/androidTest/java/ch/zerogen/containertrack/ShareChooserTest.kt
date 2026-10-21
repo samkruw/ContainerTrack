@@ -20,7 +20,7 @@ import java.util.UUID
 class ShareChooserTest {
     @get:Rule val compose = createAndroidComposeRule<MainActivity>()
 
-    @Test fun exportShareButtonLaunchesAndroidChooser() = runBlocking {
+    @Test fun exportShareButtonLaunchesAndroidChooser(): Unit = runBlocking {
         val app = compose.activity.application as ContainerTrackApp
         val reference = "CHOOSER-${UUID.randomUUID()}"
         val job = app.repository.createJob(JobDraft(JobKind.RETURN, referenceNumber = reference,

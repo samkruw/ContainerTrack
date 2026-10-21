@@ -82,4 +82,32 @@ class ScreenshotCaptureTest {
         } }
         capture("08-logger-due")
     }
+    @Test fun jobDetail() {
+        val vm = TrackViewModel(app, SavedStateHandle())
+        compose.setContent { ContainerTheme { Surface(color = Color.Transparent) {
+            JobScreen(snapshot(), vm, false, {}, {}, {}, {})
+        } } }
+        capture("09-job-detail")
+    }
+    @Test fun jobsHistory() {
+        compose.setContent { ContainerTheme { Surface(color = Color.Transparent) { JobsScreen(listOf(snapshot()), {}) } } }
+        capture("10-history")
+    }
+    @Test fun returnPhoto() {
+        val vm = TrackViewModel(app, SavedStateHandle())
+        compose.setContent { ContainerTheme { Surface(color = Color.Transparent) { PhotoScreen(snapshot(JobKind.RETURN), "container", 0, vm, false) {} } } }
+        capture("11-return-photo")
+    }
+    @Test fun permissions() {
+        compose.setContent { ContainerTheme { Surface(color = Color.Transparent) { MoreScreen() } } }
+        capture("12-permissions")
+    }
+    @Test fun activeLogger() {
+        val now = 1_792_483_200_000L
+        compose.setContent { ContainerTheme { Surface(color = Color.Transparent) {
+            ReminderStrip(LoggerReminder(jobId = "screenshot", referenceNumber = "ORD-0708", dueAt = now + 900_000L), 0, now)
+        } } }
+        capture("13-logger-active")
+    }
+
 }

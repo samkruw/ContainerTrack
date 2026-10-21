@@ -7,6 +7,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.geometry.Offset
@@ -40,8 +41,8 @@ fun ContainerTheme(content: @Composable () -> Unit) {
 }
 
 @Composable
-fun GlassSurface(modifier: Modifier = Modifier, onClick: (() -> Unit)? = null, content: @Composable () -> Unit) {
-    val shape = MaterialTheme.shapes.medium
+fun GlassSurface(modifier: Modifier = Modifier, onClick: (() -> Unit)? = null,
+                 shape: Shape = MaterialTheme.shapes.medium, content: @Composable () -> Unit) {
     val panel = modifier.background(Brush.linearGradient(listOf(
         Color(0xC72D4B6C), Color(0xA616314E), Color(0xB31B3859))), shape)
     val edge = BorderStroke(1.dp, Brush.linearGradient(listOf(
@@ -63,7 +64,7 @@ fun ScreenTitle(title: String, subtitle: String? = null) {
 @Composable
 fun PrimaryButton(text: String, enabled: Boolean = true, onClick: () -> Unit) {
     Button(onClick = onClick, enabled = enabled, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB), contentColor = Color.White)) { Text(text, fontWeight = FontWeight.SemiBold) }
+        colors = ButtonDefaults.buttonColors(containerColor = ElectricBlue, contentColor = Navy)) { Text(text, fontWeight = FontWeight.SemiBold) }
 }
 
 @Composable
