@@ -19,8 +19,17 @@ class RulesTest {
         assertTrue(draft().copy(referenceNumber = " ").errors().containsKey("referenceNumber"))
         assertTrue(draft().copy(kt = " ").errors().containsKey("kt"))
         assertTrue(draft().copy(orderValue = " ").errors().containsKey("orderValue"))
-        assertTrue(draft().copy(quick = "\n").errors().containsKey("quick"))
-        assertTrue(draft().copy(additionalWork = "").errors().containsKey("additionalWork"))
+        assertTrue(draft(JobKind.RETURN).copy(quick = "\n").errors(123L).containsKey("quick"))
+        assertTrue(draft(JobKind.RETURN).copy(additionalWork = "").errors(123L).containsKey("additionalWork"))
+    }
+
+    @Test fun deliveryNeedsNeitherQuickNorAdditionalWork() {
+        assertTrue(draft().copy(quick = "", additionalWork = "").errors().isEmpty())
+    }
+
+    @Test fun returnRequiresBothExtraFieldsEvenAfterLoggerStop() {
+        val errors = draft(JobKind.RETURN).copy(quick = "", additionalWork = "").errors(123L)
+        assertEquals(setOf("quick", "additionalWork"), errors.keys)
     }
 
     @Test fun returnRequiresLoggerConfirmationButNotSeparateZrh() {
@@ -61,13 +70,13 @@ class RulesTest {
     @Test fun txtDeliveryUsesZrhAndContainerType() {
         val txt = excelText(draft().copy(quantity = 2), listOf("0708", "0710"), LocalDate.of(2026, 10, 20))
         assertEquals("Datum\tIn/Out\tKT\tOrder\tQuantity\tadditional Work\tContainer Number\tQuick\r\n" +
-            "20.10.2026\tOUT\tZRH-8\t20 ft\t2\tEmpty\t0708,0710\tNothing\r\n", txt)
+            "20.10.2026\tOUT\tZRH-8\t20 ft\t2\t\t0708,0710\t\r\n", txt)
     }
 
     @Test fun txtReturnUsesReferenceAndNormalizesNewlines() {
         val txt = excelText(draft(JobKind.RETURN).copy(quick = "A\tB\r\nC"), listOf("0708"), LocalDate.of(2026, 1, 2))
         assertTrue(txt.contains("02.01.2026\tIN\tORD-12\t20 ft\t1"))
-        assertTrue(txt.endsWith("A B / C\r\n"))
+        assertTrue(txt.endsWith("\tEmpty\t0708\tA B / C\r\n"))
     }
 
     @Test fun timerNeverResets() {
