@@ -37,8 +37,8 @@ fun ReferenceBottomBar(route:String,enabled:Boolean,onNavigate:(String)->Unit) {
         Row(Modifier.fillMaxWidth().height(72.dp)) {
             listOf(Triple("jobs","Aufträge",Icons.Outlined.Description),Triple("scan","Kamera",Icons.Outlined.PhotoCamera),Triple("gallery","Galerie",Icons.Outlined.Image)).forEachIndexed{index,(path,label,icon)->
                 if(index>0) VerticalDivider(Modifier.height(38.dp).align(Alignment.CenterVertically),color=Hairline)
-                val selected=route==path || (path=="scan" && (route.startsWith("photo/") || route.startsWith("scan/")))
-                Column(Modifier.weight(1f).fillMaxHeight().clickable(enabled=enabled,role=Role.Tab){onNavigate(path)}.padding(top=10.dp),horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.spacedBy(4.dp)) {
+                val selected=route==path || (path=="jobs" && route=="setup") || (path=="scan" && (route.startsWith("photo/") || route.startsWith("scan/") || route.startsWith("review/") || route.startsWith("upload/")))
+                Column(Modifier.weight(1f).fillMaxHeight().semantics{this.selected=selected}.clickable(enabled=enabled,role=Role.Tab){onNavigate(path)}.padding(top=10.dp),horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.spacedBy(4.dp)) {
                     Icon(icon,null,tint=if(selected)Lime else Muted,modifier=Modifier.size(23.dp))
                     Text(label,style=MaterialTheme.typography.labelMedium,color=if(selected)Lime else Muted)
                     if(selected) HorizontalDivider(Modifier.width(52.dp),thickness=2.dp,color=Lime)

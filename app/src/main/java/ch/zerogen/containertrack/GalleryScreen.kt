@@ -25,6 +25,7 @@ import java.io.File
 @Composable
 fun GalleryScreen(jobs:List<JobWithContainers>,uploads:List<UploadPhotoEntity>,onShare:(GalleryPhoto)->Unit,
                   onSaveSelected:(Set<String>)->Unit={},onShareSelected:((Set<String>)->Unit)?=null) {
+    val focus=androidx.compose.ui.platform.LocalFocusManager.current
     var query by rememberSaveable{mutableStateOf("")}
     var owner by rememberSaveable{mutableStateOf<String?>(null)}
     var ownerMenu by remember{mutableStateOf(false)}
@@ -42,7 +43,7 @@ fun GalleryScreen(jobs:List<JobWithContainers>,uploads:List<UploadPhotoEntity>,o
         if(opened==null) {
             Text("AUF DIESEM GERÄT",Modifier.padding(top=18.dp),color=Lime,style=MaterialTheme.typography.labelMedium)
             ScreenTitle("Galerie")
-            OutlinedTextField(query,{query=it},Modifier.fillMaxWidth(),placeholder={Text("KT oder Container suchen")},leadingIcon={Icon(Icons.Outlined.Search,null)},singleLine=true)
+            OutlinedTextField(query,{query=it},Modifier.fillMaxWidth(),placeholder={Text("KT oder Container suchen")},leadingIcon={Icon(Icons.Outlined.Search,null)},singleLine=true,keyboardOptions=androidx.compose.foundation.text.KeyboardOptions(imeAction=androidx.compose.ui.text.input.ImeAction.Done),keyboardActions=androidx.compose.foundation.text.KeyboardActions(onDone={focus.clearFocus()}))
             Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(8.dp)) {
                 Box {
                     OutlinedButton(onClick={ownerMenu=true},shape=MaterialTheme.shapes.small,modifier=Modifier.heightIn(min=48.dp)) {Icon(Icons.Outlined.Group,null,Modifier.size(18.dp));Spacer(Modifier.width(8.dp));Text(if(owner==null)"Alle Uploader" else "Bestätigter Uploader");Icon(Icons.Outlined.ExpandMore,null)}
@@ -62,7 +63,7 @@ fun GalleryScreen(jobs:List<JobWithContainers>,uploads:List<UploadPhotoEntity>,o
                     Column {
                         Row(Modifier.fillMaxWidth().clickable{opened=key}.padding(vertical=4.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)) {
                             Checkbox(photos.all{it.photoId in selected},{checked->selected=if(checked)(selected+photos.map{it.photoId}).distinct() else selected-photos.map{it.photoId}.toSet()},Modifier.size(28.dp))
-                            Surface(shape=MaterialTheme.shapes.small){PhotoImage(first.localPath,"Container ${first.containerNumber}",Modifier.width(88.dp).height(112.dp))}
+                            Surface(shape=MaterialTheme.shapes.small){PhotoImage(first.localPath,"Container ${first.containerNumber}",Modifier.width(112.dp).height(108.dp))}
                             Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(8.dp)) {
                                 Text("${batch?.let(::orderIdentifier) ?: first.reference} · ${first.containerNumber}",style=MaterialTheme.typography.titleMedium,fontWeight=FontWeight.Bold)
                                 Text("${photos.size} Originalfotos",color=Muted,style=MaterialTheme.typography.bodySmall)
@@ -79,7 +80,7 @@ fun GalleryScreen(jobs:List<JobWithContainers>,uploads:List<UploadPhotoEntity>,o
             Row(Modifier.padding(top=6.dp),verticalAlignment=Alignment.CenterVertically) {IconButton(onClick={opened=null}){Icon(Icons.Outlined.ArrowBack,"Zur Galerie")};Text("Auftragsdetails",style=MaterialTheme.typography.titleLarge)}
             if(first!=null) {
                 Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {StatusBadge(batch?.job?.draft?.kind?.label?.uppercase() ?: "FOTOS");StatusBadge(if(group.all{it.uploaderAccountId!=null})"Gesendet" else "Lokal gespeichert",confirmed=group.all{it.uploaderAccountId!=null})}
-                Text(batch?.let(::orderIdentifier) ?: first.reference,fontSize=42.sp,lineHeight=46.sp,fontWeight=FontWeight.ExtraBold)
+                Text(batch?.let(::orderIdentifier) ?: first.reference,fontSize=56.sp,lineHeight=64.sp,fontWeight=FontWeight.ExtraBold)
                 Text("Container ${first.containerNumber}",style=MaterialTheme.typography.titleMedium,color=Muted)
                 HorizontalDivider(color=Hairline)
                 Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween) {Text("${group.size} Originalfotos",color=Muted);Text(if(group.all{it.uploaderAccountId!=null})"In Teams bestätigt" else "Auf diesem Gerät",color=Muted,style=MaterialTheme.typography.bodySmall)}

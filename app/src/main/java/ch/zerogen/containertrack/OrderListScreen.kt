@@ -56,9 +56,9 @@ fun OrderListScreen(jobs:List<JobWithContainers>,uploads:List<UploadJobEntity>,p
                     Icon(if(active.job.draft.kind==JobKind.DELIVERY)Icons.Outlined.LocalShipping else Icons.Outlined.Undo,null,tint=Lime)
                     Text(active.job.draft.kind.label.uppercase(Locale.GERMAN),color=Lime,fontWeight=FontWeight.SemiBold)
                 }
-                Text(orderIdentifier(active),fontSize=42.sp,lineHeight=48.sp,fontWeight=FontWeight.ExtraBold)
+                Text(orderIdentifier(active),fontSize=56.sp,lineHeight=64.sp,fontWeight=FontWeight.ExtraBold)
                 Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(20.dp)) {
-                    Column(Modifier.weight(1f)) { Text("Container-Nr.",color=Muted,style=MaterialTheme.typography.bodySmall);Text(active.ordered.firstOrNull{it.photos.size<active.job.draft.kind.photoCount}?.container?.containerNumber ?: "Noch offen",fontSize=28.sp,fontWeight=FontWeight.Bold) }
+                    Column(Modifier.weight(1f)) { Text("Container-Nr.",color=Muted,style=MaterialTheme.typography.bodySmall);Text(active.ordered.firstOrNull{it.photos.size<active.job.draft.kind.photoCount}?.container?.containerNumber ?: "Noch offen",fontSize=40.sp,lineHeight=46.sp,fontWeight=FontWeight.Bold) }
                     Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(8.dp)) {
                         Text("Fortschritt",color=Muted,style=MaterialTheme.typography.bodySmall)
                         PhotoSegments(active.containers.sumOf{it.photos.size},active.job.draft.quantity*active.job.draft.kind.photoCount)
@@ -84,12 +84,12 @@ fun OrderListScreen(jobs:List<JobWithContainers>,uploads:List<UploadJobEntity>,p
                         Text("${batch.job.draft.quantity} Container · ${batch.containers.sumOf{it.photos.size}}/${batch.job.draft.quantity*batch.job.draft.kind.photoCount} Fotos",style=MaterialTheme.typography.bodySmall,color=Muted)
                     }
                     Column(horizontalAlignment=Alignment.End) {
-                        StatusBadge(if(sync?.state=="SYNCED")"Gesendet" else if(sync?.state=="UPLOAD_ERROR")"Fehler" else if(batch.complete)"Vollständig" else "Entwurf",confirmed=sync?.state=="SYNCED",error=sync?.state=="UPLOAD_ERROR")
+                        StatusBadge(if(sync?.state=="SYNCED")"Gesendet" else if(sync?.state=="UPLOAD_ERROR")"Fehler" else if(sync!=null)"Wartend" else if(batch.complete)"Vollständig" else "Entwurf",confirmed=sync?.state=="SYNCED",error=sync?.state=="UPLOAD_ERROR")
                         if(batch.phase==WorkflowPhase.READY_FOR_FILL) Text("Befüllt-Foto fehlt",color=Warning,style=MaterialTheme.typography.labelSmall)
                     }
                     Icon(Icons.Outlined.ChevronRight,null,tint=Muted)
                 }
-                if(sync!=null && sync.state!="SYNCED") Text("Teams · ${syncLabel(sync,online)}",style=MaterialTheme.typography.bodySmall,color=if(sync.state=="UPLOAD_ERROR")MaterialTheme.colorScheme.error else Muted)
+                if(sync?.state=="UPLOADING") Text("Teams · ${syncLabel(sync,online)}",style=MaterialTheme.typography.bodySmall,color=if(sync.state=="UPLOAD_ERROR")MaterialTheme.colorScheme.error else Muted)
                 if(sync?.state=="UPLOAD_ERROR") {
                     Text(sync.lastError ?: "Übertragung nicht bestätigt",color=MaterialTheme.colorScheme.error,style=MaterialTheme.typography.bodySmall)
                     TextButton(onClick={onRetry(batch.job.id)}){Icon(Icons.Outlined.Refresh,null,Modifier.size(18.dp));Spacer(Modifier.width(8.dp));Text("Erneut versuchen")}

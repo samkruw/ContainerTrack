@@ -15,6 +15,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -28,7 +29,10 @@ val Success=Lime
 val Warning=Color(0xFFE5BD69)
 val Muted=Color(0xFFA8B2B9)
 val Hairline=Color(0xFF3B4348)
-private val Inter=FontFamily(Font(R.font.inter,FontWeight.Normal),Font(R.font.inter,FontWeight.Medium),Font(R.font.inter,FontWeight.SemiBold),Font(R.font.inter,FontWeight.Bold),Font(R.font.inter,FontWeight.ExtraBold))
+@OptIn(androidx.compose.ui.text.ExperimentalTextApi::class)
+private val Inter=FontFamily(*listOf(FontWeight.Normal,FontWeight.Medium,FontWeight.SemiBold,FontWeight.Bold,FontWeight.ExtraBold).map { weight ->
+    Font(R.font.inter,weight,variationSettings=FontVariation.Settings(FontVariation.weight(weight.weight)))
+}.toTypedArray())
 private fun type(size:Int,weight:FontWeight=FontWeight.Normal,line:Int=size+6)=TextStyle(fontFamily=Inter,fontWeight=weight,fontSize=size.sp,lineHeight=line.sp)
 @Composable
 fun ContainerTheme(content:@Composable ()->Unit) {
@@ -36,7 +40,7 @@ fun ContainerTheme(content:@Composable ()->Unit) {
         secondary=Lime,onSecondary=Navy,secondaryContainer=Color(0xFF2B3920),onSecondaryContainer=Lime,
         background=Navy,onBackground=Color(0xFFF8FAF9),surface=Navy,onSurface=Color(0xFFF8FAF9),
         surfaceVariant=Graphite,onSurfaceVariant=Muted,outline=Hairline,error=Color(0xFFFF8181)),
-        typography=Typography(headlineLarge=type(36,FontWeight.ExtraBold,40),headlineMedium=type(30,FontWeight.Bold,36),titleLarge=type(23,FontWeight.Bold),titleMedium=type(18,FontWeight.SemiBold),bodyLarge=type(16),bodyMedium=type(14),bodySmall=type(12),labelLarge=type(14,FontWeight.SemiBold),labelMedium=type(12,FontWeight.Medium),labelSmall=type(11)),
+        typography=Typography(headlineLarge=type(44,FontWeight.ExtraBold,50),headlineMedium=type(30,FontWeight.Bold,36),titleLarge=type(23,FontWeight.Bold),titleMedium=type(18,FontWeight.SemiBold),bodyLarge=type(16),bodyMedium=type(14),bodySmall=type(12),labelLarge=type(14,FontWeight.SemiBold),labelMedium=type(12,FontWeight.Medium),labelSmall=type(11)),
         shapes=Shapes(small=RoundedCornerShape(5.dp),medium=RoundedCornerShape(7.dp),large=RoundedCornerShape(10.dp))) {
         Surface(Modifier.fillMaxSize(),color=Navy,content=content)
     }

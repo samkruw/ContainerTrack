@@ -21,10 +21,9 @@ class ReferenceScreenshotsTest {
     private val app get()=compose.activity.application as ContainerTrackApp
     private lateinit var completeId:String
     @Before fun fixture():Unit=runBlocking {
-        val ui=InstrumentationRegistry.getInstrumentation().uiAutomation
-        ParcelFileDescriptor.AutoCloseInputStream(ui.executeShellCommand("pm grant ch.zerogen.containertrack android.permission.POST_NOTIFICATIONS")).use{it.readBytes()}
         suspend fun job(kt:String,number:String,steps:Int):String {
             val id=app.repository.createJob(JobDraft(JobKind.DELIVERY,"ORDER-$kt",kt,"20 ft",1),null);ids+=id
+            if(steps==6) app.database.dao().insertReminder(LoggerReminder(jobId=id,referenceNumber="ORDER-$kt",dueAt=System.currentTimeMillis(),confirmedAt=System.currentTimeMillis()))
             val c=app.repository.addContainer(id,number)
             for(step in 1..steps) {
                 val file=File.createTempFile("reference", ".jpg",app.cacheDir)
@@ -58,13 +57,21 @@ class ReferenceScreenshotsTest {
     @Test fun newOrderMatchesReference(){
         compose.onNodeWithContentDescription("Neuer Auftrag").performClick()
         compose.onNodeWithText("KT-Nummer").performTextInput("2482")
-        compose.onNodeWithText("Container-Nr.").performTextInput("0708");keyboardAway()
+        compose.onNodeWithText("Container-Nr.").performTextInput("0708")
+        compose.onNodeWithText("Container-Nr.").performImeAction();keyboardAway()
+        compose.onNodeWithText("Neuer Auftrag").performScrollTo()
         capture("21-reference-new-order")
     }
-    @Test fun photoReviewMatchesReference(){openCompleteDetails();capture("22-reference-photo-review")}
+    @Test fun photoReviewMatchesReference(){
+        openCompleteDetails()
+        compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasText("Fotos prüfen"))
+        compose.onNodeWithText("Fotos prüfen").performClick()
+        capture("22-reference-photo-review")
+    }
     @Test fun galleryMatchesReference(){
         compose.onNodeWithText("Galerie").performClick()
-        compose.onNode(hasSetTextAction()).performTextInput("248");keyboardAway()
+        compose.onNode(hasSetTextAction()).performTextInput("248")
+        compose.onNode(hasSetTextAction()).performImeAction();keyboardAway()
         compose.waitUntil(10_000){compose.onAllNodesWithText("KT 2480 · 0042").fetchSemanticsNodes().isNotEmpty()}
         capture("23-reference-gallery")
     }
@@ -83,7 +90,8 @@ class ReferenceScreenshotsTest {
     }
     @Test fun uploadMatchesReferenceWithoutPretendingSuccess(){
         openCompleteDetails()
-        compose.onNodeWithText("Teams-Übertragung").performScrollTo().performClick()
+        compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasText("Teams-Übertragung"))
+        compose.onNodeWithText("Teams-Übertragung").performClick()
         compose.onNodeWithText("Alle 6 Fotos erfolgreich gesendet").assertDoesNotExist()
         capture("26-reference-upload")
     }

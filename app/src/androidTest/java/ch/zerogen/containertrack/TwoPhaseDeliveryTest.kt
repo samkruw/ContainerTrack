@@ -21,7 +21,8 @@ class TwoPhaseDeliveryTest {
         val photos = (1..5).map { PhotoEntity(containerId=container.id,step=it,localPath="fixture",capturedAt=1L) }
         var scans=0
         compose.setContent { ContainerTheme { JobScreen(JobWithContainers(job,listOf(ContainerWithPhotos(container,photos))),vm,false,{scans++},{},{},{}) } }
-        compose.onNodeWithText("Container 2 / 3 erfassen").performScrollTo().performClick()
+        compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasText("Container 2 / 3 erfassen"))
+        compose.onNodeWithText("Container 2 / 3 erfassen").performClick()
         compose.runOnIdle { assertEquals(1,scans) }
     }
     @Test fun tenthContainerAndFilledSlotRemainReachableWithLargeFont() {

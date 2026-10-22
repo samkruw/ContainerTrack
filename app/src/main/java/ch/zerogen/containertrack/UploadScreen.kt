@@ -28,7 +28,7 @@ fun UploadScreen(batch:JobWithContainers,queue:UploadJobEntity?,uploads:List<Upl
         item {
             Row(horizontalArrangement=Arrangement.spacedBy(14.dp),verticalAlignment=Alignment.CenterVertically) {
                 Icon(if(batch.complete)Icons.Outlined.CheckCircle else Icons.Outlined.PhotoCamera,null,Modifier.size(48.dp),tint=if(batch.complete)Lime else Warning)
-                Column {Text("Auftrag ${orderIdentifier(batch)}",color=Muted,style=MaterialTheme.typography.bodyMedium);Text(if(batch.containers.size==1)"Container ${batch.ordered.first().container.containerNumber}" else "${batch.containers.size} Container",fontSize=28.sp,fontWeight=FontWeight.Bold)}
+                Column {Text("Auftrag ${orderIdentifier(batch)}",color=Muted,style=MaterialTheme.typography.bodyMedium);Text(if(batch.containers.size==1)"Container ${batch.ordered.first().container.containerNumber}" else "${batch.containers.size} Container",fontSize=36.sp,lineHeight=42.sp,fontWeight=FontWeight.ExtraBold)}
             }
         }
         item {GlassSurface {Column(Modifier.padding(16.dp),verticalArrangement=Arrangement.spacedBy(14.dp)) {

@@ -33,7 +33,8 @@ import androidx.navigation.compose.*
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        enableEdgeToEdge(statusBarStyle=androidx.activity.SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),navigationBarStyle=androidx.activity.SystemBarStyle.dark(android.graphics.Color.TRANSPARENT))
+        if(Build.VERSION.SDK_INT>=29) window.isNavigationBarContrastEnforced=false
         setContent { ContainerTheme { TrackApp() } }
     }
 }
@@ -108,14 +109,14 @@ fun TrackApp(vm: TrackViewModel = viewModel()) {
         if(uri!=null && savingPhotos.isNotEmpty()) vm.saveSelectedPhotos(savingPhotos.toSet(),uri)
         savingPhotos=arrayListOf()
     }
-    Scaffold(containerColor=Navy,topBar={BrandHeader(identity){if(!busy)nav.navigate("profile"){launchSingleTop=true}}},
+    Scaffold(containerColor=Navy,topBar={if(route!="profile" || identity!=null)BrandHeader(identity){if(!busy)nav.navigate("profile"){launchSingleTop=true}}},
         floatingActionButton={if(route=="jobs")FloatingActionButton(onClick={if(!busy){vm.begin(JobKind.DELIVERY);nav.navigate("setup")}},containerColor=Lime,contentColor=Navy,shape=MaterialTheme.shapes.small){Icon(Icons.Default.Add,"Neuer Auftrag")}},
-        bottomBar={ReferenceBottomBar(route,!busy){path->nav.navigate(path){popUpTo(nav.graph.startDestinationId){saveState=true};launchSingleTop=true;restoreState=true}}}
+        bottomBar={if(route!="profile" || identity!=null)ReferenceBottomBar(route,!busy){path->nav.navigate(path){popUpTo(nav.graph.startDestinationId){saveState=true};launchSingleTop=true;restoreState=true}}}
     ) { insets ->
         Column(Modifier.padding(insets).imePadding().fillMaxSize()) {
-            if(route !in tabs.map{it.first}) Row(verticalAlignment=Alignment.CenterVertically) {
+            if(route !in tabs.map{it.first} && route!="setup" && route!="profile" && !route.startsWith("upload/")) Row(verticalAlignment=Alignment.CenterVertically) {
                 IconButton(onClick={if(!busy)nav.popBackStack()},enabled=!busy){Icon(Icons.Default.ArrowBack,"Zurück")}
-                Text(when {route=="profile"->"Profil";route=="access"->"Benutzer & Rechte";route.startsWith("upload/")->"Teams-Übertragung";route.startsWith("job/")->"Auftragsdetails";else->"Zurück zum Auftrag"},style=MaterialTheme.typography.titleMedium)
+                Text(when {route=="profile"->"Profil";route=="access"->"Benutzer & Rechte";route.startsWith("upload/")->"Teams-Übertragung";route.startsWith("review/")->"Fotos prüfen";route.startsWith("job/")->"Auftragsdetails";else->"Zurück zum Auftrag"},style=MaterialTheme.typography.titleLarge)
             }
             if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
             reminders.firstOrNull()?.let { ReminderStrip(it, reminders.size - 1, now) }
@@ -137,7 +138,7 @@ fun TrackApp(vm: TrackViewModel = viewModel()) {
                     if (batch != null) JobScreen(batch, vm, busy,
                         onScan = { nav.navigate("scan/$id") },
                         onContainer = { nav.navigate("photo/$id/$it?step=0") },
-                        onExport = { nav.navigate("export/$id") }, onDeleted = { nav.popBackStack() }, onPhoto = { container, step -> nav.navigate("photo/$id/$container?step=$step") },onUpload={nav.navigate("upload/$id")})
+                        onExport = { nav.navigate("export/$id") }, onDeleted = { nav.popBackStack() }, onPhoto = { container, step -> nav.navigate("photo/$id/$container?step=$step") },onUpload={nav.navigate("upload/$id")},onReview={nav.navigate("review/$id")})
                 }
                 composable("scan/{jobId}") { back ->
                     val id = back.arguments?.getString("jobId") ?: return@composable
@@ -154,6 +155,11 @@ fun TrackApp(vm: TrackViewModel = viewModel()) {
                             nav.navigate("job/$id") { popUpTo("job/$id") { inclusive = true }; launchSingleTop = true }
                         })
                     }
+                }
+                composable("review/{jobId}") { back ->
+                    val id=back.arguments?.getString("jobId") ?: return@composable
+                    jobs.find{it.job.id==id}?.let{batch->PhotoReviewScreen(batch,busy,
+                        onPhoto={container,step->nav.navigate("photo/$id/$container?step=$step")},onContinue={nav.navigate("upload/$id")},onBack={batch.ordered.firstOrNull()?.let{nav.navigate("photo/$id/${it.container.id}?step=0")} ?: resumeJob(id)})}
                 }
                 composable("upload/{jobId}") { back ->
                     val id=back.arguments?.getString("jobId") ?: return@composable

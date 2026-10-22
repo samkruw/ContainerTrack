@@ -23,9 +23,9 @@ fun ProfileScreen(identity:MicrosoftIdentity?,status:String,configured:Boolean,b
     onLogin:(Activity)->Unit,onLogout:()->Unit,onSwitch:(Activity)->Unit,onContinue:()->Unit={},onAccess:()->Unit={}) {
     val activity=LocalActivity.current
     var settings by remember{mutableStateOf(false)}
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),verticalArrangement=Arrangement.spacedBy(16.dp)) {
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),verticalArrangement=Arrangement.spacedBy(if(identity==null)12.dp else 16.dp)) {
         if(identity==null) {
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(32.dp))
             Image(painterResource(R.drawable.ic_container),null,Modifier.size(104.dp).align(Alignment.CenterHorizontally))
             Text("Container Track",Modifier.align(Alignment.CenterHorizontally),style=MaterialTheme.typography.headlineMedium)
             Text("Fotodokumentation für dein Team",Modifier.fillMaxWidth(),textAlign=TextAlign.Center,color=Muted)
@@ -35,7 +35,7 @@ fun ProfileScreen(identity:MicrosoftIdentity?,status:String,configured:Boolean,b
             OutlinedButton(onClick={activity?.let(onLogin)},enabled=configured && activity!=null && !busy,modifier=Modifier.fillMaxWidth().heightIn(min=56.dp),shape=MaterialTheme.shapes.small,border=androidx.compose.foundation.BorderStroke(1.5.dp,Lime)) {
                 Image(painterResource(R.drawable.ic_microsoft),null,Modifier.size(25.dp));Spacer(Modifier.width(12.dp));Text("Mit Microsoft anmelden",fontWeight=FontWeight.Bold,color=if(configured)MaterialTheme.colorScheme.onSurface else Muted)
             }
-            Text(if(configured)status else "Firmenanmeldung ist für diesen Build noch nicht eingerichtet.",Modifier.fillMaxWidth(),textAlign=TextAlign.Center,color=Muted,style=MaterialTheme.typography.bodySmall)
+            Text(if(configured)status else "Firmenanmeldung ist noch nicht eingerichtet.",Modifier.fillMaxWidth(),textAlign=TextAlign.Center,color=Muted,style=MaterialTheme.typography.bodySmall)
             Text("Nicht verbunden",Modifier.fillMaxWidth(),textAlign=TextAlign.Center,color=Muted,style=MaterialTheme.typography.labelSmall)
             TextButton(onClick=onContinue,modifier=Modifier.align(Alignment.CenterHorizontally)){Text("Offline weiterarbeiten")}
             HorizontalDivider(color=Hairline)
@@ -68,7 +68,8 @@ private fun ProfileBenefit(icon:androidx.compose.ui.graphics.vector.ImageVector,
 @Composable
 fun UserAccessScreen(identity:MicrosoftIdentity?) {
     Column(Modifier.verticalScroll(rememberScrollState()).padding(16.dp),verticalArrangement=Arrangement.spacedBy(18.dp)) {
-        ScreenTitle("Benutzer & Rechte","Anmeldung mit Firmenkonto")
+        Text("Benutzer & Rechte",style=MaterialTheme.typography.headlineMedium)
+        Text("Anmeldung mit Firmenkonto",color=Muted)
         HorizontalDivider(color=Hairline)
         if(identity!=null) {
             Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(14.dp)) {
@@ -79,7 +80,7 @@ fun UserAccessScreen(identity:MicrosoftIdentity?) {
         } else Information("Kein Firmenkonto verbunden.")
         HorizontalDivider(color=Hairline)
         Text("Rechte & Zugriffe",style=MaterialTheme.typography.titleLarge)
-        Information("Die Berechtigungen werden von Microsoft 365 vergeben. Eine Administratorrolle oder eine Team-Benutzerliste ist in diesem Build nicht bestätigt.")
+        Information("Die Teamverwaltung ist aktuell nicht verbunden. Benutzer und Rollen werden durch deine Firmenadministration verwaltet.")
         ProfileBenefit(Icons.Outlined.PhotoLibrary,"Galerie: tatsächlich auf diesem Gerät gespeicherte Fotos")
         ProfileBenefit(Icons.Outlined.CloudUpload,"Teams: Übertragung nur mit Zugriff auf den Zielkanal")
         OutlineAction("Teamzugriff verwalten",Icons.Outlined.ManageAccounts,false){}
