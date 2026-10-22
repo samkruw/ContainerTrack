@@ -6,6 +6,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 val MIGRATION_1_2 = object : Migration(1, 2) {
     override fun migrate(db: SupportSQLiteDatabase) {
         db.execSQL("ALTER TABLE jobs ADD COLUMN completionTriggeredAt INTEGER")
+        db.execSQL("ALTER TABLE jobs ADD COLUMN createdByAccountId TEXT")
         db.execSQL("UPDATE jobs SET completionTriggeredAt = COALESCE(completedAt,exportedAt) WHERE completedAt IS NOT NULL OR exportedAt IS NOT NULL")
         db.execSQL("""CREATE TABLE IF NOT EXISTS upload_jobs (
             jobId TEXT NOT NULL PRIMARY KEY, ownerAccountId TEXT, state TEXT NOT NULL,

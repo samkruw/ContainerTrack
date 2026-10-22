@@ -67,7 +67,7 @@ class ExportSharingTest {
             }
             val firstAt = db.dao().job(job)!!.job.exportedAt!!
             val firstReminder = db.dao().pendingReminders().single()
-            assertEquals(firstAt + 1_800_000L, firstReminder.dueAt)
+            assertEquals(db.dao().job(job)!!.job.completionTriggeredAt!! + 1_800_000L, firstReminder.dueAt)
             val archive = entries(attachment)
             assertEquals(8, archive.size)
             assertArrayEquals(byteArrayOf(6), archive.getValue("${form.referenceNumber}/0708/0708_06.jpg"))

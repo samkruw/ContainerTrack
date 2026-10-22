@@ -15,6 +15,6 @@ class ContainerTrackApp : Application() {
     override fun onCreate() {
         super.onCreate()
         alarms.createChannel()
-        scope.launch { database.dao().pendingReminders().forEach { alarms.schedule(it) } }
+        scope.launch { repository.reconcilePendingEffects() }
     }
 }

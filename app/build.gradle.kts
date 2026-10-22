@@ -16,7 +16,6 @@ android {
         versionName = "1.2.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
-    sourceSets.getByName("androidTest").assets.srcDir("$projectDir/schemas")
     buildFeatures { compose = true; buildConfig = true }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17

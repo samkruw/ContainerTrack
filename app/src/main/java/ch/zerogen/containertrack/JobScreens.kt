@@ -154,10 +154,13 @@ fun JobScreen(batch: JobWithContainers, vm: TrackViewModel, busy: Boolean, onSca
             }
         }
         val unfinished = batch.ordered.firstOrNull { it.container.completedAt == null }
+        val canAdd = batch.containers.size < job.draft.quantity &&
+            canAddContainer(job.draft.kind, batch.containers.map { it.photos.map { photo -> photo.step }.toSet() })
+        if (job.exportedAt == null && canAdd) item {
+            PrimaryButton("Container ${batch.containers.size + 1} / ${job.draft.quantity} erfassen", !busy, onScan)
+        }
         if (job.exportedAt == null && unfinished != null) item {
             PrimaryButton("Container ${unfinished.container.containerNumber} fortsetzen", !busy) { onContainer(unfinished.container.id) }
-        } else if (job.exportedAt == null && batch.containers.size < job.draft.quantity) item {
-            PrimaryButton("Container ${batch.containers.size + 1} / ${job.draft.quantity} erfassen", !busy, onScan)
         }
         if (batch.complete) item { PrimaryButton(if (job.exportedAt == null) "Export prüfen" else "Erneut exportieren", !busy, onExport) }
         if (job.draft.kind == JobKind.RETURN) item {

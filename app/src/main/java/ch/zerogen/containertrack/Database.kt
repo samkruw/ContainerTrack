@@ -13,7 +13,8 @@ data class JobEntity(
     val completedAt: Long? = null,
     val exportedAt: Long? = null,
     val loggerStoppedAt: Long? = null,
-    val completionTriggeredAt: Long? = null
+    val completionTriggeredAt: Long? = null,
+    val createdByAccountId: String? = null
 )
 
 @Entity(tableName = "containers", foreignKeys = [ForeignKey(entity = JobEntity::class,

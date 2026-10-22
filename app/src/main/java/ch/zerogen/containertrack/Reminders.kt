@@ -16,7 +16,7 @@ class ReminderAlarms(private val context: Context) {
     private val notifications = context.getSystemService(NotificationManager::class.java)
     fun createChannel() {
         notifications.createNotificationChannel(NotificationChannel(CHANNEL, "Logger starten", NotificationManager.IMPORTANCE_HIGH).apply {
-            description = "Lokale Erinnerung 30 Minuten nach dem ersten Delivery-Export"
+            description = "Lokale Erinnerung 30 Minuten nach vollständiger Lieferung"
         })
     }
     fun exactAllowed(): Boolean = Build.VERSION.SDK_INT < 31 || manager.canScheduleExactAlarms()

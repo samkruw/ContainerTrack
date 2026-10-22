@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.room.withTransaction
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.sync.Mutex
@@ -16,7 +17,9 @@ import java.time.Instant
 import java.time.ZoneId
 import java.util.UUID
 
-class TrackRepository(private val context: Context, val database: TrackDatabase) {
+class TrackRepository(private val context: Context, val database: TrackDatabase,
+    private val uploadScheduler: UploadScheduler = UploadScheduler {},
+    private val accountId: () -> String? = { null }) {
     private val dao = database.dao()
     private val mutations = Mutex()
     private val alarms = ReminderAlarms(context)
@@ -29,7 +32,7 @@ class TrackRepository(private val context: Context, val database: TrackDatabase)
             kt = if (draft.kind == JobKind.RETURN) draft.referenceNumber.trim() else draft.kt.trim(),
             quick = if (draft.kind == JobKind.RETURN) draft.quick else "",
             additionalWork = if (draft.kind == JobKind.RETURN) draft.additionalWork else "")
-        val entity = JobEntity(draft = normalized, createdAt = System.currentTimeMillis(), loggerStoppedAt = stoppedAt)
+        val entity = JobEntity(draft = normalized, createdAt = System.currentTimeMillis(), loggerStoppedAt = stoppedAt, createdByAccountId = accountId())
         dao.insertJob(entity)
         entity.id
     }
@@ -39,7 +42,7 @@ class TrackRepository(private val context: Context, val database: TrackDatabase)
             val batch = requireNotNull(dao.job(jobId))
             check(batch.job.exportedAt == null) { "Exportierte Aufträge sind abgeschlossen." }
             require(batch.containers.size < batch.job.draft.quantity) { "Alle Container sind bereits erfasst." }
-            require(batch.containers.all { it.container.completedAt != null }) { "Zuerst den aktuellen Container abschliessen." }
+            require(canAddContainer(batch.job.draft.kind, batch.containers.map { it.photos.map { p -> p.step }.toSet() })) { "Zuerst die Leerdokumentation des aktuellen Containers abschliessen." }
             require(containerError(number, batch.containers.map { it.container.containerNumber }.toSet()) == null) {
                 containerError(number, batch.containers.map { it.container.containerNumber }.toSet()) ?: "Ungültige Nummer."
             }
@@ -74,6 +77,7 @@ class TrackRepository(private val context: Context, val database: TrackDatabase)
                 captured.inputStream().use { input -> staged.outputStream().use { output -> input.copyTo(output); output.fd.sync() } }
                 check(staged.renameTo(destination)) { "Foto konnte nicht gespeichert werden." }
                 var replaced: PhotoEntity? = null
+                var effects = CompletionEffects()
                 withContext(NonCancellable) {
                   database.withTransaction {
                     val batch = requireNotNull(dao.job(jobId))
@@ -88,10 +92,23 @@ class TrackRepository(private val context: Context, val database: TrackDatabase)
                     dao.updateContainer(item.container.copy(completedAt = if (complete) at else null))
                     val updated = requireNotNull(dao.job(jobId))
                     dao.updateJob(batch.job.copy(updatedAt = at, completedAt = if (updated.complete) at else null))
+                    if (updated.complete) {
+                        val first = batch.job.completionTriggeredAt == null
+                        if (first) dao.updateJob(batch.job.copy(updatedAt = at, completedAt = at, completionTriggeredAt = at))
+                        var reminder: LoggerReminder? = null
+                        if (batch.job.draft.kind == JobKind.DELIVERY) {
+                            dao.insertReminder(LoggerReminder(jobId = jobId, referenceNumber = batch.job.draft.referenceNumber,
+                                dueAt = reminderDueAt(batch.job.completionTriggeredAt ?: at)))
+                            reminder = dao.jobReminder(jobId)
+                        }
+                        if (first || dao.uploadJob(jobId) != null) queuePhotos(requireNotNull(dao.job(jobId)))
+                        effects = CompletionEffects(reminder, if (dao.uploadJob(jobId) != null) jobId else null)
+                    }
                   }
                   committed = true
                   replaced?.let { File(it.localPath).delete() }
                   captured.delete()
+                  dispatch(effects)
                 }
             } catch (e: Exception) {
                 staged.delete()
@@ -171,15 +188,56 @@ class TrackRepository(private val context: Context, val database: TrackDatabase)
         val reminder = database.withTransaction {
             val job = requireNotNull(dao.job(jobId)).job
             dao.updateJob(job.copy(exportedAt = firstExportAt(job.exportedAt, now), updatedAt = now))
-            if (job.draft.kind == JobKind.DELIVERY) {
-                dao.insertReminder(LoggerReminder(jobId = job.id, referenceNumber = job.draft.referenceNumber,
-                    dueAt = reminderDueAt(firstExportAt(job.exportedAt, now))))
-                dao.jobReminder(job.id)
-            } else null
+            dao.jobReminder(job.id)
         }
-        reminder?.let { alarms.schedule(it) }
         File(context.filesDir, "pending/$jobId").deleteRecursively()
         reminder
+    }
+
+    private suspend fun queuePhotos(batch: JobWithContainers) {
+        dao.insertUploadJob(UploadJobEntity(batch.job.id, ownerAccountId = batch.job.createdByAccountId))
+        for (item in batch.ordered) for (photo in item.photos) {
+            dao.insertUploadPhoto(UploadPhotoEntity(photo.id, batch.job.id,
+                "${batch.job.id}/${item.container.containerNumber}/${photoName(item.container.containerNumber, photo.step)}"))
+        }
+        if (dao.uploadPhotos(batch.job.id).any { it.uploadedAt == null })
+            dao.uploadState(batch.job.id, "COMPLETE_PENDING_UPLOAD", null, System.currentTimeMillis())
+    }
+
+    private fun dispatch(effects: CompletionEffects) {
+        // The durable DB records remain authoritative if the process or scheduler stops here.
+        effects.reminder?.let { runCatching { alarms.schedule(it) } }
+        effects.uploadJobId?.let { runCatching { uploadScheduler.enqueue(it) } }
+    }
+
+    suspend fun enqueuePhotoUpload(jobId: String, owner: String) = withContext(Dispatchers.IO) {
+        mutations.withLock {
+            database.withTransaction {
+                val batch = requireNotNull(dao.job(jobId))
+                check(batch.complete) { "Zuerst alle Pflichtfotos aufnehmen." }
+                queuePhotos(batch)
+                val existing = requireNotNull(dao.uploadJob(jobId))
+                check(existing.ownerAccountId == null || existing.ownerAccountId == owner) { "Dieser Auftrag gehört zu einem anderen Konto." }
+                dao.bindUpload(jobId, owner)
+            }
+            dispatch(CompletionEffects(uploadJobId = jobId))
+        }
+    }
+
+    suspend fun reconcilePendingEffects() = withContext(Dispatchers.IO) {
+        mutations.withLock {
+            database.withTransaction {
+                for (batch in dao.observeJobs().first()) {
+                    if (batch.complete && batch.job.draft.kind == JobKind.DELIVERY &&
+                        batch.job.completionTriggeredAt != null && dao.jobReminder(batch.job.id) == null) {
+                        dao.insertReminder(LoggerReminder(jobId = batch.job.id, referenceNumber = batch.job.draft.referenceNumber,
+                            dueAt = reminderDueAt(System.currentTimeMillis())))
+                    }
+                }
+            }
+            dao.pendingReminders().forEach { dispatch(CompletionEffects(reminder = it)) }
+            dao.uploadJobs().filter { it.state != "SYNCED" }.forEach { dispatch(CompletionEffects(uploadJobId = it.jobId)) }
+        }
     }
 
     private fun pruneSharedExports(now: Long) {

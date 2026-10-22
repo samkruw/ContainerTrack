@@ -2,11 +2,11 @@
   "formatVersion": 1,
   "database": {
     "version": 2,
-    "identityHash": "1a891ea2b78e1e5b5f7f6418c49b1702",
+    "identityHash": "56f8330f4911538d4fea4a9c9b4c0cc1",
     "entities": [
       {
         "tableName": "jobs",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, `completedAt` INTEGER, `exportedAt` INTEGER, `loggerStoppedAt` INTEGER, `completionTriggeredAt` INTEGER, `kind` TEXT NOT NULL, `referenceNumber` TEXT NOT NULL, `kt` TEXT NOT NULL, `orderValue` TEXT NOT NULL, `quantity` INTEGER NOT NULL, `quick` TEXT NOT NULL, `additionalWork` TEXT NOT NULL, PRIMARY KEY(`id`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, `completedAt` INTEGER, `exportedAt` INTEGER, `loggerStoppedAt` INTEGER, `completionTriggeredAt` INTEGER, `createdByAccountId` TEXT, `kind` TEXT NOT NULL, `referenceNumber` TEXT NOT NULL, `kt` TEXT NOT NULL, `orderValue` TEXT NOT NULL, `quantity` INTEGER NOT NULL, `quick` TEXT NOT NULL, `additionalWork` TEXT NOT NULL, PRIMARY KEY(`id`))",
         "fields": [
           {
             "fieldPath": "id",
@@ -45,6 +45,11 @@
             "fieldPath": "completionTriggeredAt",
             "columnName": "completionTriggeredAt",
             "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "createdByAccountId",
+            "columnName": "createdByAccountId",
+            "affinity": "TEXT"
           },
           {
             "fieldPath": "draft.kind",
@@ -439,7 +444,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '1a891ea2b78e1e5b5f7f6418c49b1702')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '56f8330f4911538d4fea4a9c9b4c0cc1')"
     ]
   }
 }

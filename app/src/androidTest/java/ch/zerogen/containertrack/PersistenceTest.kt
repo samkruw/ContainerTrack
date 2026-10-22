@@ -86,7 +86,7 @@ class PersistenceTest {
         } finally { invalid.delete(); repo.deleteJob(job); db.close() }
     }
 
-    @Test fun firstSuccessfulExportCreatesOneTimerAndReexportPreservesIt() = runBlocking {
+    @Test fun firstCompletionCreatesOneTimerAndReexportPreservesIt() = runBlocking {
         val db = Room.inMemoryDatabaseBuilder(context, TrackDatabase::class.java).build()
         val repo = TrackRepository(context, db)
         val job = repo.createJob(draft(JobKind.DELIVERY), null)
@@ -102,7 +102,7 @@ class PersistenceTest {
             val first = repo.export(job, Uri.fromFile(export1))!!
             val firstAt = db.dao().job(job)!!.job.exportedAt!!
             assertTrue(firstAt >= before)
-            assertEquals(firstAt + 1_800_000L, first.dueAt)
+            assertEquals(db.dao().job(job)!!.job.completionTriggeredAt!! + 1_800_000L, first.dueAt)
             val second = repo.export(job, Uri.fromFile(export2))!!
             assertEquals(first.id, second.id)
             assertEquals(first.dueAt, second.dueAt)

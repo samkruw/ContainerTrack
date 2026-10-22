@@ -96,6 +96,10 @@ fun PhotoScreen(batch: JobWithContainers, containerId: String, selectedStep: Int
                 LinearProgressIndicator(progress = { item.photos.size.toFloat() / kind.photoCount }, modifier = Modifier.fillMaxWidth())
             }
         }
+        if (!readonly && kind == JobKind.DELIVERY && completed.containsAll((1..5).toSet()) && 6 !in completed) {
+            Information("Leerdokumentation vollständig · Befüllt-Foto kann später ergänzt werden.")
+            PrimaryButton("Befüllt später · zum Auftrag", !busy, onDone)
+        }
         val selected = item.photos.find { it.step == reviewStep }
         when {
             pendingPhoto != null && step != null -> {
