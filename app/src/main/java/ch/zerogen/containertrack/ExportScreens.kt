@@ -71,6 +71,11 @@ fun ExportReviewScreen(batch: JobWithContainers, busy: Boolean, onShare: () -> U
 
 @Composable
 fun MoreScreen() {
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) { PermissionsContent() }
+}
+
+@Composable
+fun PermissionsContent() {
     val context = LocalContext.current
     val app = context.applicationContext as ContainerTrackApp
     val lifecycle = LocalLifecycleOwner.current
@@ -83,8 +88,7 @@ fun MoreScreen() {
     }
     val notifications = remember(refresh) { app.alarms.notificationsAllowed() }
     val exact = remember(refresh) { app.alarms.exactAllowed() }
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        ScreenTitle("Mehr", "Berechtigungen und lokale Daten")
+    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
         Text("Logger-Erinnerungen", style = MaterialTheme.typography.titleLarge)
         Information(if (notifications) "Benachrichtigungen sind erlaubt." else "Benachrichtigungen sind gesperrt. Fällige Logger werden beim Öffnen der App weiterhin angezeigt.", warning = !notifications)
         PrimaryButton(if (notifications) "Benachrichtigungseinstellungen" else "Benachrichtigungen erlauben") {
@@ -100,7 +104,7 @@ fun MoreScreen() {
         }) { Text("Genaue Alarme erlauben") }
         HorizontalDivider()
         Text("Offline und Datenschutz", style = MaterialTheme.typography.titleLarge)
-        Text("Aufträge, OCR und Fotos werden auf diesem Gerät verarbeitet. Keine Anmeldung, keine Synchronisierung und kein Cloud-Upload durch die App. Fotos liegen im internen App-Speicher. Android-Backups sind deaktiviert.")
+        Text("Aufträge, OCR und Fotos werden auf diesem Gerät verarbeitet. Optional werden nach Microsoft-Anmeldung ausschließlich nummerierte Fotos an den konfigurierten Teams-Kanal übertragen. Fotos liegen im internen App-Speicher. Android-Backups sind deaktiviert.")
         Text("ZIP-Dateien werden am selbst gewählten Speicherort abgelegt oder über Android an eine von Ihnen ausgewählte App übergeben. Beim Teilen kann diese App den Anhang versenden. Bei Deinstallation werden die internen Aufträge und Fotos gelöscht; separat gespeicherte Dateien bleiben erhalten.")
         Text("App-Berechtigungen", style = MaterialTheme.typography.titleMedium)
         OutlinedButton(modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp), onClick = {

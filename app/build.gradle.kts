@@ -17,8 +17,8 @@ android {
         applicationId = "ch.zerogen.containertrack"
         minSdk = 26
         targetSdk = 36
-        versionCode = 3
-        versionName = "1.2.0"
+        versionCode = 4
+        versionName = "1.3.0"
         for (part in listOf("TENANT_ID", "CLIENT_ID", "REDIRECT_URI", "TEAM_ID", "CHANNEL_ID")) {
             buildConfigField("String", "MICROSOFT_$part", javaLiteral(publicSetting("CT_MICROSOFT_$part")))
         }
@@ -38,6 +38,9 @@ android {
 }
 room { schemaDirectory("$projectDir/schemas") }
 dependencies {
+    // Align the app and Room migration-test APK; mixed serialization ABIs fail at runtime.
+    implementation(platform("org.jetbrains.kotlinx:kotlinx-serialization-bom:1.8.1"))
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1")
     implementation(libs.msal)
     implementation(libs.work)
     implementation(platform(libs.compose.bom))

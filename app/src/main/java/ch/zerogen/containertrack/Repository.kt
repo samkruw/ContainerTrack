@@ -54,16 +54,22 @@ class TrackRepository(private val context: Context, val database: TrackDatabase,
     }
 
     suspend fun renameContainer(jobId: String, containerId: String, number: String) = withContext(Dispatchers.IO) {
-        mutations.withLock { database.withTransaction {
-            val batch = requireNotNull(dao.job(jobId))
-            check(batch.job.exportedAt == null) { "Exportierte Aufträge sind abgeschlossen." }
-            val container = batch.containers.first { it.container.id == containerId }.container
-            require(containerError(number, batch.containers.filter { it.container.id != containerId }.map { it.container.containerNumber }.toSet()) == null) {
-                "Exakt 4 Ziffern verwenden; Duplikate sind nicht erlaubt."
+        mutations.withLock {
+            database.withTransaction {
+                val batch = requireNotNull(dao.job(jobId))
+                check(batch.job.exportedAt == null) { "Exportierte Aufträge sind abgeschlossen." }
+                val item = batch.containers.first { it.container.id == containerId }
+                require(containerError(number,batch.containers.filter { it.container.id != containerId }.map { it.container.containerNumber }.toSet()) == null)
+                if (item.container.containerNumber != number) {
+                    dao.updateContainer(item.container.copy(containerNumber = number))
+                    // Names are part of the upload version; stale in-flight acknowledgements must not survive a rename.
+                    for (photo in item.photos) dao.putPhoto(photo.copy(id = UUID.randomUUID().toString()))
+                    if (batch.complete && dao.uploadJob(jobId) != null) queuePhotos(requireNotNull(dao.job(jobId)))
+                    dao.updateJob(batch.job.copy(updatedAt = System.currentTimeMillis()))
+                }
             }
-            dao.updateContainer(container.copy(containerNumber = number))
-            dao.updateJob(batch.job.copy(updatedAt = System.currentTimeMillis()))
-        } }
+            if (dao.uploadJob(jobId) != null) dispatch(CompletionEffects(uploadJobId = jobId))
+        }
     }
 
     suspend fun savePhoto(jobId: String, containerId: String, step: Int, captured: File) = withContext(Dispatchers.IO) {
@@ -128,6 +134,7 @@ class TrackRepository(private val context: Context, val database: TrackDatabase,
                 dao.deletePhotosFrom(containerId, fromStep)
                 dao.updateContainer(item.container.copy(completedAt = null))
                 dao.updateJob(batch.job.copy(updatedAt = System.currentTimeMillis(), completedAt = null))
+                if (dao.uploadJob(jobId) != null) dao.uploadState(jobId,"COMPLETE_PENDING_UPLOAD","Pflichtfotos fehlen · Upload pausiert",System.currentTimeMillis())
                 paths
             }
             deleted.forEach { File(it).delete() }
@@ -171,6 +178,26 @@ class TrackRepository(private val context: Context, val database: TrackDatabase,
             } finally {
                 if (!committed) directory.deleteRecursively()
             }
+        }
+    }
+
+    suspend fun preparePhotoShare(jobId: String, teamsPackage: String? = null, photoId: String? = null): Intent = withContext(Dispatchers.IO) {
+        mutations.withLock {
+            val batch = requireNotNull(dao.job(jobId))
+            pruneSharedExports(System.currentTimeMillis())
+            val directory = File(context.cacheDir,"shared-photos/$jobId/${UUID.randomUUID()}")
+            check(directory.mkdirs()) { "Fotos konnten nicht vorbereitet werden." }
+            try {
+                val photos = batch.ordered.flatMap { item -> item.photos.sortedBy { it.step }.filter { photoId == null || it.id == photoId }.map { photo ->
+                    require(photo.step in 1..batch.job.draft.kind.photoCount)
+                    val source = File(photo.localPath)
+                    require(source.isFile && source.length() > 0)
+                    File(directory,photoName(item.container.containerNumber,photo.step)).also { source.copyTo(it) }
+                } }
+                val intent = photoShareIntent(context,photos,teamsPackage)
+                intent.putExtra(Intent.EXTRA_SUBJECT,batch.job.draft.referenceNumber)
+                intent
+            } catch (e: Exception) { directory.deleteRecursively();throw e }
         }
     }
 
@@ -236,27 +263,29 @@ class TrackRepository(private val context: Context, val database: TrackDatabase,
                 }
             }
             dao.pendingReminders().forEach { dispatch(CompletionEffects(reminder = it)) }
-            dao.uploadJobs().filter { it.state != "SYNCED" }.forEach { dispatch(CompletionEffects(uploadJobId = it.jobId)) }
+            dao.uploadJobs().filter { it.state in setOf("COMPLETE_PENDING_UPLOAD","UPLOADING") }.forEach { dispatch(CompletionEffects(uploadJobId = it.jobId)) }
         }
     }
 
     private fun pruneSharedExports(now: Long) {
         val cutoff = now - 7 * 24 * 60 * 60 * 1000L
-        File(context.cacheDir, "shared-exports").listFiles()?.forEach { jobDirectory ->
+        listOf("shared-exports","shared-photos").forEach { base -> File(context.cacheDir, base).listFiles()?.forEach { jobDirectory ->
             jobDirectory.listFiles()?.filter { it.lastModified() < cutoff }?.forEach { it.deleteRecursively() }
             if (jobDirectory.listFiles()?.isEmpty() == true) jobDirectory.delete()
-        }
+        } }
     }
 
     suspend fun deleteJob(jobId: String): LoggerReminder? = withContext(Dispatchers.IO) {
         mutations.withLock {
             val reminder = dao.jobReminder(jobId)
+            uploadScheduler.cancel(jobId)
             withContext(NonCancellable) {
                 dao.deleteJob(jobId)
                 reminder?.let { alarms.cancel(it.id) }
                 File(context.filesDir, "photos/$jobId").deleteRecursively()
                 File(context.filesDir, "pending/$jobId").deleteRecursively()
                 File(context.cacheDir, "shared-exports/$jobId").deleteRecursively()
+                File(context.cacheDir, "shared-photos/$jobId").deleteRecursively()
             }
             reminder
         }

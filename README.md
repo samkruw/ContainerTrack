@@ -1,13 +1,13 @@
 # Container Track — Android
 
-Native Kotlin-App zur lokalen Erfassung von Lieferungen und Returns. Ein `:app`-Modul mit Compose, Room, CameraX und gebündeltem ML Kit. Kein WebView, kein Backend, keine Anmeldung.
+Native Kotlin-App zur lokalen Erfassung von Lieferungen und Returns. Ein `:app`-Modul mit Compose, Room, CameraX und gebündeltem ML Kit. Kein WebView. Optionaler Foto-Upload über Microsoft-Firmenkonto und Teams.
 
-**Stand:** Update 1.2.0 / versionCode 3. Bestehende native Architektur, App-ID und Room-Schema bleiben erhalten. Änderungen und Kompatibilitätsgrenzen: [UPDATE_1_2.md](docs/UPDATE_1_2.md). Aktuelle Prüfnachweise: [QA_STATUS.md](docs/QA_STATUS.md).
+**Stand:** Update 1.3.0 / versionCode 4. Bestehende native Architektur und App-ID bleiben erhalten; Room migriert ohne Datenlöschung von Schema 1 auf 2. Änderungen: [UPDATE_1_3.md](docs/UPDATE_1_3.md). Microsoft-Einrichtung: [MICROSOFT_SETUP.md](docs/MICROSOFT_SETUP.md). Aktuelle Prüfnachweise: [QA_STATUS.md](docs/QA_STATUS.md).
 
 ## Projekt öffnen und APK bauen
 
 1. Ordner in Android Studio öffnen.
-2. JDK 17 oder neuer, Android SDK Platform 36 und Build Tools 36.0.0 bereitstellen. Gradle 8.13 wird über den mitgelieferten Wrapper geladen. Nur der Entwicklungs-Build benötigt Internet für Werkzeuge und Abhängigkeiten.
+2. JDK 17 oder neuer, Android SDK Platform 36 und Build Tools 36.0.0 bereitstellen. Gradle 8.13 wird über den mitgelieferten Wrapper geladen. Der Entwicklungs-Build benötigt Internet für Werkzeuge und Abhängigkeiten; der optionale Microsoft-Upload benötigt ebenfalls Internet.
 3. Gradle synchronisieren und ausführen:
 
 ```sh
@@ -23,13 +23,13 @@ Bei Push/PR führt [android.yml](.github/workflows/android.yml) Build, Unit-Test
 
 ## Bedienung
 
-- **Start:** Lieferung oder Return anlegen. Alle Pflichtfelder ausfüllen. `Quick` und `additional Work` werden ausschliesslich bei Return angegeben; `Nothing` und `Empty` sind dort gültig. Quantity: 1–50.
+- **Plus-Button:** Lieferung oder Return anlegen. Alle Pflichtfelder ausfüllen. `Quick` und `additional Work` werden ausschliesslich bei Return angegeben; `Nothing` und `Empty` sind dort gültig. Quantity: 1–50.
 - **Return:** zuerst den gestoppten Logger bestätigen. Der Zeitstempel wird genau bei der Bestätigung gesetzt. Erst danach sind die Formularfelder aktiv.
 - **Scannen:** Auftrag auswählen; vierstellige Nummer in den Rahmen halten. Der erste gültige OCR-Treffer wird übernommen. Manuelle Eingabe und spätere Nummernkorrektur sind möglich. Führende Nullen bleiben erhalten; doppelte Nummern im Auftrag werden blockiert.
-- **Fotos:** Lieferung benötigt sechs Fotos in vorgeschriebener Reihenfolge, Return genau ein Inhaltsfoto. Foto prüfen und ausdrücklich verwenden. Neuaufnahme ersetzt erst nach Bestätigung das bisherige Foto. Löschen ab einem Schritt entfernt auch die folgenden Fotos und setzt den Abschlussstatus zurück.
+- **Fotos:** Lieferung benötigt sechs Fotos: zuerst je Container 01–05, anschließend darf 06 (befüllt) später folgen. Return benötigt genau ein Inhaltsfoto. Foto prüfen und ausdrücklich verwenden. Neuaufnahme ersetzt erst nach Bestätigung das bisherige Foto. Löschen ab einem Schritt entfernt auch die folgenden Fotos und setzt den Abschlussstatus zurück.
 - **Aufträge:** lokal gespeicherte Vorgänge fortsetzen, ansehen oder nach gesonderter Bestätigung löschen. Exportierte Aufträge sind zur Ansicht und zum erneuten Export verfügbar.
 - **Export:** nur vollständige Aufträge exportieren. Mit **ZIP teilen** die Android-Auswahl öffnen und beispielsweise ein E-Mail-Programm wählen. Mit **ZIP speichern** legt Androids Dateiauswahl den Speicherort fest. Für vollständigen Offline-Betrieb einen lokalen Ordner auswählen; externe Dokumentanbieter werden vom Benutzer gewählt und liegen ausserhalb der App.
-- **Mehr:** Kamera, Benachrichtigungen und genaue Alarme verwalten.
+- **Galerie:** vorhandene lokale Fotos ansehen, filtern und einzeln teilen. **Profil:** Microsoft-Konto sowie Kamera, Benachrichtigungen und genaue Alarme verwalten.
 
 ## Exportformat
 
@@ -57,7 +57,7 @@ META enthält Auftragswerte, Fotozeitpunkte und relative Exportnamen, keine inte
 
 ## Logger und Berechtigungen
 
-Nach dem ersten erfolgreichen Delivery-Export wird genau eine Room-Erinnerung angelegt: erster Exportzeitpunkt + 30 Minuten. Erneuter Export oder erneutes Teilen erzeugt keine neue Frist. Beim Teilen beginnt sie nach erfolgreicher ZIP-Erstellung, auch wenn die anschliessende Android-Auswahl abgebrochen wird; die App bestätigt keinen E-Mail-Versand. Countdown und Fortschritt bleiben in der App sichtbar; bei Fälligkeit erscheint ein nicht wegwischbarer Bestätigungsdialog. Eine Benachrichtigung bietet die Aktion „Logger gestartet“.
+Beim ersten vollständigen Delivery-Abschluss (alle sechs Fotos jedes Containers) wird genau eine Room-Erinnerung angelegt: Abschlusszeitpunkt + 30 Minuten. Export, Teilen und Wiederholungen setzen sie nicht zurück. Die App bestätigt keinen Versand durch eine andere App. Countdown und Fortschritt bleiben in der App sichtbar; bei Fälligkeit erscheint ein nicht wegwischbarer Bestätigungsdialog. Eine Benachrichtigung bietet die Aktion „Logger gestartet“.
 
 `CAMERA` für Scan/Fotos, `POST_NOTIFICATIONS` ab Android 13, optionaler Zugriff `SCHEDULE_EXACT_ALARM` für zeitgenaue Standby-Alarme. Ohne genauen Alarmzugriff nutzt die App `setAndAllowWhileIdle`; Android darf die Zustellung verzögern. Ohne Benachrichtigungsfreigabe bleibt der Dialog beim Öffnen der App wirksam. `RECEIVE_BOOT_COMPLETED` stellt offene Alarme nach Neustart wieder her. Nach explizitem Android-„Beenden erzwingen“ muss die App erneut geöffnet werden; Android verhindert vorher Alarm-/Broadcast-Zustellung.
 
@@ -65,11 +65,11 @@ Nach dem ersten erfolgreichen Delivery-Export wird genau eine Room-Erinnerung an
 
 Room und Fotos liegen intern, Fotos nicht als BLOB. Fotos werden als JPEG mit aufgelöster EXIF-Orientierung, maximal 2200 Pixel längster Kante und Qualität 85 gespeichert. Unbestätigte Vorschauen liegen ebenfalls intern; Pfad und Schritt werden für Android-Zustandswiederherstellung gesichert. Ein neuer Auftrag wird erst nach erfolgreicher Formularvalidierung gespeichert.
 
-Zum Teilen liegen separate ZIP-Kopien im privaten Cache. FileProvider gibt nur diese Archive mit temporärem Lesezugriff an die gewählte App weiter. Jede Freigabe bekommt einen eigenen Pfad. Auftragslöschung entfernt die internen Kopien; weitere Freigaben bereinigen Kopien älter als sieben Tage. Android darf den Cache früher löschen. Das E-Mail-Programm verarbeitet und versendet den Anhang selbst.
+Zum Teilen liegen separate ZIP- oder nummerierte JPEG-Kopien im privaten Cache. FileProvider gibt nur diese Dateien mit temporärem Lesezugriff an die gewählte App weiter. Jede Freigabe bekommt einen eigenen Pfad. Auftragslöschung entfernt die internen Kopien; weitere Freigaben bereinigen Kopien älter als sieben Tage. Android darf den Cache früher löschen. Das E-Mail-Programm verarbeitet und versendet den Anhang selbst.
 
-Netzwerk-, Standort-, Mikrofon- und breite Speicherrechte werden nicht angefordert. Manifest-Merger-Regeln entfernen Netzwerkberechtigungen aus Bibliotheksmanifesten. Android-Backup ist deaktiviert. Der APK-Berechtigungscheck bestätigt das fehlende INTERNET-Recht.
+INTERNET, ACCESS_NETWORK_STATE und WAKE_LOCK unterstützen den optionalen Microsoft-Upload. Standort-, Mikrofon-, NFC- und breite Speicherrechte werden nicht angefordert. Android-Backup ist deaktiviert. Die Berechtigungsprüfung lässt nur die ausdrücklich benötigten Rechte zu.
 
-Der geprüfte Abhängigkeitsbericht enthält keine Firebase-Analytics-, Crashlytics- oder Cloud-Datenhaltungs-SDKs. Das vorgeschriebene gebündelte ML Kit bringt jedoch technische Hilfsbibliotheken `firebase-components`, `firebase-encoders`, `firebase-encoders-json`, `firebase-annotations` und Google DataTransport transitiv mit. Diese sind im Bericht ausgewiesen; eine völlige Abwesenheit aller Artefakte mit Firebase-Gruppennamen wird daher nicht behauptet. Ohne INTERNET-Berechtigung kann auch dieser Bibliothekscode keine Internetverbindung aufbauen. Es ist kein Firebase-Projekt konfiguriert.
+Der geprüfte Abhängigkeitsbericht enthält keine Firebase-Analytics-, Crashlytics- oder Cloud-Datenhaltungs-SDKs. Das vorgeschriebene gebündelte ML Kit bringt jedoch technische Hilfsbibliotheken `firebase-components`, `firebase-encoders`, `firebase-encoders-json`, `firebase-annotations` und Google DataTransport transitiv mit. Diese sind im Bericht ausgewiesen; eine völlige Abwesenheit aller Artefakte mit Firebase-Gruppennamen wird daher nicht behauptet. Der Quellcode-Audit begrenzt Netzwerkadapter auf die Microsoft-Anbindung; dies ist keine technische Netzwerksperre für Bibliothekscode. Es ist kein Firebase-Projekt konfiguriert.
 
 Prozessabbruch kann vor bestätigter Speicherung eine Aufnahme verlieren. Bei abruptem Prozessabbruch genau zwischen erfolgreichem Export und Room-Commit kann eine ZIP existieren, ohne dass ein Exportabschluss gespeichert ist. Innerhalb des laufenden Prozesses sind Fotoabschluss und Erinnerungsplanung gegen Coroutine-Abbruch geschützt. Offene Erinnerungen werden beim App-Start und Boot erneut geplant.
 
@@ -81,7 +81,7 @@ Prozessabbruch kann vor bestätigter Speicherung eine Aufnahme verlieren. Bei ab
 python3 tools/check_privacy.py
 ```
 
-Unit: Validierung, OCR-Normalisierung, Duplikate, Fotofolge, TXT, ZIP-Pfade, Dateinamen und Timer. Android: Room-Wiederöffnung, Dateien/Löschen, Return-Gate, Fotozustände, Export/Re-Export, Navigation, Activity-Neustart, Alarm-Receiver und Benachrichtigungsaktion mit gesperrten/erlaubten Benachrichtigungen. OfflineOcrTest schaltet den API-35-Emulator in den Flugmodus und prüft die Erkennung von `0708` durch das echte gebündelte ML-Kit-Modell. ScreenshotCaptureTest erzeugt 14 PNGs unter `Android/data/ch.zerogen.containertrack/files/screenshots`. CI lässt die Testinstallation zum Screenshot-Transfer bis zum Ende des Emulator-Jobs bestehen.
+Unit: Validierung, OCR-Normalisierung, Duplikate, Fotofolge, TXT, ZIP-Pfade, Dateinamen und Timer. Android: Room-Wiederöffnung, Dateien/Löschen, Return-Gate, Fotozustände, Export/Re-Export, Navigation, Activity-Neustart, Alarm-Receiver und Benachrichtigungsaktion mit gesperrten/erlaubten Benachrichtigungen. OfflineOcrTest schaltet den API-35-Emulator in den Flugmodus und prüft die Erkennung von `0708` durch das echte gebündelte ML-Kit-Modell. ScreenshotCaptureTest erzeugt 17 PNGs unter `Android/data/ch.zerogen.containertrack/files/screenshots`. CI lässt die Testinstallation zum Screenshot-Transfer bis zum Ende des Emulator-Jobs bestehen.
 
 Nach Sichtprüfung auf festem Emulator die Bilder nach `design/goldens/` übernehmen. Danach prüft CI diese Baselines; lokale Prüfung mit `python3 tools/compare_screenshots.py design/goldens app/build/screenshots` (Pillow erforderlich). Ohne freigegebene Baselines ist Screenshot-Regression noch nicht abgenommen. Die im Update-Auftrag mitgelieferte Navy-/Glas-Referenz und Container-/Kamera-Marke dienen als visuelle Richtung. Der App-Marker ist eine kompakte native Vektorumsetzung; die hochaufgelösten Vorlagen werden nicht als Screens eingebettet. Das Referenzbild liegt bislang nicht als `design/UI_REFERENCE.png` im Repository vor.
 

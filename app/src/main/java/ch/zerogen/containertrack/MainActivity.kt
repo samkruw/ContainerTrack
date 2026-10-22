@@ -43,7 +43,7 @@ class MainActivity : ComponentActivity() {
 fun TrackApp(vm: TrackViewModel = viewModel()) {
     val nav = rememberNavController()
     val entry by nav.currentBackStackEntryAsState()
-    val route = entry?.destination?.route ?: "home"
+    val route = entry?.destination?.route ?: "jobs"
     val jobs by vm.jobs.collectAsStateWithLifecycle()
     val reminders by vm.reminders.collectAsStateWithLifecycle()
     val now by vm.now.collectAsStateWithLifecycle()
@@ -51,6 +51,16 @@ fun TrackApp(vm: TrackViewModel = viewModel()) {
     val error by vm.error.collectAsStateWithLifecycle()
     val notice by vm.notice.collectAsStateWithLifecycle()
     val active by vm.activeJob.collectAsStateWithLifecycle()
+    val uploads by vm.uploadJobs.collectAsStateWithLifecycle()
+    val uploadedPhotos by vm.photoUploads.collectAsStateWithLifecycle()
+    val identity by vm.microsoftIdentity.collectAsStateWithLifecycle()
+    val microsoftStatus by vm.microsoftStatus.collectAsStateWithLifecycle()
+    val online by vm.online.collectAsStateWithLifecycle()
+    val query by vm.search.collectAsStateWithLifecycle()
+    val filterName by vm.filter.collectAsStateWithLifecycle()
+    var createSheet by rememberSaveable { mutableStateOf(false) }
+    var actionJob by rememberSaveable { mutableStateOf<String?>(null) }
+    var shareJob by rememberSaveable { mutableStateOf<String?>(null) }
     val context = LocalContext.current
     val app = context.applicationContext as ContainerTrackApp
     val lifecycle = LocalLifecycleOwner.current
@@ -59,9 +69,9 @@ fun TrackApp(vm: TrackViewModel = viewModel()) {
             vm.shares.collect { intent ->
                 try { context.startActivity(Intent.createChooser(intent, "Auftrag teilen")) }
                 catch (_: android.content.ActivityNotFoundException) {
-                    vm.error.value = "Keine App zum Teilen gefunden. Bitte ZIP speichern oder eine E-Mail-App installieren."
+                    vm.error.value = "Keine App zum Teilen gefunden. Bitte eine passende App installieren."
                 } catch (_: SecurityException) {
-                    vm.error.value = "ZIP konnte nicht geteilt werden. Bitte erneut versuchen oder ZIP speichern."
+                    vm.error.value = "Dateien konnten nicht geteilt werden. Bitte erneut versuchen."
                 }
             }
         }
@@ -84,7 +94,7 @@ fun TrackApp(vm: TrackViewModel = viewModel()) {
         }
     }
     fun openJob(id: String) { vm.selectJob(id); nav.navigate("job/$id") { launchSingleTop = true } }
-    val tabs = listOf("home" to "Start", "jobs" to "Aufträge", "scan" to "Scannen", "exports" to "Export", "more" to "Mehr")
+    val tabs = listOf("jobs" to "Aufträge", "gallery" to "Galerie", "profile" to "Profil")
     Scaffold(containerColor = Color.Transparent, topBar = {
         GlassSurface(shape = androidx.compose.foundation.shape.RoundedCornerShape(0.dp)) {
             TopAppBar(colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
@@ -97,13 +107,13 @@ fun TrackApp(vm: TrackViewModel = viewModel()) {
                 if (route !in tabs.map { it.first }) IconButton(onClick = { if (!busy) nav.popBackStack() }, enabled = !busy) { Icon(Icons.Default.ArrowBack, "Zurück") }
             })
         }
-    }, bottomBar = {
+    }, floatingActionButton = { if(route in tabs.map { it.first }) FloatingActionButton(onClick={ if(!busy) createSheet=true }) { Icon(Icons.Default.Add,"Neuer Auftrag") } }, bottomBar = {
         GlassSurface(shape = androidx.compose.foundation.shape.RoundedCornerShape(0.dp)) {
             NavigationBar(containerColor = Color.Transparent) {
                 tabs.forEachIndexed { index, (path, label) ->
                     NavigationBarItem(selected = route == path, enabled = !busy,
                         onClick = { nav.navigate(path) { popUpTo(nav.graph.startDestinationId) { saveState = true }; launchSingleTop = true; restoreState = true } },
-                        icon = { Icon(when (index) { 0 -> Icons.Default.Home; 1 -> Icons.Default.List; 2 -> Icons.Default.Search; 3 -> Icons.Default.Share; else -> Icons.Default.MoreVert }, label) },
+                        icon = { Icon(when (index) { 0 -> Icons.Default.List; 1 -> Icons.Default.Search; else -> Icons.Default.Person }, label) },
                         label = { Text(label, maxLines = 1) })
                 }
             }
@@ -112,9 +122,12 @@ fun TrackApp(vm: TrackViewModel = viewModel()) {
         Column(Modifier.padding(insets).imePadding().fillMaxSize()) {
             if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
             reminders.firstOrNull()?.let { ReminderStrip(it, reminders.size - 1, now) }
-            NavHost(nav, startDestination = "home", modifier = Modifier.weight(1f)) {
+            NavHost(nav, startDestination = "jobs", modifier = Modifier.weight(1f)) {
                 composable("home") { HomeScreen(jobs, onBegin = { kind -> vm.begin(kind); nav.navigate("setup") }, onJob = ::openJob) }
-                composable("jobs") { JobsScreen(jobs, onJob = ::openJob) }
+                composable("jobs") { OrderListScreen(jobs,uploads,uploadedPhotos,reminders,now,online,query,
+                    runCatching { OrderFilter.valueOf(filterName) }.getOrDefault(OrderFilter.ACTIVE),vm::search,{vm.filter(it.name)},{actionJob=it}) }
+                composable("gallery") { GalleryScreen(jobs,uploadedPhotos) { vm.sharePhotos(it.jobId,photoId=it.photoId) } }
+                composable("profile") { ProfileScreen(identity,microsoftStatus,vm.microsoftConfigured,busy,vm::signIn,vm::signOut,vm::switchAccount) }
                 composable("scan") { ScanJobsScreen(jobs, active, onJob = { batch ->
                     vm.selectJob(batch.job.id)
                     val unfinished = batch.ordered.firstOrNull { it.container.completedAt == null }
@@ -130,7 +143,7 @@ fun TrackApp(vm: TrackViewModel = viewModel()) {
                     if (batch != null) JobScreen(batch, vm, busy,
                         onScan = { nav.navigate("scan/$id") },
                         onContainer = { nav.navigate("photo/$id/$it?step=0") },
-                        onExport = { nav.navigate("export/$id") }, onDeleted = { nav.popBackStack() })
+                        onExport = { nav.navigate("export/$id") }, onDeleted = { nav.popBackStack() }, onPhoto = { container, step -> nav.navigate("photo/$id/$container?step=$step") })
                 }
                 composable("scan/{jobId}") { back ->
                     val id = back.arguments?.getString("jobId") ?: return@composable
@@ -157,8 +170,50 @@ fun TrackApp(vm: TrackViewModel = viewModel()) {
             }
         }
     }
+    if(createSheet) ModalBottomSheet(onDismissRequest={createSheet=false}) {
+        Column(Modifier.padding(20.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
+            ScreenTitle("Neuer Auftrag","Auftragsart wählen")
+            JobKind.entries.forEach { kind -> PrimaryButton(kind.label,enabled=!busy) {
+                createSheet=false;vm.begin(kind);nav.navigate("setup")
+            } }
+            Spacer(Modifier.height(24.dp))
+        }
+    }
+    jobs.find { it.job.id==actionJob }?.let { batch -> ModalBottomSheet(onDismissRequest={actionJob=null}) {
+        Column(Modifier.padding(20.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
+            ScreenTitle(batch.job.draft.referenceNumber,"${batch.containers.sumOf { it.photos.size }}/${batch.job.draft.quantity*batch.job.draft.kind.photoCount} Fotos")
+            PrimaryButton("Fotodokumentation fortsetzen",enabled=!busy && !batch.complete) {
+                actionJob=null;vm.selectJob(batch.job.id)
+                val first=batch.ordered.firstOrNull { item -> !(1..minOf(5,batch.job.draft.kind.photoCount)).all { step -> item.photos.any { it.step==step } } }
+                if(first!=null) nav.navigate("photo/${batch.job.id}/${first.container.id}?step=0")
+                else if(batch.containers.size < batch.job.draft.quantity) nav.navigate("scan/${batch.job.id}")
+                else batch.ordered.firstOrNull { it.photos.size<batch.job.draft.kind.photoCount }?.let { nav.navigate("photo/${batch.job.id}/${it.container.id}?step=0") }
+            }
+            PrimaryButton("Auftragsdetails",enabled=!busy) { actionJob=null;openJob(batch.job.id) }
+            OutlinedButton(onClick={actionJob=null;shareJob=batch.job.id},enabled=!busy,modifier=Modifier.fillMaxWidth().heightIn(min=48.dp)) { Text("Fotos teilen / Teams") }
+            OutlinedButton(onClick={actionJob=null;nav.navigate("export/${batch.job.id}")},enabled=!busy,modifier=Modifier.fillMaxWidth().heightIn(min=48.dp)) { Text("Lokaler ZIP-Export") }
+            Spacer(Modifier.height(24.dp))
+        }
+    } }
+    jobs.find { it.job.id==shareJob }?.let { batch -> ModalBottomSheet(onDismissRequest={shareJob=null}) {
+        Column(Modifier.padding(20.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
+            ScreenTitle("Fotos teilen","Ausschließlich nummerierte JPEG-Dateien")
+            uploads.find { it.jobId==batch.job.id }?.let { Text(syncLabel(it,online));it.lastError?.let { message -> Information(message,warning=true) } }
+            PrimaryButton("An Teams-Kanal übertragen",enabled=!busy && batch.complete && identity!=null && vm.microsoftConfigured) { vm.uploadPhotos(batch.job.id);shareJob=null }
+            if(identity==null) Text("Für den automatischen Upload zuerst im Profil anmelden.")
+            val teamsAvailable = remember(batch.containers.sumOf { it.photos.size }) {
+                Intent(if (batch.containers.sumOf { it.photos.size } > 1) Intent.ACTION_SEND_MULTIPLE else Intent.ACTION_SEND)
+                    .setType("image/jpeg").setPackage("com.microsoft.teams").resolveActivity(context.packageManager) != null
+            }
+            if (teamsAvailable) PrimaryButton("In Teams-App teilen",enabled=!busy && batch.containers.any { it.photos.isNotEmpty() }) { vm.sharePhotos(batch.job.id,teams=true);shareJob=null }
+            else Text("Teams-App nicht verfügbar. Fotos können über Android geteilt werden.")
+            OutlinedButton(onClick={vm.sharePhotos(batch.job.id);shareJob=null},enabled=!busy && batch.containers.any { it.photos.isNotEmpty() },modifier=Modifier.fillMaxWidth().heightIn(min=48.dp)) { Text("Fotos über Android teilen") }
+            Text("Der Android-Teilen-Dialog bestätigt keinen Upload. Der Teams-Status zählt nur vom Server bestätigte Dateien.",style=MaterialTheme.typography.bodySmall)
+            Spacer(Modifier.height(24.dp))
+        }
+    } }
     error?.let { message -> AlertDialog(onDismissRequest = { vm.error.value = null }, title = { Text("Vorgang prüfen") }, text = { Text(message) }, confirmButton = { TextButton(onClick = { vm.error.value = null }) { Text("Verstanden") } }) }
-    notice?.let { message -> AlertDialog(onDismissRequest = { vm.notice.value = null }, title = { Text("Export gespeichert") }, text = { Text(message) }, confirmButton = { TextButton(onClick = { vm.notice.value = null }) { Text("Schliessen") } }) }
+    notice?.let { message -> AlertDialog(onDismissRequest = { vm.notice.value = null }, title = { Text("Hinweis") }, text = { Text(message) }, confirmButton = { TextButton(onClick = { vm.notice.value = null }) { Text("Schliessen") } }) }
     reminders.firstOrNull { it.dueAt <= now }?.let { reminder ->
         AlertDialog(onDismissRequest = {}, title = { Text("Logger jetzt starten") },
             text = { Text("Auftrag ${reminder.referenceNumber}\nBitte Logger starten und anschliessend bestätigen.") },

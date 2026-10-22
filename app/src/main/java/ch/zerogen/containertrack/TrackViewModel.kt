@@ -1,6 +1,7 @@
 package ch.zerogen.containertrack
 
 import android.app.Application
+import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
@@ -17,6 +18,16 @@ import kotlinx.coroutines.withContext
 
 class TrackViewModel(application: Application, private val saved: SavedStateHandle) : AndroidViewModel(application) {
     private val app = application as ContainerTrackApp
+    val uploadJobs = app.database.dao().observeUploadJobs().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+    val photoUploads = app.database.dao().observePhotoUploads().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+    val microsoftIdentity = app.accounts.identity
+    val microsoftStatus = app.accounts.status
+    val microsoftConfigured get() = app.microsoftConfig.configured
+    val online = app.network.online
+    val search = saved.getStateFlow("orderSearch", "")
+    val filter = saved.getStateFlow("orderFilter", "ACTIVE")
+    fun search(value: String) { saved["orderSearch"] = value }
+    fun filter(value: String) { saved["orderFilter"] = value }
     val jobs = app.repository.jobs.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
     val reminders = app.repository.reminders.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
     val busy = MutableStateFlow(false)
@@ -78,6 +89,7 @@ class TrackViewModel(application: Application, private val saved: SavedStateHand
             catch (e: Exception) {
                 if (e is kotlinx.coroutines.CancellationException) throw e
                 error.value = when (e) {
+                    is MicrosoftAuthenticationRequired -> "Microsoft-Anmeldung oder Firmenfreigabe prüfen."
                     is IllegalArgumentException -> "Eingaben, Container-Nummer und Fotoreihenfolge bitte prüfen."
                     is IllegalStateException -> "Vorgang im aktuellen Auftragsstatus nicht möglich. Auftrag und verfügbaren Speicher prüfen."
                     is SecurityException -> "Zugriff nicht erlaubt. Berechtigungen oder Exportziel prüfen."
@@ -113,6 +125,19 @@ class TrackViewModel(application: Application, private val saved: SavedStateHand
     }
     fun share(jobId: String) = runAction {
         shareRequests.send(app.repository.prepareShare(jobId))
+    }
+    fun sharePhotos(jobId: String, teams: Boolean = false, photoId: String? = null) = runAction {
+        shareRequests.send(app.repository.preparePhotoShare(jobId,if (teams) "com.microsoft.teams" else null,photoId))
+    }
+    fun uploadPhotos(jobId: String) = runAction {
+        val owner = microsoftIdentity.value?.accountId ?: throw MicrosoftAuthenticationRequired()
+        app.repository.enqueuePhotoUpload(jobId,owner)
+        notice.value = "Fotos zur Übertragung vorgemerkt. Der Status zeigt die tatsächliche Bestätigung."
+    }
+    fun signIn(activity: Activity) = runAction { app.accounts.signIn(activity);app.repository.reconcilePendingEffects() }
+    fun signOut() = runAction { app.accounts.signOut();app.uploadScheduler.stopForLogout() }
+    fun switchAccount(activity: Activity) = runAction {
+        app.accounts.signOut();app.uploadScheduler.stopForLogout();app.accounts.signIn(activity);app.repository.reconcilePendingEffects()
     }
     fun deleteJob(id: String, done: () -> Unit) = runAction {
         app.repository.deleteJob(id)

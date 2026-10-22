@@ -83,7 +83,8 @@ data class UploadJobEntity(
     val ownerAccountId: String? = null,
     val state: String = "COMPLETE_PENDING_UPLOAD",
     val lastError: String? = null,
-    val lastAttemptAt: Long? = null
+    val lastAttemptAt: Long? = null,
+    val nextAttemptAt: Long? = null
 )
 
 @Entity(tableName = "upload_photos", foreignKeys = [
@@ -110,6 +111,8 @@ interface TrackDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE) suspend fun insertUploadPhoto(photo: UploadPhotoEntity): Long
     @Query("UPDATE upload_jobs SET state=:state,lastError=:error,lastAttemptAt=:at WHERE jobId=:jobId")
     suspend fun uploadState(jobId: String, state: String, error: String?, at: Long)
+    @Query("UPDATE upload_jobs SET nextAttemptAt=:at WHERE jobId=:jobId")
+    suspend fun deferUpload(jobId: String, at: Long?)
     @Query("UPDATE upload_jobs SET ownerAccountId=:accountId,state='COMPLETE_PENDING_UPLOAD',lastError=NULL WHERE jobId=:jobId AND ownerAccountId IS NULL")
     suspend fun bindUpload(jobId: String, accountId: String): Int
     @Query("UPDATE upload_photos SET uploadedAt=:at,remoteItemId=:remoteId,uploadedByAccountId=:accountId WHERE photoId=:photoId AND EXISTS (SELECT 1 FROM upload_jobs WHERE upload_jobs.jobId=upload_photos.jobId AND ownerAccountId=:accountId)")

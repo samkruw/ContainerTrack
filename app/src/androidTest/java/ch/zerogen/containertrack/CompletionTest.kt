@@ -53,4 +53,19 @@ class CompletionTest {
             assertNotNull(db.dao().job(job)!!.job.completionTriggeredAt)
         } finally {repo.deleteJob(job);db.close()}
     }
+    @Test fun permanentUploadErrorsNeedExplicitRetry(): Unit = runBlocking {
+        val db=Room.inMemoryDatabaseBuilder(context,TrackDatabase::class.java).build()
+        val scheduled=mutableListOf<String>()
+        val repo=TrackRepository(context,db,UploadScheduler { scheduled+=it })
+        val job=repo.createJob(JobDraft(JobKind.RETURN,"ERROR-RETRY",orderValue="20 ft",quick="Nothing",additionalWork="Empty"),123L)
+        try {
+            val c=repo.addContainer(job,"0708");photo(repo,job,c,1)
+            db.dao().uploadState(job,"UPLOAD_ERROR","Freigabe prüfen",1L)
+            scheduled.clear();repo.reconcilePendingEffects()
+            assertTrue(scheduled.isEmpty())
+            repo.enqueuePhotoUpload(job,"account")
+            assertEquals(listOf(job),scheduled)
+        } finally {repo.deleteJob(job);db.close()}
+    }
+
 }

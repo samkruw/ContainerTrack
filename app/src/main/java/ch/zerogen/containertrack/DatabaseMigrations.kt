@@ -10,7 +10,7 @@ val MIGRATION_1_2 = object : Migration(1, 2) {
         db.execSQL("UPDATE jobs SET completionTriggeredAt = COALESCE(completedAt,exportedAt) WHERE completedAt IS NOT NULL OR exportedAt IS NOT NULL")
         db.execSQL("""CREATE TABLE IF NOT EXISTS upload_jobs (
             jobId TEXT NOT NULL PRIMARY KEY, ownerAccountId TEXT, state TEXT NOT NULL,
-            lastError TEXT, lastAttemptAt INTEGER,
+            lastError TEXT, lastAttemptAt INTEGER, nextAttemptAt INTEGER,
             FOREIGN KEY(jobId) REFERENCES jobs(id) ON UPDATE NO ACTION ON DELETE CASCADE)""")
         db.execSQL("""CREATE TABLE IF NOT EXISTS upload_photos (
             photoId TEXT NOT NULL PRIMARY KEY, jobId TEXT NOT NULL, remotePath TEXT NOT NULL,

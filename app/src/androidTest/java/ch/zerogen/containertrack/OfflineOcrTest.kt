@@ -28,7 +28,10 @@ class OfflineOcrTest {
     @Test fun bundledModelRecognizesLeadingZeroInAirplaneMode() {
         val app = ApplicationProvider.getApplicationContext<ContainerTrackApp>()
         val permissions = app.packageManager.getPackageInfo(app.packageName, PackageManager.GET_PERMISSIONS).requestedPermissions.orEmpty()
-        assertFalse("The installed APK must not request INTERNET", Manifest.permission.INTERNET in permissions)
+        assertFalse("Location is not needed", Manifest.permission.ACCESS_FINE_LOCATION in permissions)
+        fun shell(command: String) = ParcelFileDescriptor.AutoCloseInputStream(
+            InstrumentationRegistry.getInstrumentation().uiAutomation.executeShellCommand(command)).use { String(it.readBytes()).trim() }
+        val wifiBefore = shell("settings get global wifi_on") == "1"
         val airplaneBefore = Settings.Global.getInt(app.contentResolver, Settings.Global.AIRPLANE_MODE_ON, 0) == 1
         fun airplane(enabled: Boolean) {
             if (Build.VERSION.SDK_INT < 29) return
@@ -45,12 +48,17 @@ class OfflineOcrTest {
         val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
         try {
             airplane(true)
+            shell("svc wifi disable")
+            val connectivity=app.getSystemService(android.net.ConnectivityManager::class.java)
+            val deadline=android.os.SystemClock.elapsedRealtime()+10_000
+            while(connectivity.getNetworkCapabilities(connectivity.activeNetwork)?.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_VALIDATED)==true && android.os.SystemClock.elapsedRealtime()<deadline) Thread.sleep(100)
+            assertFalse("OCR must run without a validated network",connectivity.getNetworkCapabilities(connectivity.activeNetwork)?.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_VALIDATED)==true)
             if (Build.VERSION.SDK_INT >= 29) assertEquals(1, Settings.Global.getInt(app.contentResolver, Settings.Global.AIRPLANE_MODE_ON, 0))
             val result = Tasks.await(recognizer.process(InputImage.fromBitmap(bitmap, 0)), 30, TimeUnit.SECONDS)
             val candidates = result.textBlocks.flatMap { it.lines.flatMap { line -> line.elements.map { element -> element.text } + line.text } }
             assertEquals("0708", firstContainerNumber(candidates))
         } finally {
-            recognizer.close(); bitmap.recycle(); airplane(airplaneBefore)
+            recognizer.close(); bitmap.recycle(); airplane(airplaneBefore);if(wifiBefore)shell("svc wifi enable")
         }
     }
 }

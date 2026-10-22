@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 2,
-    "identityHash": "56f8330f4911538d4fea4a9c9b4c0cc1",
+    "identityHash": "bbfec678c50f4d19291d357f82c15838",
     "entities": [
       {
         "tableName": "jobs",
@@ -311,7 +311,7 @@
       },
       {
         "tableName": "upload_jobs",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`jobId` TEXT NOT NULL, `ownerAccountId` TEXT, `state` TEXT NOT NULL, `lastError` TEXT, `lastAttemptAt` INTEGER, PRIMARY KEY(`jobId`), FOREIGN KEY(`jobId`) REFERENCES `jobs`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`jobId` TEXT NOT NULL, `ownerAccountId` TEXT, `state` TEXT NOT NULL, `lastError` TEXT, `lastAttemptAt` INTEGER, `nextAttemptAt` INTEGER, PRIMARY KEY(`jobId`), FOREIGN KEY(`jobId`) REFERENCES `jobs`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
           {
             "fieldPath": "jobId",
@@ -338,6 +338,11 @@
           {
             "fieldPath": "lastAttemptAt",
             "columnName": "lastAttemptAt",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "nextAttemptAt",
+            "columnName": "nextAttemptAt",
             "affinity": "INTEGER"
           }
         ],
@@ -444,7 +449,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '56f8330f4911538d4fea4a9c9b4c0cc1')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'bbfec678c50f4d19291d357f82c15838')"
     ]
   }
 }

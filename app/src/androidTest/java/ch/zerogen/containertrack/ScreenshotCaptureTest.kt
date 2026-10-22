@@ -38,7 +38,7 @@ class ScreenshotCaptureTest {
         File(directory, "$name.png").outputStream().use { image.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
     }
     @Test fun start() {
-        compose.setContent { ContainerTheme { Surface(color = Color.Transparent) { HomeScreen(emptyList(), {}, {}) } } }
+        compose.setContent { ContainerTheme { Surface(color = Color.Transparent) { OrderListScreen(emptyList(),emptyList(),emptyList(),emptyList(),0L,false,"",OrderFilter.ACTIVE,{},{},{}) } } }
         capture("01-start")
     }
     @Test fun deliverySetup() {
@@ -90,7 +90,7 @@ class ScreenshotCaptureTest {
         capture("09-job-detail")
     }
     @Test fun jobsHistory() {
-        compose.setContent { ContainerTheme { Surface(color = Color.Transparent) { JobsScreen(listOf(snapshot()), {}) } } }
+        compose.setContent { ContainerTheme { Surface(color = Color.Transparent) { OrderListScreen(listOf(snapshot()),emptyList(),emptyList(),emptyList(),0L,true,"",OrderFilter.ALL,{},{},{}) } } }
         capture("10-history")
     }
     @Test fun returnPhoto() {
@@ -99,7 +99,7 @@ class ScreenshotCaptureTest {
         capture("11-return-photo")
     }
     @Test fun permissions() {
-        compose.setContent { ContainerTheme { Surface(color = Color.Transparent) { MoreScreen() } } }
+        compose.setContent { ContainerTheme { Surface(color = Color.Transparent) { ProfileScreen(null,"Nicht verbunden",false,false,{},{},{}) } } }
         capture("12-permissions")
     }
     @Test fun activeLogger() {
@@ -108,6 +108,20 @@ class ScreenshotCaptureTest {
             ReminderStrip(LoggerReminder(jobId = "screenshot", referenceNumber = "ORD-0708", dueAt = now + 900_000L), 0, now)
         } } }
         capture("13-logger-active")
+    }
+
+    @Test fun galleryEmpty() {
+        compose.setContent { ContainerTheme { Surface { GalleryScreen(emptyList(),emptyList(),{}) } } }
+        capture("14-gallery")
+    }
+    @Test fun deliveryReadyForFill() {
+        val batch=snapshot(complete=true).let { it.copy(containers=it.containers.map { c -> c.copy(photos=c.photos.filter { p -> p.step<6 }) }) }
+        compose.setContent { ContainerTheme { Surface { OrderListScreen(listOf(batch),emptyList(),emptyList(),emptyList(),0L,true,"",OrderFilter.NEEDS_FILL,{},{},{}) } } }
+        capture("15-ready-for-fill")
+    }
+    @Test fun uploadError() {
+        compose.setContent { ContainerTheme { Surface { OrderListScreen(listOf(snapshot(complete=true)),listOf(UploadJobEntity("screenshot",state="UPLOAD_ERROR",lastError="Freigabe prüfen")),emptyList(),emptyList(),0L,true,"",OrderFilter.UPLOAD_ERROR,{},{},{}) } } }
+        capture("16-upload-error")
     }
 
 }

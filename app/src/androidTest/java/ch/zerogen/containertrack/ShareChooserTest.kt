@@ -32,9 +32,10 @@ class ShareChooserTest {
             val container = app.repository.addContainer(job, "0708")
             val photo = File.createTempFile("chooser-photo", ".jpg", app.cacheDir).apply { writeBytes(byteArrayOf(1)) }
             app.repository.savePhoto(job, container, 1, photo)
-            compose.onNodeWithText("Export").performClick()
+            compose.onNodeWithText("Alle").performClick()
             compose.waitUntil(10_000) { compose.onAllNodesWithText(reference).fetchSemanticsNodes().isNotEmpty() }
             compose.onNodeWithText(reference).performClick()
+            compose.onNodeWithText("Lokaler ZIP-Export").performClick()
             compose.onNodeWithText("ZIP teilen").performScrollTo().performClick()
             compose.waitUntil(10_000) { monitor.hits > 0 }
             assertEquals(1, monitor.hits)

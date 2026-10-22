@@ -136,22 +136,18 @@ fun FormField(label: String, value: String, enabled: Boolean, error: String?, mu
 
 @Composable
 fun JobScreen(batch: JobWithContainers, vm: TrackViewModel, busy: Boolean, onScan: () -> Unit,
-              onContainer: (String) -> Unit, onExport: () -> Unit, onDeleted: () -> Unit) {
+              onContainer: (String) -> Unit, onExport: () -> Unit, onDeleted: () -> Unit,
+              onPhoto: (String,Int) -> Unit = { id, _ -> onContainer(id) }) {
     var deleting by remember { mutableStateOf(false) }
     val job = batch.job
+    var expanded by rememberSaveable(job.id) { mutableStateOf<String?>(batch.ordered.firstOrNull()?.container?.id) }
     LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item { ScreenTitle(job.draft.referenceNumber, "${job.draft.kind.label} · ${batch.status}") }
         item { Information("${job.draft.orderValue}\n${batch.completedCount} / ${job.draft.quantity} Container vollständig\n${if (job.draft.kind == JobKind.DELIVERY) "ZRH · ${job.draft.kt}" else "Logger gestoppt · ${job.loggerStoppedAt?.let(::localTime) ?: "–"}"}") }
         items(batch.ordered, key = { it.container.id }) { item ->
-            GlassSurface(onClick = { if (!busy) onContainer(item.container.id) }) {
-                Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text("${item.container.sequenceIndex.toString().padStart(2, '0')} · ${item.container.containerNumber}", style = MaterialTheme.typography.titleMedium)
-                        Text("${item.photos.size} / ${job.draft.kind.photoCount} Fotos · ${if (item.container.completedAt != null) "Vollständig" else "Fortsetzen"}", color = if (item.container.completedAt != null) Success else LightBlue)
-                    }
-                    Icon(Icons.Default.ArrowForward, "Container öffnen")
-                }
-            }
+            ContainerDetails(item,job.draft.kind,job.exportedAt != null,expanded == item.container.id,
+                onExpand = { expanded = if (expanded == item.container.id) null else item.container.id },
+                onPhoto = { onPhoto(item.container.id,it) },busy = busy)
         }
         val unfinished = batch.ordered.firstOrNull { it.container.completedAt == null }
         val canAdd = batch.containers.size < job.draft.quantity &&

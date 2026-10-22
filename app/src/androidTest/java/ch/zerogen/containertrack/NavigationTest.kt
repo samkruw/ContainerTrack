@@ -12,6 +12,7 @@ class NavigationTest {
     @get:Rule val compose = createAndroidComposeRule<MainActivity>()
 
     @Test fun returnFieldsAreLockedUntilLoggerStopped() {
+        compose.onNodeWithContentDescription("Neuer Auftrag").performClick()
         compose.onNodeWithText("Return", useUnmergedTree = true).performClick()
         compose.onNodeWithText("Return Number").assertIsNotEnabled()
         compose.onNodeWithText("Order / Container-Typ").assertIsNotEnabled()
@@ -21,6 +22,7 @@ class NavigationTest {
     }
 
     @Test fun deliveryNeedsNoQuickOrAdditionalWork() {
+        compose.onNodeWithContentDescription("Neuer Auftrag").performClick()
         compose.onNodeWithText("Lieferung", useUnmergedTree = true).performClick()
         compose.onNodeWithText("Auftrag speichern").performScrollTo().performClick()
         compose.onAllNodesWithText("Pflichtfeld").assertCountEquals(3)
@@ -36,6 +38,7 @@ class NavigationTest {
     }
 
     @Test fun returnStillRequiresBothExtraFieldsAndAcceptsNothingEmpty() {
+        compose.onNodeWithContentDescription("Neuer Auftrag").performClick()
         compose.onNodeWithText("Return", useUnmergedTree = true).performClick()
         compose.onNodeWithText("Quick").assertIsNotEnabled()
         compose.onNodeWithText("additional Work").assertIsNotEnabled()
@@ -53,19 +56,18 @@ class NavigationTest {
     }
 
     @Test fun bottomNavigationOpensAllDestinations() {
+        compose.onNodeWithText("Container dokumentieren und fortsetzen").assertIsDisplayed()
+        compose.onNodeWithText("Galerie").performClick()
+        compose.onNodeWithText("Lokal gespeicherte Fotos").assertIsDisplayed()
+        compose.onNodeWithText("Profil").performClick()
+        compose.onNodeWithText("Microsoft und Geräteeinstellungen").assertIsDisplayed()
+        compose.onNodeWithText("Nicht verbunden").assertIsDisplayed()
         compose.onNodeWithText("Aufträge").performClick()
-        compose.onNodeWithText("Fortsetzen, prüfen und bewusst löschen").assertIsDisplayed()
-        compose.onNodeWithText("Scannen").performClick()
-        compose.onNodeWithText("Auftrag für die nächste Erfassung wählen").assertIsDisplayed()
-        compose.onNodeWithText("Export").performClick()
-        compose.onNodeWithText("Nur vollständige Aufträge können exportiert werden.").assertIsDisplayed()
-        compose.onNodeWithText("Mehr").performClick()
-        compose.onNodeWithText("Berechtigungen und lokale Daten").assertIsDisplayed()
-        compose.onNodeWithText("Start").performClick()
-        compose.onNodeWithText("Erfassung").assertIsDisplayed()
+        compose.onNodeWithText("Container dokumentieren und fortsetzen").assertIsDisplayed()
     }
 
     @Test fun activityRecreationPreservesReturnGateAndInput() {
+        compose.onNodeWithContentDescription("Neuer Auftrag").performClick()
         compose.onNodeWithText("Return", useUnmergedTree = true).performClick()
         compose.onNodeWithText("Logger gestoppt – bestätigen").performClick()
         compose.onNodeWithText("Return Number").performTextInput("RETURN-0708")
