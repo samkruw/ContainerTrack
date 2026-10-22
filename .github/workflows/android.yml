@@ -4,6 +4,12 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+env:
+  CT_MICROSOFT_TENANT_ID: ${{ vars.CT_MICROSOFT_TENANT_ID }}
+  CT_MICROSOFT_CLIENT_ID: ${{ vars.CT_MICROSOFT_CLIENT_ID }}
+  CT_MICROSOFT_REDIRECT_URI: ${{ vars.CT_MICROSOFT_REDIRECT_URI }}
+  CT_MICROSOFT_TEAM_ID: ${{ vars.CT_MICROSOFT_TEAM_ID }}
+  CT_MICROSOFT_CHANNEL_ID: ${{ vars.CT_MICROSOFT_CHANNEL_ID }}
 permissions:
   contents: read
 concurrency:
@@ -29,7 +35,7 @@ jobs:
       - name: Audit packaged permissions and runtime dependencies
         run: |
           apkanalyzer manifest permissions app/build/outputs/apk/debug/app-debug.apk > app/build/reports/apk-permissions.txt
-          python3 -c "from pathlib import Path; assert 'android.permission.INTERNET' not in Path('app/build/reports/apk-permissions.txt').read_text()"
+          python3 tools/check_privacy.py --apk-permissions app/build/reports/apk-permissions.txt
           ./gradlew :app:dependencies --configuration debugRuntimeClasspath > app/build/reports/runtime-dependencies.txt
           python3 -c "from pathlib import Path; p=Path('app/build/reports'); print('APK permissions:\\n'+(p/'apk-permissions.txt').read_text()); print('SDK support dependencies:\\n'+'\\n'.join(sorted(set(line.strip() for line in (p/'runtime-dependencies.txt').read_text().splitlines() if any(word in line.lower() for word in ['firebase','datatransport','analytics','crashlytics','okhttp','retrofit','supabase'])))))"
       - name: Test QA tools

@@ -8,6 +8,10 @@ camera = "1.5.1"
 lifecycle = "2.9.4"
 
 [libraries]
+msal = { module = "com.microsoft.identity.client:msal", version = "8.6.0" }
+work = { module = "androidx.work:work-runtime-ktx", version = "2.11.2" }
+work-testing = { module = "androidx.work:work-testing", version = "2.11.2" }
+json-test = { module = "org.json:json", version = "20250517" }
 compose-bom = { module = "androidx.compose:compose-bom", version.ref = "compose" }
 compose-ui = { module = "androidx.compose.ui:ui" }
 compose-foundation = { module = "androidx.compose.foundation:foundation" }

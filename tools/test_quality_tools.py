@@ -18,7 +18,9 @@ class QualityToolsTest(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.fixture = Path(self.temp.name)
 
-    def privacy(self, extra_manifest='', extra_code='', merged=False):
+    def privacy(self, extra_manifest='', extra_code='', merged=False, code_path='Example.kt'):
+        if (self.fixture / 'app').exists():
+            shutil.rmtree(self.fixture / 'app')
         main = self.fixture / 'app/src/main'
         main.mkdir(parents=True)
         source = (ROOT / 'app/src/main/AndroidManifest.xml').read_text()
@@ -26,8 +28,10 @@ class QualityToolsTest(unittest.TestCase):
         (main / 'AndroidManifest.xml').write_text(source)
         kotlin = main / 'java'
         kotlin.mkdir()
-        (kotlin / 'Example.kt').write_text('package test\n' + extra_code)
-        (self.fixture / 'gradle').mkdir()
+        target = kotlin / code_path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text('package test\n' + extra_code)
+        (self.fixture / 'gradle').mkdir(exist_ok=True)
         shutil.copy(ROOT / 'gradle/libs.versions.toml', self.fixture / 'gradle/libs.versions.toml')
         if merged:
             target = self.fixture / 'app/build/intermediates/merged_manifests/debug/processDebugManifest'
@@ -51,8 +55,17 @@ class QualityToolsTest(unittest.TestCase):
     def test_removal_markers_do_not_grant_network_permission(self):
         self.assertEqual(0, self.privacy())
 
-    def test_actual_network_permission_is_rejected(self):
-        self.assertEqual(1, self.privacy('<uses-permission android:name="android.permission.INTERNET" />'))
+    def test_unexpected_location_permission_is_rejected(self):
+        self.assertEqual(1, self.privacy('<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />'))
+
+    def test_network_is_only_allowed_in_the_graph_adapter(self):
+        self.assertEqual(0, self.privacy(extra_code='val endpoint = "https://graph.microsoft.com/v1.0"',
+            code_path='ch/zerogen/containertrack/GraphPhotoClient.kt'))
+
+    def test_private_keys_and_webview_stay_forbidden(self):
+        self.assertEqual(1, self.privacy(extra_code='val key = "-----BEGIN PRIVATE KEY-----"'))
+        self.assertEqual(1, self.privacy(extra_code='val view = WebView(context)',
+            code_path='ch/zerogen/containertrack/GraphPhotoClient.kt'))
 
     def test_production_network_call_is_rejected(self):
         self.assertEqual(1, self.privacy(extra_code='val url = "https://example.invalid"'))

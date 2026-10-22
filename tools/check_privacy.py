@@ -12,6 +12,7 @@ ANDROID = '{http://schemas.android.com/apk/res/android}'
 TOOLS = '{http://schemas.android.com/tools}'
 ALLOWED = {
     'android.permission.CAMERA', 'android.permission.POST_NOTIFICATIONS',
+    'android.permission.INTERNET', 'android.permission.ACCESS_NETWORK_STATE', 'android.permission.WAKE_LOCK',
     'android.permission.SCHEDULE_EXACT_ALARM', 'android.permission.RECEIVE_BOOT_COMPLETED',
     'ch.zerogen.containertrack.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION',
 }
@@ -19,6 +20,7 @@ ALLOWED = {
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--merged', action='store_true')
+    parser.add_argument('--apk-permissions', type=Path)
     args = parser.parse_args()
     manifests = [ROOT / 'app/src/main/AndroidManifest.xml']
     if args.merged:
@@ -27,6 +29,11 @@ def main():
         if not manifests:
             sys.exit('FAIL: No debug merged manifest. Run ./gradlew assembleDebug first.')
     failures = []
+    if args.apk_permissions:
+        permissions = set(args.apk_permissions.read_text().split())
+        unexpected = permissions - ALLOWED
+        if unexpected:
+            failures.append(f'APK unexpected permissions: {sorted(unexpected)}')
     for manifest in manifests:
         tree = ET.parse(manifest)
         permissions = {node.get(ANDROID + 'name') for node in tree.getroot()
@@ -37,10 +44,17 @@ def main():
         app = tree.find('application')
         if app is None or app.get(ANDROID + 'allowBackup') != 'false':
             failures.append(f'{manifest}: backups must be disabled')
-    banned_code = re.compile(r'\b(?:WebView|FirebaseAnalytics|FirebaseCrashlytics|OkHttpClient|Retrofit)\b|https?://|java\.net\.|android\.net\.(?:ConnectivityManager|NetworkRequest)')
-    for source in (ROOT / 'app/src/main/java').rglob('*.kt'):
-        if banned_code.search(source.read_text()):
-            failures.append(f'{source}: runtime network/cloud/WebView code')
+    banned_code = re.compile(r'\b(?:WebView|FirebaseAnalytics|FirebaseCrashlytics|OkHttpClient|Retrofit)\b|-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----')
+    network_code = re.compile(r'https?://|java\.net\.|android\.net\.(?:ConnectivityManager|NetworkRequest)')
+    network_adapters = {'ch/zerogen/containertrack/' + name for name in (
+        'GraphPhotoClient.kt', 'MsalAccountProvider.kt', 'MicrosoftConfig.kt', 'NetworkMonitor.kt')}
+    source_root = ROOT / 'app/src/main/java'
+    for source in source_root.rglob('*.kt'):
+        text = source.read_text()
+        if banned_code.search(text):
+            failures.append(f'{source}: forbidden WebView/analytics/private key')
+        if network_code.search(text) and source.relative_to(source_root).as_posix() not in network_adapters:
+            failures.append(f'{source}: network code outside designated Microsoft/connectivity adapter')
     catalog = tomllib.loads((ROOT / 'gradle/libs.versions.toml').read_text())
     for name, library in catalog['libraries'].items():
         module = library.get('module', '')
@@ -49,7 +63,7 @@ def main():
     if failures:
         print('\n'.join(failures), file=sys.stderr)
         return 1
-    print(f'PASS: {"merged" if args.merged else "source"} manifest permissions, backups, production network code, direct dependencies')
+    print(f'PASS: {"merged" if args.merged else "source"} manifest permissions, backups, network adapter boundaries, direct dependencies')
     if not args.merged:
         print('Source audit only; does not verify transitive dependencies or the packaged APK.')
     return 0

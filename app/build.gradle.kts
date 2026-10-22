@@ -1,3 +1,5 @@
+import java.net.URI
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -5,6 +7,9 @@ plugins {
     alias(libs.plugins.ksp)
     alias(libs.plugins.room)
 }
+fun publicSetting(name: String) = providers.gradleProperty(name).orElse(providers.environmentVariable(name)).orElse("").get()
+fun javaLiteral(value: String) = "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r") + "\""
+
 android {
     namespace = "ch.zerogen.containertrack"
     compileSdk = 36
@@ -14,6 +19,11 @@ android {
         targetSdk = 36
         versionCode = 3
         versionName = "1.2.0"
+        for (part in listOf("TENANT_ID", "CLIENT_ID", "REDIRECT_URI", "TEAM_ID", "CHANNEL_ID")) {
+            buildConfigField("String", "MICROSOFT_$part", javaLiteral(publicSetting("CT_MICROSOFT_$part")))
+        }
+        manifestPlaceholders["msalRedirectPath"] = runCatching { URI(publicSetting("CT_MICROSOFT_REDIRECT_URI")).path }
+            .getOrNull()?.takeIf { it.startsWith("/") && it.length > 1 } ?: "/not-configured"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     buildFeatures { compose = true; buildConfig = true }
@@ -28,6 +38,8 @@ android {
 }
 room { schemaDirectory("$projectDir/schemas") }
 dependencies {
+    implementation(libs.msal)
+    implementation(libs.work)
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)
     implementation(libs.compose.foundation)
@@ -49,11 +61,13 @@ dependencies {
     implementation(libs.exif)
     implementation(libs.coroutines)
     testImplementation(libs.junit)
+    testImplementation(libs.json.test)
     androidTestImplementation(platform(libs.compose.bom))
     androidTestImplementation(libs.compose.test)
     androidTestImplementation(libs.androidx.test)
     androidTestImplementation(libs.androidx.runner)
     androidTestImplementation(libs.room.testing)
+    androidTestImplementation(libs.work.testing)
     debugImplementation(libs.compose.tooling)
     debugImplementation(libs.compose.test.manifest)
 }
