@@ -68,7 +68,6 @@ private fun ProfileBenefit(icon:androidx.compose.ui.graphics.vector.ImageVector,
 @Composable
 fun UserAccessScreen(identity:MicrosoftIdentity?) {
     Column(Modifier.verticalScroll(rememberScrollState()).padding(16.dp),verticalArrangement=Arrangement.spacedBy(18.dp)) {
-        Text("Benutzer & Rechte",style=MaterialTheme.typography.headlineMedium)
         Text("Anmeldung mit Firmenkonto",color=Muted)
         HorizontalDivider(color=Hairline)
         if(identity!=null) {

@@ -32,12 +32,14 @@ fun OrderListScreen(jobs:List<JobWithContainers>,uploads:List<UploadJobEntity>,p
     val active=visible.firstOrNull{!it.complete && it.job.exportedAt==null}
     LazyColumn(contentPadding=PaddingValues(16.dp,8.dp,16.dp,90.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
         item { Row(Modifier.fillMaxWidth().padding(vertical=6.dp),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically) {
-            Text(identity?.displayName?.takeIf{it.isNotBlank()}?.let{"Angemeldet als $it"} ?: "Lokal auf diesem Gerät",style=MaterialTheme.typography.bodyMedium,color=Muted)
+            Row(Modifier.weight(1f),verticalAlignment=Alignment.CenterVertically) {
+            Text(identity?.displayName?.takeIf{it.isNotBlank()}?.let{"Angemeldet als $it"} ?: "Lokal auf diesem Gerät",modifier=Modifier.weight(1f),style=MaterialTheme.typography.bodyMedium,color=Muted)
+            IconButton(onClick={filtersExpanded=!filtersExpanded}){Icon(Icons.Outlined.Search,"Aufträge filtern",tint=if(filtersExpanded)Lime else Muted)}
+            }
             StatusBadge(if(online)"Online" else "Offline",confirmed=online)
         };HorizontalDivider(color=Hairline) }
         item { Row(verticalAlignment=Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) { ScreenTitle("Meine Aufträge",Instant.ofEpochMilli(now).atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("EEEE, d. MMMM",Locale.GERMAN))) }
-            IconButton(onClick={filtersExpanded=!filtersExpanded}){Icon(Icons.Outlined.Search,"Aufträge filtern",tint=if(filtersExpanded)Lime else Muted)}
         } }
         if(!online && photos.any{it.uploadedAt==null}) item { Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) { Icon(Icons.Outlined.CloudOff,null,tint=Warning,modifier=Modifier.size(18.dp));Text("Offline · ${photos.count{it.uploadedAt==null}} Fotos warten",color=Warning,style=MaterialTheme.typography.bodySmall) } }
         if(filtersExpanded || query.isNotBlank() || filter!=OrderFilter.ACTIVE) {

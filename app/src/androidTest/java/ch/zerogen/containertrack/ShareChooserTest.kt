@@ -34,7 +34,10 @@ class ShareChooserTest {
             app.repository.savePhoto(job, container, 1, photo)
             compose.onNodeWithContentDescription("Aufträge filtern").performClick()
             compose.onNodeWithText("Alle").performClick()
-            compose.waitUntil(10_000) { compose.onAllNodesWithText(reference).fetchSemanticsNodes().isNotEmpty() }
+            compose.onNodeWithText("Aufträge suchen").performTextInput(reference)
+            compose.onNodeWithText("Aufträge suchen").performImeAction()
+            compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasText(reference))
+            compose.onNodeWithText(reference).assertExists()
             compose.onNodeWithText(reference).performClick()
             compose.onNodeWithText("Lokaler ZIP-Export").performClick()
             compose.onNodeWithText("ZIP teilen").performScrollTo().performClick()

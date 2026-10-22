@@ -2,7 +2,7 @@
 
 Native Kotlin-App zur lokalen Erfassung von Lieferungen und Returns. Ein `:app`-Modul mit Compose, Room, CameraX und gebündeltem ML Kit. Kein WebView. Optionaler Foto-Upload über Microsoft-Firmenkonto und Teams.
 
-**Stand:** Update 1.3.0 / versionCode 4. Bestehende native Architektur und App-ID bleiben erhalten; Room migriert ohne Datenlöschung von Schema 1 auf 2. Änderungen: [UPDATE_1_3.md](docs/UPDATE_1_3.md). Microsoft-Einrichtung: [MICROSOFT_SETUP.md](docs/MICROSOFT_SETUP.md). Aktuelle Prüfnachweise: [QA_STATUS.md](docs/QA_STATUS.md).
+**Stand:** Update 1.3.1 / versionCode 5. Bestehende native Architektur und App-ID bleiben erhalten; Room migriert ohne Datenlöschung von Schema 1 auf 2. Designkorrektur nach den acht Bildvorlagen: [UPDATE_1_3_1.md](docs/UPDATE_1_3_1.md). Fachliche Änderungen: [UPDATE_1_3.md](docs/UPDATE_1_3.md). Microsoft-Einrichtung: [MICROSOFT_SETUP.md](docs/MICROSOFT_SETUP.md). Aktuelle Prüfnachweise: [QA_STATUS.md](docs/QA_STATUS.md).
 
 ## Projekt öffnen und APK bauen
 
@@ -23,13 +23,13 @@ Bei Push/PR führt [android.yml](.github/workflows/android.yml) Build, Unit-Test
 
 ## Bedienung
 
-- **Plus-Button:** Lieferung oder Return anlegen. Alle Pflichtfelder ausfüllen. `Quick` und `additional Work` werden ausschliesslich bei Return angegeben; `Nothing` und `Empty` sind dort gültig. Quantity: 1–50.
+- **Plus-Button:** Lieferung oder Return anlegen. Optional die erste Container-Nummer direkt eingeben oder scannen. Weitere Pflichtangaben sind ausklappbar. Alle Pflichtfelder ausfüllen. `Quick` und `additional Work` werden ausschliesslich bei Return angegeben; `Nothing` und `Empty` sind dort gültig. Quantity: 1–50.
 - **Return:** zuerst den gestoppten Logger bestätigen. Der Zeitstempel wird genau bei der Bestätigung gesetzt. Erst danach sind die Formularfelder aktiv.
-- **Scannen:** Auftrag auswählen; vierstellige Nummer in den Rahmen halten. Der erste gültige OCR-Treffer wird übernommen. Manuelle Eingabe und spätere Nummernkorrektur sind möglich. Führende Nullen bleiben erhalten; doppelte Nummern im Auftrag werden blockiert.
+- **Kamera:** Auftrag auswählen; vierstellige Nummer in den Rahmen halten. Der erste gültige OCR-Treffer wird übernommen. Manuelle Eingabe und spätere Nummernkorrektur sind möglich. Führende Nullen bleiben erhalten; doppelte Nummern im Auftrag werden blockiert.
 - **Fotos:** Lieferung benötigt sechs Fotos: zuerst je Container 01–05, anschließend darf 06 (befüllt) später folgen. Return benötigt genau ein Inhaltsfoto. Foto prüfen und ausdrücklich verwenden. Neuaufnahme ersetzt erst nach Bestätigung das bisherige Foto. Löschen ab einem Schritt entfernt auch die folgenden Fotos und setzt den Abschlussstatus zurück.
 - **Aufträge:** lokal gespeicherte Vorgänge fortsetzen, ansehen oder nach gesonderter Bestätigung löschen. Exportierte Aufträge sind zur Ansicht und zum erneuten Export verfügbar.
 - **Export:** nur vollständige Aufträge exportieren. Mit **ZIP teilen** die Android-Auswahl öffnen und beispielsweise ein E-Mail-Programm wählen. Mit **ZIP speichern** legt Androids Dateiauswahl den Speicherort fest. Für vollständigen Offline-Betrieb einen lokalen Ordner auswählen; externe Dokumentanbieter werden vom Benutzer gewählt und liegen ausserhalb der App.
-- **Galerie:** vorhandene lokale Fotos ansehen, filtern und einzeln teilen. **Profil:** Microsoft-Konto sowie Kamera, Benachrichtigungen und genaue Alarme verwalten.
+- **Galerie:** vorhandene lokale Fotos ansehen, filtern und einzeln teilen. **Zahnrad / Profil:** Microsoft-Konto sowie Kamera, Benachrichtigungen und genaue Alarme verwalten.
 
 ## Exportformat
 
