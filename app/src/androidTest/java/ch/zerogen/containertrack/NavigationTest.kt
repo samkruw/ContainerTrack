@@ -24,16 +24,16 @@ class NavigationTest {
     @Test fun deliveryNeedsNoQuickOrAdditionalWork() {
         compose.onNodeWithContentDescription("Neuer Auftrag").performClick()
         compose.onNodeWithText("Lieferung", useUnmergedTree = true).performClick()
-        compose.onNodeWithText("Auftrag speichern").performScrollTo().performClick()
+        compose.onNodeWithText("Fotos starten").performScrollTo().performClick()
         compose.onAllNodesWithText("Pflichtfeld").assertCountEquals(3)
         compose.onNodeWithText("Order Number").performScrollTo().performTextInput("TEST-UI")
-        compose.onNodeWithText("ZRH Number").performTextInput("ZRH-UI")
+        compose.onNodeWithText("KT-Nummer").performTextInput("ZRH-UI")
         compose.onNodeWithText("Order / Container-Typ").performTextInput("20 ft")
         compose.onNodeWithText("Quick").assertDoesNotExist()
         compose.onNodeWithText("additional Work").assertDoesNotExist()
-        compose.onNodeWithText("Auftrag speichern").performScrollTo().performClick()
+        compose.onNodeWithText("Fotos starten").performScrollTo().performClick()
         compose.waitUntil(10_000) { compose.onAllNodesWithText("Container 1 / 1 erfassen").fetchSemanticsNodes().isNotEmpty() }
-        compose.onNodeWithText("Auftrag speichern").assertDoesNotExist()
+        compose.onNodeWithText("Fotos starten").assertDoesNotExist()
         compose.onNodeWithText("TEST-UI").assertIsDisplayed()
     }
 
@@ -45,13 +45,13 @@ class NavigationTest {
         compose.onNodeWithText("Logger gestoppt – bestätigen").performClick()
         compose.onNodeWithText("Return Number").performTextInput("RETURN-UI")
         compose.onNodeWithText("Order / Container-Typ").performTextInput("20 ft")
-        compose.onNodeWithText("Auftrag speichern").performScrollTo().performClick()
+        compose.onNodeWithText("Fotos starten").performScrollTo().performClick()
         compose.onAllNodesWithText("Pflichtfeld – Nothing und Empty sind erlaubt.").assertCountEquals(2)
         compose.onNodeWithText("Quick").performScrollTo().performTextInput("Nothing")
         compose.onNodeWithText("additional Work").performScrollTo().performTextInput("Empty")
-        compose.onNodeWithText("Auftrag speichern").performScrollTo().performClick()
+        compose.onNodeWithText("Fotos starten").performScrollTo().performClick()
         compose.waitUntil(10_000) { compose.onAllNodesWithText("Container 1 / 1 erfassen").fetchSemanticsNodes().isNotEmpty() }
-        compose.onNodeWithText("Auftrag speichern").assertDoesNotExist()
+        compose.onNodeWithText("Fotos starten").assertDoesNotExist()
         compose.onNodeWithText("Quick · Nothing\nadditional Work · Empty").performScrollTo().assertIsDisplayed()
     }
 

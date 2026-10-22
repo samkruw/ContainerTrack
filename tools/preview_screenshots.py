@@ -5,7 +5,11 @@ from pathlib import Path
 from PIL import Image, ImageOps, ImageDraw
 
 directory = Path('app/build/screenshots')
-names = ['20-reference-orders', '21-reference-new-order', '22-reference-photo-review', '23-reference-gallery', '24-reference-photo-selection', '25-reference-sign-in', '26-reference-upload']
+names = ['20-reference-orders', '21-reference-new-order', '22-reference-photo-review', '23-reference-gallery', '24-reference-photo-selection', '25-reference-sign-in', '26-reference-upload', '27-reference-access']
+missing = [name for name in names if not (directory / f'{name}.png').is_file()]
+if missing: print('MISSING_REFERENCE_CAPTURES=' + ','.join(missing))
+names = [name for name in names if (directory / f'{name}.png').is_file()]
+if not names: raise SystemExit('No reference screenshots available; visual QA blocked')
 sheet = Image.new('RGB', (len(names) * 320, 680), '#151a1d')
 draw = ImageDraw.Draw(sheet)
 for index, name in enumerate(names):

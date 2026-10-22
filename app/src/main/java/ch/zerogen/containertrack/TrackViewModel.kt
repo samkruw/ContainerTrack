@@ -41,6 +41,9 @@ class TrackViewModel(application: Application, private val saved: SavedStateHand
         get() = saved["pendingExport"]
         set(value) { saved["pendingExport"] = value }
     val formKind = saved.getStateFlow("formKind", JobKind.DELIVERY.name)
+    val formContainer = saved.getStateFlow("formContainer", "")
+    var createdContainerId: String? = null
+        private set
     val formReference = saved.getStateFlow("formReference", "")
     val formKt = saved.getStateFlow("formKt", "")
     val formOrder = saved.getStateFlow("formOrder", "")
@@ -73,7 +76,7 @@ class TrackViewModel(application: Application, private val saved: SavedStateHand
     }
     fun begin(kind: JobKind) {
         saved["formKind"] = kind.name
-        for (key in listOf("formReference", "formKt", "formOrder", "formQuick", "formWork")) saved[key] = ""
+        for (key in listOf("formReference", "formKt", "formOrder", "formQuick", "formWork", "formContainer")) saved[key] = ""
         saved["formQuantity"] = "1"; saved["formStoppedAt"] = null
     }
     fun field(key: String, value: String) { saved[key] = value }
@@ -101,7 +104,8 @@ class TrackViewModel(application: Application, private val saved: SavedStateHand
     }
 
     fun create(onCreated: (String) -> Unit) = runAction {
-        val id = app.repository.createJob(draft(), formStoppedAt.value)
+        val id = app.repository.createJob(draft(), formStoppedAt.value,formContainer.value)
+        createdContainerId=app.database.dao().job(id)?.ordered?.firstOrNull()?.container?.id
         selectJob(id); onCreated(id)
     }
     fun addContainer(jobId: String, number: String, onAdded: (String) -> Unit) = runAction {

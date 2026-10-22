@@ -26,14 +26,20 @@ class TrackRepository(private val context: Context, val database: TrackDatabase,
     val jobs = dao.observeJobs()
     val reminders = dao.observeReminders()
 
-    suspend fun createJob(draft: JobDraft, stoppedAt: Long?): String = withContext(Dispatchers.IO) {
+    suspend fun createJob(draft: JobDraft, stoppedAt: Long?, initialNumber: String? = null): String = withContext(Dispatchers.IO) {
+        require(initialNumber.isNullOrBlank() || containerError(initialNumber,emptySet())==null)
         require(draft.errors(stoppedAt).isEmpty()) { "Bitte alle Pflichtfelder prüfen." }
         val normalized = draft.copy(referenceNumber = draft.referenceNumber.trim(),
             kt = if (draft.kind == JobKind.RETURN) draft.referenceNumber.trim() else draft.kt.trim(),
             quick = if (draft.kind == JobKind.RETURN) draft.quick else "",
             additionalWork = if (draft.kind == JobKind.RETURN) draft.additionalWork else "")
         val entity = JobEntity(draft = normalized, createdAt = System.currentTimeMillis(), loggerStoppedAt = stoppedAt, createdByAccountId = accountId())
-        dao.insertJob(entity)
+        database.withTransaction {
+            dao.insertJob(entity)
+            initialNumber?.takeIf { it.isNotBlank() }?.let { number ->
+                dao.insertContainer(ContainerEntity(jobId=entity.id,sequenceIndex=1,containerNumber=number))
+            }
+        }
         entity.id
     }
 

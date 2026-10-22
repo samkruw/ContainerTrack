@@ -10,7 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
@@ -20,8 +20,8 @@ fun BrandHeader(identity:MicrosoftIdentity?,onProfile:()->Unit) {
         Row(Modifier.fillMaxWidth().height(60.dp).padding(horizontal=16.dp),verticalAlignment=Alignment.CenterVertically) {
             Image(painterResource(R.drawable.ic_container),null,Modifier.size(36.dp));Spacer(Modifier.width(8.dp))
             Text("Container Track",style=MaterialTheme.typography.titleMedium,fontWeight=FontWeight.Bold,modifier=Modifier.weight(1f))
-            IconButton(onClick=onProfile) {
-                if(identity==null) Icon(Icons.Outlined.Settings,"Profil und Einstellungen",tint=Muted)
+            IconButton(onClick=onProfile,modifier=Modifier.semantics{contentDescription="Profil und Einstellungen"}) {
+                if(identity==null) Icon(Icons.Outlined.Settings,null,tint=Muted)
                 else Surface(shape=androidx.compose.foundation.shape.CircleShape,color=Hairline) {
                     Box(Modifier.size(34.dp),contentAlignment=Alignment.Center){Text(identity.displayName.split(' ').filter{it.isNotBlank()}.take(2).joinToString(""){it.first().uppercase()},style=MaterialTheme.typography.labelLarge)}
                 }

@@ -93,6 +93,15 @@ fun TrackApp(vm: TrackViewModel = viewModel()) {
         }
     }
     fun openJob(id: String) { vm.selectJob(id); nav.navigate("job/$id") { launchSingleTop = true } }
+    fun resumeJob(id:String) {
+        val batch=jobs.find{it.job.id==id} ?: return
+        vm.selectJob(id)
+        if(batch.complete || batch.job.exportedAt!=null){openJob(id);return}
+        val next=batch.ordered.firstOrNull{item->!(1..minOf(5,batch.job.draft.kind.photoCount)).all{step->item.photos.any{it.step==step}}}
+        if(next!=null) nav.navigate("photo/$id/${next.container.id}?step=0")
+        else if(batch.containers.size<batch.job.draft.quantity) nav.navigate("scan/$id")
+        else batch.ordered.firstOrNull{it.photos.size<batch.job.draft.kind.photoCount}?.let{nav.navigate("photo/$id/${it.container.id}?step=0")}
+    }
     val tabs = listOf("jobs" to "Aufträge", "scan" to "Kamera", "gallery" to "Galerie")
     var savingPhotos by rememberSaveable { mutableStateOf(arrayListOf<String>()) }
     val savePhotos = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
@@ -113,20 +122,15 @@ fun TrackApp(vm: TrackViewModel = viewModel()) {
             NavHost(nav, startDestination = "jobs", modifier = Modifier.weight(1f)) {
                 composable("home") { HomeScreen(jobs, onBegin = { kind -> vm.begin(kind); nav.navigate("setup") }, onJob = ::openJob) }
                 composable("jobs") { OrderListScreen(jobs,uploads,uploadedPhotos,reminders,now,online,query,
-                    runCatching { OrderFilter.valueOf(filterName) }.getOrDefault(OrderFilter.ACTIVE),vm::search,{vm.filter(it.name)},{actionJob=it},identity,onResume={id-> vm.selectJob(id);nav.navigate("job/$id")},onRetry=vm::uploadPhotos) }
+                    runCatching { OrderFilter.valueOf(filterName) }.getOrDefault(OrderFilter.ACTIVE),vm::search,{vm.filter(it.name)},{actionJob=it},identity,onResume=::resumeJob,onRetry=vm::uploadPhotos) }
                 composable("gallery") { GalleryScreen(jobs,uploadedPhotos,onShare={vm.sharePhotos(it.jobId,photoId=it.photoId)},
                     onSaveSelected={savingPhotos=ArrayList(it);savePhotos.launch(null)},onShareSelected=vm::shareSelectedPhotos) }
                 composable("profile") { ProfileScreen(identity,microsoftStatus,vm.microsoftConfigured,busy,vm::signIn,vm::signOut,vm::switchAccount,onContinue={nav.navigate("jobs"){popUpTo("jobs");launchSingleTop=true}},onAccess={nav.navigate("access")}) }
                 composable("access") {UserAccessScreen(identity)}
-                composable("scan") { ScanJobsScreen(jobs, active, onJob = { batch ->
-                    vm.selectJob(batch.job.id)
-                    val unfinished = batch.ordered.firstOrNull { it.container.completedAt == null }
-                    if (unfinished != null) nav.navigate("photo/${batch.job.id}/${unfinished.container.id}?step=0")
-                    else nav.navigate("scan/${batch.job.id}")
-                }) }
+                composable("scan") { ScanJobsScreen(jobs,active,onJob={resumeJob(it.job.id)}) }
                 composable("exports") { ExportJobsScreen(jobs, onJob = { nav.navigate("export/${it.job.id}") }) }
                 composable("more") { MoreScreen() }
-                composable("setup") { SetupScreen(vm, busy) { id -> nav.navigate("job/$id") { popUpTo("setup") { inclusive = true } } } }
+                composable("setup") { SetupScreen(vm, busy) { id -> nav.navigate("job/$id") { popUpTo("setup") { inclusive = true } };vm.createdContainerId?.let{container->nav.navigate("photo/$id/$container?step=0")} } }
                 composable("job/{jobId}") { back ->
                     val id = back.arguments?.getString("jobId") ?: return@composable
                     val batch = jobs.find { it.job.id == id }

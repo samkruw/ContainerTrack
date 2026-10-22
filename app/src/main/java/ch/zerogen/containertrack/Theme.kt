@@ -83,3 +83,9 @@ fun PrimaryIconButton(text:String,icon:ImageVector,enabled:Boolean=true,onClick:
         Icon(icon,null,Modifier.size(24.dp));Spacer(Modifier.width(12.dp));Text(text,style=MaterialTheme.typography.bodyLarge,fontWeight=FontWeight.Bold)
     }
 }
+@Composable
+fun NumberDisc(number:String) {
+    Surface(color=Lime,shape=androidx.compose.foundation.shape.CircleShape) {
+        Box(Modifier.size(38.dp),contentAlignment=androidx.compose.ui.Alignment.Center){Text(number,color=Navy,fontSize=22.sp,fontWeight=FontWeight.Bold)}
+    }
+}

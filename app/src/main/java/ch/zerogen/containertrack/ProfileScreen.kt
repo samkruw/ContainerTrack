@@ -48,11 +48,11 @@ fun ProfileScreen(identity:MicrosoftIdentity?,status:String,configured:Boolean,b
             Text(identity.username,color=Muted)
             StatusBadge(status,confirmed=true)
             HorizontalDivider(color=Hairline)
-            OutlineAction("Benutzer & Rechte",Icons.Outlined.People,onClick=onAccess)
             OutlineAction("Konto wechseln",Icons.Outlined.SwitchAccount,!busy && activity!=null){activity?.let(onSwitch)}
             OutlineAction("Abmelden",Icons.Outlined.Logout,!busy,onLogout)
         }
         HorizontalDivider(color=Hairline)
+        OutlineAction("Benutzer & Rechte",Icons.Outlined.People,onClick=onAccess)
         OutlineAction("Geräteeinstellungen",Icons.Outlined.Settings){settings=!settings}
         if(settings) PermissionsContent()
         Text("ZeroGen · ${BuildConfig.VERSION_NAME}",Modifier.fillMaxWidth().padding(vertical=12.dp),textAlign=TextAlign.Center,color=Muted,style=MaterialTheme.typography.bodySmall)

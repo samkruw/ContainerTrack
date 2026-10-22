@@ -57,7 +57,8 @@ class ReferenceScreenshotsTest {
     @Test fun ordersMatchReference(){capture("20-reference-orders")}
     @Test fun newOrderMatchesReference(){
         compose.onNodeWithContentDescription("Neuer Auftrag").performClick()
-        compose.onNodeWithText("ZRH Number").performTextInput("2482");keyboardAway()
+        compose.onNodeWithText("KT-Nummer").performTextInput("2482")
+        compose.onNodeWithText("Container-Nr.").performTextInput("0708");keyboardAway()
         capture("21-reference-new-order")
     }
     @Test fun photoReviewMatchesReference(){openCompleteDetails();capture("22-reference-photo-review")}
@@ -86,4 +87,11 @@ class ReferenceScreenshotsTest {
         compose.onNodeWithText("Alle 6 Fotos erfolgreich gesendet").assertDoesNotExist()
         capture("26-reference-upload")
     }
+    @Test fun userAccessShowsOnlyVerifiedPermissions(){
+        compose.onNodeWithContentDescription("Profil und Einstellungen").performClick()
+        compose.onNodeWithText("Benutzer & Rechte").performScrollTo().performClick()
+        compose.onNodeWithText("Kein Firmenkonto verbunden.").assertExists()
+        capture("27-reference-access")
+    }
+
 }

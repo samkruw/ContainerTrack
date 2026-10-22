@@ -84,7 +84,7 @@ fun ScanJobsScreen(jobs: List<JobWithContainers>, active: String?, onJob: (JobWi
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SetupScreen(vm: TrackViewModel, busy: Boolean, onCreated: (String) -> Unit) {
+fun SetupScreen(vm:TrackViewModel,busy:Boolean,onCreated:(String)->Unit) {
     val kindName by vm.formKind.collectAsStateWithLifecycle()
     val reference by vm.formReference.collectAsStateWithLifecycle()
     val kt by vm.formKt.collectAsStateWithLifecycle()
@@ -92,54 +92,67 @@ fun SetupScreen(vm: TrackViewModel, busy: Boolean, onCreated: (String) -> Unit) 
     val quantity by vm.formQuantity.collectAsStateWithLifecycle()
     val quick by vm.formQuick.collectAsStateWithLifecycle()
     val work by vm.formWork.collectAsStateWithLifecycle()
+    val number by vm.formContainer.collectAsStateWithLifecycle()
     val stopped by vm.formStoppedAt.collectAsStateWithLifecycle()
-    val kind = JobKind.valueOf(kindName)
-    val locked = kind == JobKind.RETURN && stopped == null
-    var attempted by rememberSaveable { mutableStateOf(false) }
-    val draft = JobDraft(kind, reference, kt, order, quantity.toIntOrNull() ?: 0, quick, work)
-    val errors = if (attempted) draft.errors(stopped) else emptyMap()
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    val kind=JobKind.valueOf(kindName)
+    val locked=kind==JobKind.RETURN && stopped==null
+    var attempted by rememberSaveable{mutableStateOf(false)}
+    var details by rememberSaveable(kindName){mutableStateOf(kind==JobKind.RETURN)}
+    var scanning by remember{mutableStateOf(false)}
+    val draft=JobDraft(kind,reference,kt,order,quantity.toIntOrNull() ?: 0,quick,work)
+    val errors=if(attempted)draft.errors(stopped) else emptyMap()
+    val numberError=if(number.isNotBlank())containerError(number,emptySet()) else null
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),verticalArrangement=Arrangement.spacedBy(16.dp)) {
         ScreenTitle("Neuer Auftrag")
         SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-            JobKind.entries.forEachIndexed { index,value ->
-                SegmentedButton(kind==value,{if(!busy && kind!=value)vm.begin(value)},SegmentedButtonDefaults.itemShape(index,2),modifier=Modifier.heightIn(min=52.dp),icon={Icon(if(value==JobKind.DELIVERY)Icons.Outlined.LocalShipping else Icons.Outlined.Undo,null)}) {Text(value.label,fontWeight=FontWeight.Bold)}
+            JobKind.entries.forEachIndexed{index,value->SegmentedButton(kind==value,{if(!busy && kind!=value)vm.begin(value)},SegmentedButtonDefaults.itemShape(index,2),modifier=Modifier.heightIn(min=52.dp),icon={Icon(if(value==JobKind.DELIVERY)Icons.Outlined.LocalShipping else Icons.Outlined.Undo,null)}){Text(value.label,fontWeight=FontWeight.Bold)}}
+        }
+        if(kind==JobKind.RETURN) {
+            if(locked){Information("Zuerst den Logger stoppen. Erst dann sind die Formularfelder freigegeben.",true);PrimaryButton("Logger gestoppt – bestätigen",!busy){vm.confirmStopped()}}
+            else Information("Logger gestoppt · ${localTime(stopped!!)}")
+        }
+        FormField(if(kind==JobKind.DELIVERY)"KT-Nummer" else "Return Number",if(kind==JobKind.DELIVERY)kt else reference,!locked && !busy,errors[if(kind==JobKind.DELIVERY)"kt" else "referenceNumber"]){vm.field(if(kind==JobKind.DELIVERY)"formKt" else "formReference",it)}
+        FormField("Container-Nr.",number,!locked && !busy,if(attempted)numberError else null){if(it.length<=4 && it.all{c->c in '0'..'9'})vm.field("formContainer",it)}
+        OutlineAction("Nummer scannen",Icons.Outlined.PhotoCamera,!locked && !busy){scanning=true}
+        TextButton(onClick={details=!details},modifier=Modifier.fillMaxWidth().heightIn(min=48.dp)) {Text("Auftragsdaten · Pflichtangaben");Spacer(Modifier.weight(1f));Icon(if(details)Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,null)}
+        if(details) {
+            if(kind==JobKind.DELIVERY)FormField("Order Number",reference,!busy,errors["referenceNumber"]){vm.field("formReference",it)}
+            FormField("Order / Container-Typ",order,!locked && !busy,errors["orderValue"]){vm.field("formOrder",it)}
+            OutlinedTextField(quantity,{if(it.length<=2 && it.all{c->c in '0'..'9'})vm.field("formQuantity",it)},Modifier.fillMaxWidth(),enabled=!locked && !busy,label={Text("Quantity · 1 bis 50")},singleLine=true,keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Number),isError=errors["quantity"]!=null,supportingText={errors["quantity"]?.let{Text(it)}})
+            if(kind==JobKind.RETURN) {
+                FormField("Quick",quick,!locked && !busy,errors["quick"],true){vm.field("formQuick",it)}
+                FormField("additional Work",work,!locked && !busy,errors["additionalWork"],true){vm.field("formWork",it)}
+                Text("Nothing und Empty sind gültige Angaben.",color=Muted,style=MaterialTheme.typography.bodySmall)
             }
         }
-        Text("Auftragsdaten",style=MaterialTheme.typography.titleLarge)
-        Text("Bestehende Pflichtfelder ausfüllen.",color=Muted,style=MaterialTheme.typography.bodySmall)
-        if (kind == JobKind.RETURN) {
-            if (locked) {
-                Information("Zuerst den Logger stoppen. Das Formular wird erst nach Ihrer Bestätigung freigegeben.", warning = true)
-                PrimaryButton("Logger gestoppt – bestätigen", enabled = !busy) { vm.confirmStopped() }
-            } else Information("Logger gestoppt · ${localTime(stopped!!)}")
-        }
-        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                FormField(if (kind == JobKind.DELIVERY) "Order Number" else "Return Number", reference, !locked && !busy, errors["referenceNumber"]) { vm.field("formReference", it) }
-                if (kind == JobKind.DELIVERY) FormField("ZRH Number", kt, !busy, errors["kt"]) { vm.field("formKt", it) }
-                FormField("Order / Container-Typ", order, !locked && !busy, errors["orderValue"]) { vm.field("formOrder", it) }
-                OutlinedTextField(value = quantity, onValueChange = { if (it.length <= 2 && it.all { c -> c in '0'..'9' }) vm.field("formQuantity", it) },
-                    label = { Text("Quantity · 1 bis 50") }, enabled = !locked && !busy, modifier = Modifier.fillMaxWidth(), singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), isError = errors["quantity"] != null,
-                    supportingText = { errors["quantity"]?.let { Text(it) } })
-                if (kind == JobKind.RETURN) {
-                    FormField("Quick", quick, !locked && !busy, errors["quick"], multiline = true) { vm.field("formQuick", it) }
-                    FormField("additional Work", work, !locked && !busy, errors["additionalWork"], multiline = true) { vm.field("formWork", it) }
-                    Text("Nothing und Empty sind gültige Angaben.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-        }
         HorizontalDivider(color=Hairline)
-        PrimaryButton("Auftrag speichern", enabled = !locked && !busy) {
-            attempted = true
-            if (draft.errors(stopped).isEmpty()) vm.create(onCreated)
+        Text("Fotodokumentation",style=MaterialTheme.typography.titleLarge)
+        GlassSurface {Row(Modifier.padding(14.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(14.dp)) {
+            NumberDisc(if(kind==JobKind.DELIVERY)"5" else "1")
+            Column {Text(if(kind==JobKind.DELIVERY)"Leerdokumentation" else "Inhaltsfoto",fontWeight=FontWeight.SemiBold);Text(if(kind==JobKind.DELIVERY)"Leer · Front · Türen · Links · Rechts" else "Container-Inhalt",color=Muted,style=MaterialTheme.typography.bodySmall)}
+        }}
+        if(kind==JobKind.DELIVERY) GlassSurface {Row(Modifier.padding(14.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(14.dp)) {
+            NumberDisc("1");Column {Text("Befüllt-Foto",fontWeight=FontWeight.SemiBold);Text("Kann später ergänzt werden",color=Muted,style=MaterialTheme.typography.bodySmall)}
+        }}
+        PrimaryIconButton("Fotos starten",Icons.Outlined.PhotoCamera,!locked && !busy) {
+            attempted=true
+            if(draft.errors(stopped).isEmpty() && numberError==null)vm.create(onCreated) else details=true
         }
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(12.dp))
+    }
+    if(scanning) androidx.compose.ui.window.Dialog(onDismissRequest={scanning=false}) {
+        Surface(shape=MaterialTheme.shapes.medium){Column(Modifier.padding(12.dp)) {
+            Text("Container-Nummer scannen",style=MaterialTheme.typography.titleMedium)
+            CameraSurface(scan=true,enabled=!busy,onNumber={vm.field("formContainer",it);scanning=false})
+            TextButton(onClick={scanning=false}){Text("Manuell eingeben")}
+        }}
     }
 }
 
 @Composable
 fun FormField(label: String, value: String, enabled: Boolean, error: String?, multiline: Boolean = false, onChange: (String) -> Unit) {
     OutlinedTextField(value = value, onValueChange = onChange, label = { Text(label) }, enabled = enabled,
-        modifier = Modifier.fillMaxWidth(), textStyle = MaterialTheme.typography.bodyLarge.copy(fontSize=if(label=="ZRH Number" || label=="Return Number")30.sp else 18.sp,fontWeight=if(label=="ZRH Number" || label=="Return Number")FontWeight.Bold else FontWeight.Normal), singleLine = !multiline, minLines = 1, maxLines = if (multiline) 4 else 1,
+        modifier = Modifier.fillMaxWidth(), textStyle = MaterialTheme.typography.bodyLarge.copy(fontSize=if(label=="KT-Nummer" || label=="Return Number" || label=="Container-Nr.")30.sp else 18.sp,fontWeight=if(label=="KT-Nummer" || label=="Return Number" || label=="Container-Nr.")FontWeight.Bold else FontWeight.Normal), singleLine = !multiline, minLines = 1, maxLines = if (multiline) 4 else 1,
         isError = error != null, supportingText = if (error != null) ({ Text(error) }) else null)
 }
 

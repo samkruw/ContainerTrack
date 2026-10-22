@@ -81,10 +81,13 @@ jobs:
           script: |
             chmod +x gradlew
             adb shell wm size 1080x2340
-            ./gradlew connectedDebugAndroidTest --no-daemon --stacktrace -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true
+            test_status=0
+            ./gradlew connectedDebugAndroidTest --no-daemon --stacktrace -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true || test_status=$?
             mkdir -p app/build/screenshots
-            adb pull /sdcard/Android/data/ch.zerogen.containertrack/files/screenshots/. app/build/screenshots/
+            adb pull /sdcard/Android/data/ch.zerogen.containertrack/files/screenshots/. app/build/screenshots/ || true
+            exit "$test_status"
       - name: Preview fixture screenshots for visual review
+        if: always() && hashFiles('app/build/screenshots/20-reference-orders.png') != ''
         run: |
           python3 -m pip install Pillow==11.3.0
           python3 tools/preview_screenshots.py
