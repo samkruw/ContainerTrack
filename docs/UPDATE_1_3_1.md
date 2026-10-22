@@ -1,6 +1,6 @@
 # ContainerTrack 1.3.1 — konkrete Bildvorlagen
 
-Die acht nachgereichten Graphit-/Lime-Bilder sind Grundlage der nativen Designkorrektur. VersionCode5, App-ID unverändert, Room-Schema unverändert bei2.
+Die acht nachgereichten Graphit-/Lime-Bilder sind Grundlage der nativen Designkorrektur. VersionCode 5, App-ID unverändert, Room-Schema unverändert bei 2.
 
 Die Oberfläche nutzt Inter mit expliziten variablen Schriftgewichten, große KT-/Container-Zahlen, ein flaches Container-Logo, kräftiges Lime, kleine rechteckige Radien und klare Trennlinien. Die Hauptnavigation entspricht Aufträge–Kamera–Galerie mit ausgewähltem Unterstrich. Das Zahnrad führt zum Firmenkonto und zu Einstellungen; ohne verbundenes Konto erscheint die eigenständige Anmeldung mit Offline-Zugang.
 
@@ -10,7 +10,7 @@ Eine eigene Fotoprüfung zeigt echte Originalbilder, Dateinamen und den realen V
 
 Die Galerie zeigt tatsächlich vorhandene lokale Fotos als Containerliste und als auswählbares Raster. Ausgewählte Original-JPGs lassen sich ohne ZIP/TXT/META teilen oder über Androids Ordnerauswahl speichern. Dateien verschiedener Aufträge werden in getrennten Ordnern abgelegt. Lokale Fotos, Completion-Marker und Upload-Bestätigungen bleiben durch Speichern/Teilen unverändert. Temporäre Share-Kopien werden nach sieben Tagen bereinigt und beim Löschen des betreffenden Auftrags entfernt.
 
-Die Teams-Ansicht zeigt den echten Kontostatus, ZielkanalOp530-Lal und Dateibestätigungen. Ohne Microsoft-Konfiguration gibt es keine erfundene Anmeldung, Übertragung, Administratorrolle oder Team-Benutzerliste. Die lokale Galerie wird nicht als zentrale Team-Galerie ausgegeben. Einrichtung: [MICROSOFT_SETUP.md](MICROSOFT_SETUP.md).
+Die Teams-Ansicht zeigt den echten Kontostatus, Zielkanal Op530-Lal und Dateibestätigungen. Ohne Microsoft-Konfiguration gibt es keine erfundene Anmeldung, Übertragung, Administratorrolle oder Team-Benutzerliste. Die lokale Galerie wird nicht als zentrale Team-Galerie ausgegeben. Einrichtung: [MICROSOFT_SETUP.md](MICROSOFT_SETUP.md).
 
 Android-Tests erfassen alle acht vollständigen nativen Ansichten einschließlich Markenleiste/Navigation. Die Containerabbildung liegt ausschließlich in androidTest/assets und ist synthetisches Testmaterial; sie ist nicht in der ausgelieferten App enthalten. Visuelle Prüfnachweise: [design-qa.md](../design-qa.md), aktueller Lauf und Artefakt: [QA_STATUS.md](QA_STATUS.md).
 

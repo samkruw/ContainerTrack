@@ -1,3 +1,18 @@
+# V1.3.1 — ausgewählte Bildvorlagen
+
+Nachweis: [QA_STATUS.md](QA_STATUS.md), [visueller Abgleich](../design-qa.md), [acht native Ansichten](../design/verification/reference-ui-v1.3.1.jpg).
+
+| Anforderung | Nachweis | Status |
+| --- | --- | --- |
+| Acht Graphit-/Lime-Ansichten inklusive echter App-Navigation | ReferenceScreenshotsTest, manueller Referenzvergleich | bestanden: CI39839563123 |
+| Erster Container atomar, führende Null erhalten | InitialContainerTest | bestanden: CI39839563123 |
+| Original-JPG-Auswahl/Share ohne Timer-/Queue-Änderung | PhotoSelectionTest, SelectedPhotoSharingTest | bestanden: CI39839563123 |
+| Bestehende Migration, Delivery, Return, OCR, Timer, Upload-/Exportregeln | 56 Android-Tests und 39 Unit-Tests je Variante | bestanden: CI39839563123 |
+| CI erhält Fehlerstatus und sammelt Captures in beiden Fällen | DeviceRunnerTest, finaler grüner Gesamtlauf | bestanden: CI39839563123 |
+| Reale Firmenübertragung, zentrale Team-Galerie und Adminverwaltung | Firmenkonfiguration/echte Rechte erforderlich | offen; keine simulierten Erfolge |
+
+Die folgenden Tabellen dokumentieren frühere Abnahmestände.
+
 # V1.3 Ergänzung (22.10.2026)
 
 | Anforderung | Nachweis | Status |

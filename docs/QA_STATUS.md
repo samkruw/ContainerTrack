@@ -1,29 +1,33 @@
-# Prüfstatus — Update 1.3.0 — 22.10.2026
+# Prüfstatus — Update 1.3.1 — 22.10.2026
 
 Repository [samkruw/ContainerTrack](https://github.com/samkruw/ContainerTrack), Branch `codex/native-android-app`, [Draft-PR #1](https://github.com/samkruw/ContainerTrack/pull/1). Nur Debug-APK; kein Merge, kein Release.
 
-## Abschließender Nachweis
+## Nachweis
 
-[GitHub-Lauf 39807919494](https://github.com/samkruw/ContainerTrack/actions/runs/39807919494) ist vollständig erfolgreich. Geprüfter App-/Test-Commit: `3da0c6f90b467b59048e5d742bad760df8d7033e`. Nachfolgende Dokumentationsänderungen verändern diesen App-Stand nicht.
+[GitHub-Lauf 39839563123](https://github.com/samkruw/ContainerTrack/actions/runs/39839563123) ist vollständig erfolgreich. Geprüfter App-/Test-Commit: `42114afb1a0674e83356c46ad4825abcf79a176d`. Nachfolgende Dokumentationsänderungen verändern diesen App-Stand nicht.
 
-[Container-Track-debug-APK herunterladen](https://github.com/samkruw/ContainerTrack/actions/runs/39807919494/artifacts/12438786748). Das Artefakt ist ein ZIP mit `app-debug.apk`, Version 1.3.0 / versionCode 4. GitHub-Artefakte haben begrenzte Aufbewahrungszeit. Weitere Artefakte: `Android-reports`, `Android-device-reports-and-screenshots`.
+[Debug-APK herunterladen](https://github.com/samkruw/ContainerTrack/actions/runs/39839563123/artifacts/12452901477). Das Artefakt enthält `app-debug.apk`, Version 1.3.1 / versionCode 5. GitHub-Artefakte haben begrenzte Aufbewahrungszeit.
 
-- Lokal: 38 Gradle-Unit-Tests je Debug/Release, jeweils 0 Fehler und 0 übersprungene Tests. Vollständiger Build mit Lint, Debug-APK und Android-Test-APK erfolgreich. Nach der visuellen Korrektur nochmals `test lint assembleDebug` erfolgreich.
-- GitHub: Build, Unit-Tests, Lint, Quell-/Merged-Manifest-/APK-Berechtigungsprüfung sowie sieben Python-QA-Tests erfolgreich. 46 Android-Tests erfolgreich, keine übersprungenen Tests; 17 Screenshot-PNGs erzeugt.
-- Unverändertes Schema 1 erhalten; reales Room-Migrationstest-Szenario 1→2 bewahrt Aufträge, Foto-Pfade, Reminder-ID und Frist und erzeugt keinen historischen Massen-Upload.
-- Echte gebündelte ML-Kit-Erkennung von `0708` bei deaktiviertem validierten Netzwerk bestanden. INTERNET ist für Microsoft absichtlich vorhanden; Offline wird tatsächlich getestet.
-- Integration prüft dreifache verzögerte Delivery, einmaligen Completion-/Timer-/Queue-Effekt, Return, per-Foto-Bestätigung über Wiederöffnung, falsches Konto, partiellen Retry, persistiertes Retry-After und Fotoersatz. Dauerhafte Fehler benötigen expliziten Retry.
-- Native Navigation, Activity-Neustart, reale lokale JPEG-Galerie/Vollbild/Share-ID, zehn Container bei großer Schrift, JPEG-Freigaben, ZIP-Chooser, Export und Alarm-Aktionen geprüft.
+- 39 Unit-Tests je Debug/Release; keine Fehler oder übersprungenen Tests. Lint, Debug-APK, Android-Test-APK und neun Python-QA-Tests erfolgreich.
+- 56 Android-Tests erfolgreich, keine übersprungenen Tests; 25 Screenshot-PNGs erzeugt. Weitere Artefakte: Android-reports und Android-device-reports-and-screenshots.
+- Reale Room-Migration 1→2 bewahrt Aufträge, Foto-Pfade und Reminder ohne historischen Massen-Upload. Schema 2 bleibt unverändert.
+- Gebündelte ML-Kit-Erkennung von 0708 bei deaktiviertem validierten Netzwerk. Führende Null des optionalen Erstcontainers bleibt erhalten; Job und Erstcontainer werden atomar gespeichert.
+- Zweiphasige Delivery, sechs Pflichtfotos, einmaliger Completion-/Timer-/Queue-Effekt, Return, Konto-Bindung, per-Foto-Bestätigung, partieller Retry, persistiertes Retry-After und Fotoersatz geprüft.
+- Echte lokale JPEG-Galerie, Vollbild, Auswahl/Share-ID, ausgewählte Originalbytes, Cache-Bereinigung, ZIP-Chooser, Export, Alarm-Aktionen und zehn Container bei großer Schrift geprüft.
 
-Unabhängiger statischer Abschlussreview: keine P1-Befunde; zwei P2 behoben und nachgeprüft (dauerhafte Fehler nur explizit erneut versuchen; installierten Teams-Empfänger vor Angebot prüfen). Erste tatsächliche Screenshot-Sichtprüfung zeigte Material-Standardviolett und zu runde Fotoplätze; beide korrigiert und im abschließenden CI erneut geprüft. Die visuelle Übersicht umfasst sechs synthetische Testansichten. Keine freigegebenen Goldens; der entsprechende Vergleichsschritt wird deshalb übersprungen, nicht die Android-Tests.
+## Visueller Abgleich
 
-Direkter Artefakt-Download in die Cloud ist durch den Netzwerk-Proxy für `productionresultssa6.blob.core.windows.net` blockiert. Die Screenshot-Übersicht wurde aus dem rechtmäßig erhaltenen vollständigen CI-Protokoll-ZIP extrahiert; keine Sperre umgangen. Der GitHub-Download-Link bleibt für angemeldete berechtigte Benutzer verfügbar.
+Alle acht ausgewählten Referenzansichten wurden im echten MainActivity inklusive Markenleiste/Navigation erfasst und manuell mit den gelieferten Bildern verglichen. [Bildschirmnachweis mit synthetischen Testdaten](../design/verification/reference-ui-v1.3.1.jpg), [Zuordnung und fachliche Unterschiede](../design-qa.md).
+
+Graphit-/Lime-Palette, Inter mit echten variablen Schriftgewichten, flaches Container-Logo, große KT-/Container-Zahlen, rechteckige Aktionen, Trennlinien, Foto-Raster und drei Tabs mit ausgewähltem Unterstrich sind umgesetzt. Die Testabbildung ist ausschließlich in androidTest/assets; sie ist nicht im Produkt-APK enthalten. Keine freigegebenen Goldens: manueller Vergleich, kein behaupteter automatischer Pixelvergleich.
+
+Unabhängiger statischer Review ohne verbleibende wichtige Befunde nach Korrektur der Share-Cache-Bereinigung. Original-JPG-Speichern über Androids Ordnerauswahl ist implementiert und statisch geprüft; eine reale SAF-Provider-/Hardware-Abnahme steht aus.
 
 ## Noch nicht abgenommen
 
-- Echte Microsoft-Anmeldung und Graph-Übertragung ins Firmen-Team: öffentliche Tenant-/Client-/Redirect-/Team-/Channel-Konfiguration fehlt. Keine Testadapter oder simulierten Erfolge im Produkt. Einrichtung: [MICROSOFT_SETUP.md](MICROSOFT_SETUP.md).
+- Echte Microsoft-Anmeldung und Graph-Übertragung ins Firmen-Team: öffentliche Tenant-/Client-/Redirect-/Team-/Channel-Konfiguration fehlt. Keine simulierte Anmeldung oder Übertragung. Einrichtung: [MICROSOFT_SETUP.md](MICROSOFT_SETUP.md).
+- Zentraler Team-Galerie-Zugriff und administrative Benutzerverwaltung: ohne verifizierte Rechte keine erfundenen Benutzer oder Rollen. Die vorhandene Galerie ist ausdrücklich lokal.
 - Update-Installation über bestehender APK mit identischem Debug-Zertifikat; ein frischer Runner garantiert dies nicht. Keine Deinstallation zum vermeintlichen Update empfehlen.
-- Reale Kamera/Licht/Fotoqualität, Standby/Boot/OEM-Verhalten und Benachrichtigungsfreigaben auf Hardware.
-- TalkBack, große Systemschrift auf Hardware und visuelle Benutzerfreigabe.
+- Reale Kamera/Licht/Fotoqualität, Standby/Boot/OEM-Verhalten, TalkBack und vollständige Hardware-Abnahme.
 
-INTERNET/ACCESS_NETWORK_STATE/WAKE_LOCK sind ausdrücklich vorgesehen. Keine Standort-/Mikrofon-/NFC-/breiten Speicherrechte. Der Quellcode-Audit ist keine technische Netzwerksperre für Bibliotheken.
+INTERNET/ACCESS_NETWORK_STATE/WAKE_LOCK sind vorgesehen. Keine Standort-/Mikrofon-/NFC-/breiten Speicherrechte. Direkter Artefakt-Download in die Cloud ist durch den Netzwerk-Proxy eingeschränkt; die Bildschirmübersicht wurde aus dem regulären CI-Protokoll extrahiert. Der GitHub-Download-Link bleibt für berechtigte Benutzer verfügbar.
