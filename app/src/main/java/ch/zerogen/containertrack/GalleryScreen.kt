@@ -24,7 +24,8 @@ import java.io.File
 
 @Composable
 fun GalleryScreen(jobs:List<JobWithContainers>,uploads:List<UploadPhotoEntity>,onShare:(GalleryPhoto)->Unit,
-                  onSaveSelected:(Set<String>)->Unit={},onShareSelected:((Set<String>)->Unit)?=null) {
+                  onSaveSelected:(Set<String>)->Unit={},onShareSelected:((Set<String>)->Unit)?=null,
+                  onTeamsShareSelected:((Set<String>)->Unit)?=null) {
     val focus=androidx.compose.ui.platform.LocalFocusManager.current
     var query by rememberSaveable{mutableStateOf("")}
     var owner by rememberSaveable{mutableStateOf<String?>(null)}
@@ -105,6 +106,9 @@ fun GalleryScreen(jobs:List<JobWithContainers>,uploads:List<UploadPhotoEntity>,o
         if(local.isNotEmpty()) {
             Text("${chosen.size} von ${if(opened==null)local.size else group.size} Fotos ausgewählt",color=Muted,style=MaterialTheme.typography.bodySmall)
             PrimaryIconButton("Fotos herunterladen",Icons.Outlined.FileDownload,chosen.isNotEmpty()){onSaveSelected(chosen.map{it.photoId}.toSet())}
+            OutlineAction("In Teams teilen",Icons.Outlined.Groups,chosen.isNotEmpty() && onTeamsShareSelected!=null) {
+                onTeamsShareSelected?.invoke(chosen.map{it.photoId}.toSet())
+            }
             OutlineAction("Über Android teilen",Icons.Outlined.Share,chosen.isNotEmpty() && (onShareSelected!=null || chosen.size==1)) {
                 if(onShareSelected!=null)onShareSelected(chosen.map{it.photoId}.toSet()) else chosen.singleOrNull()?.let(onShare)
             }

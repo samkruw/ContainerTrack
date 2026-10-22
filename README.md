@@ -2,7 +2,7 @@
 
 Native Kotlin-App zur lokalen Erfassung von Lieferungen und Returns. Ein `:app`-Modul mit Compose, Room, CameraX und gebündeltem ML Kit. Kein WebView. Optionaler Foto-Upload über Microsoft-Firmenkonto und Teams.
 
-**Stand:** Update 1.3.1 / versionCode 5. Bestehende native Architektur und App-ID bleiben erhalten; Room migriert ohne Datenlöschung von Schema 1 auf 2. Designkorrektur nach den acht Bildvorlagen: [UPDATE_1_3_1.md](docs/UPDATE_1_3_1.md). Fachliche Änderungen: [UPDATE_1_3.md](docs/UPDATE_1_3.md). Microsoft-Einrichtung: [MICROSOFT_SETUP.md](docs/MICROSOFT_SETUP.md). Aktuelle Prüfnachweise: [QA_STATUS.md](docs/QA_STATUS.md).
+**Stand:** Update 1.3.2 / versionCode 6. Bestehende native Architektur und App-ID bleiben erhalten; Room migriert ohne Datenlöschung von Schema 1 auf 2. Direktes manuelles Teams-Teilen: [UPDATE_1_3_2.md](docs/UPDATE_1_3_2.md). Designkorrektur nach den acht Bildvorlagen: [UPDATE_1_3_1.md](docs/UPDATE_1_3_1.md). Fachliche Änderungen: [UPDATE_1_3.md](docs/UPDATE_1_3.md). Microsoft-Einrichtung: [MICROSOFT_SETUP.md](docs/MICROSOFT_SETUP.md). Aktuelle Prüfnachweise: [QA_STATUS.md](docs/QA_STATUS.md).
 
 ## Projekt öffnen und APK bauen
 

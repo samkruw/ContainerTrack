@@ -207,7 +207,7 @@ class TrackRepository(private val context: Context, val database: TrackDatabase,
         }
     }
 
-    suspend fun prepareSelectedPhotoShare(photoIds: Set<String>): Intent = withContext(Dispatchers.IO) {
+    suspend fun prepareSelectedPhotoShare(photoIds: Set<String>, teamsPackage: String? = null): Intent = withContext(Dispatchers.IO) {
         mutations.withLock {
             val selected = selectedPhotos(photoIds)
             pruneSharedExports(System.currentTimeMillis())
@@ -218,7 +218,7 @@ class TrackRepository(private val context: Context, val database: TrackDatabase,
                     val folder=File(directory,jobId).apply { check(mkdirs() || isDirectory) }
                     File(folder,photoName(number,photo.step)).also { File(photo.localPath).copyTo(it) }
                 }
-                photoShareIntent(context,files)
+                photoShareIntent(context,files,teamsPackage)
             } catch(e:Exception) { directory.deleteRecursively();throw e }
         }
     }

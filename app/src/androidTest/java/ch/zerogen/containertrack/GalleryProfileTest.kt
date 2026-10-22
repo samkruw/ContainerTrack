@@ -22,11 +22,16 @@ class GalleryProfileTest {
         val photo=PhotoEntity(id="gallery-photo",containerId=container.id,step=1,localPath=file.path,capturedAt=1L)
         val missing=photo.copy(id="missing",step=2,localPath=file.path+"-missing")
         var shared:String?=null
+        var teamsShared=emptySet<String>()
         try {
-            compose.setContent { ContainerTheme { Surface { GalleryScreen(listOf(JobWithContainers(job,listOf(ContainerWithPhotos(container,listOf(photo,missing))))),emptyList(),onShare={shared=it.photoId}) } } }
+            compose.setContent { ContainerTheme { Surface { GalleryScreen(listOf(JobWithContainers(job,listOf(ContainerWithPhotos(container,listOf(photo,missing))))),emptyList(),onShare={shared=it.photoId},onTeamsShareSelected={teamsShared=it}) } } }
             compose.waitUntil(10_000) { compose.onAllNodesWithText("RET-GALLERY · 0708").fetchSemanticsNodes().isNotEmpty() }
             compose.onNodeWithText("RET-GALLERY · 0708").performClick()
             compose.onNodeWithText("0708_02.jpg").assertDoesNotExist()
+            compose.onNodeWithText("In Teams teilen").assertIsNotEnabled()
+            compose.onNodeWithContentDescription("Foto 1 auswählen").performClick()
+            compose.onNodeWithText("In Teams teilen").assertIsEnabled().performClick()
+            compose.runOnIdle { assertEquals(setOf("gallery-photo"),teamsShared) }
             compose.onNodeWithContentDescription("0708 Foto 1").performClick()
             compose.waitUntil(10_000) { compose.onAllNodesWithContentDescription("Foto in Vollansicht").fetchSemanticsNodes().isNotEmpty() }
             compose.onNodeWithContentDescription("Foto in Vollansicht").assertIsDisplayed()

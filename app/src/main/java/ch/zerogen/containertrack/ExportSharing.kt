@@ -1,10 +1,24 @@
 package ch.zerogen.containertrack
 
 import android.content.ClipData
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import androidx.core.content.FileProvider
 import java.io.File
+
+/** Teams owns recipient selection; a missing Teams receiver falls back to Android sharing. */
+fun launchShareIntent(intent: Intent, startActivity: (Intent) -> Unit) {
+    if (intent.`package` != "com.microsoft.teams") {
+        startActivity(Intent.createChooser(intent, "Auftrag teilen"))
+        return
+    }
+    try {
+        startActivity(intent)
+    } catch (_: ActivityNotFoundException) {
+        startActivity(Intent.createChooser(Intent(intent).setPackage(null), "Auftrag teilen"))
+    }
+}
 
 /** A temporary, read-only grant for this ZIP; internal photos and databases stay private. */
 fun zipShareIntent(context: Context, zipFile: File): Intent {
@@ -37,7 +51,6 @@ fun photoShareIntent(context: Context, photos: List<File>, teamsPackage: String?
         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         if (teamsPackage != null) {
             setPackage(teamsPackage)
-            if (resolveActivity(context.packageManager) == null) setPackage(null)
         }
     }
 }

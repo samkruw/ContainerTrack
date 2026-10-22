@@ -134,6 +134,9 @@ class TrackViewModel(application: Application, private val saved: SavedStateHand
         shareRequests.send(app.repository.preparePhotoShare(jobId,if (teams) "com.microsoft.teams" else null,photoId))
     }
     fun shareSelectedPhotos(ids:Set<String>) = runAction { shareRequests.send(app.repository.prepareSelectedPhotoShare(ids)) }
+    fun shareSelectedPhotosToTeams(ids:Set<String>) = runAction {
+        shareRequests.send(app.repository.prepareSelectedPhotoShare(ids,"com.microsoft.teams"))
+    }
     fun saveSelectedPhotos(ids:Set<String>,tree:Uri) = runAction {
         val count=app.repository.saveSelectedPhotos(ids,tree)
         notice.value="$count Originalfotos gespeichert."

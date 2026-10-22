@@ -1,6 +1,7 @@
 package ch.zerogen.containertrack
 
 import android.content.Context
+import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.net.Uri
 import androidx.test.core.app.ApplicationProvider
@@ -11,6 +12,35 @@ import java.util.UUID
 
 class PhotoSharingTest {
     private val context=ApplicationProvider.getApplicationContext<Context>()
+    @Test fun teamsSharingLaunchesTeamsDirectly() {
+        val intent=Intent(Intent.ACTION_SEND).setType("image/jpeg").setPackage("com.microsoft.teams")
+        val launches=mutableListOf<Intent>()
+        launchShareIntent(intent) { launches += it }
+        assertEquals(1,launches.size)
+        assertEquals(Intent.ACTION_SEND,launches.single().action)
+        assertEquals("com.microsoft.teams",launches.single().`package`)
+    }
+
+    @Suppress("DEPRECATION")
+    @Test fun missingTeamsFallsBackToChooserPreservingSelectedPhotoGrants() {
+        val uri=Uri.parse("content://${context.packageName}.exports/shared-photos/0708_01.jpg")
+        val intent=Intent(Intent.ACTION_SEND).setType("image/jpeg").setPackage("com.microsoft.teams")
+            .putExtra(Intent.EXTRA_STREAM,uri).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        intent.clipData=android.content.ClipData.newRawUri("0708_01.jpg",uri)
+        val launches=mutableListOf<Intent>()
+        launchShareIntent(intent) {
+            launches += it
+            if(launches.size==1) throw ActivityNotFoundException("Teams absent")
+        }
+        assertEquals(2,launches.size)
+        assertEquals(Intent.ACTION_CHOOSER,launches.last().action)
+        val fallback=launches.last().getParcelableExtra<Intent>(Intent.EXTRA_INTENT)!!
+        assertNull(fallback.`package`)
+        assertEquals(uri,fallback.getParcelableExtra<Uri>(Intent.EXTRA_STREAM))
+        assertEquals(uri,fallback.clipData!!.getItemAt(0).uri)
+        assertTrue(fallback.flags and Intent.FLAG_GRANT_READ_URI_PERMISSION!=0)
+        assertEquals(0,fallback.flags and Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+    }
     @Suppress("DEPRECATION")
     @Test fun onlyNumberedJpegsHaveReadOnlyProviderGrants() {
         val directory=File(context.cacheDir,"shared-photos/test-${UUID.randomUUID()}").apply{mkdirs()}

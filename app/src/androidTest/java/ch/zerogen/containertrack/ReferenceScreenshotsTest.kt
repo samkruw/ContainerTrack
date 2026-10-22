@@ -93,6 +93,7 @@ class ReferenceScreenshotsTest {
         compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasText("Teams-Übertragung"))
         compose.onNodeWithText("Teams-Übertragung").performClick()
         compose.onNodeWithText("Alle 6 Fotos erfolgreich gesendet").assertDoesNotExist()
+        compose.onNodeWithText("In Teams teilen").assertIsEnabled()
         capture("26-reference-upload")
     }
     @Test fun userAccessShowsOnlyVerifiedPermissions(){

@@ -16,7 +16,8 @@ import java.io.File
 
 @Composable
 fun UploadScreen(batch:JobWithContainers,queue:UploadJobEntity?,uploads:List<UploadPhotoEntity>,identity:MicrosoftIdentity?,
-                 configured:Boolean,online:Boolean,busy:Boolean,onUpload:()->Unit,onShare:()->Unit,onOrders:()->Unit,onProfile:()->Unit) {
+                 configured:Boolean,online:Boolean,busy:Boolean,onUpload:()->Unit,onShare:()->Unit,onOrders:()->Unit,onProfile:()->Unit,
+                 onTeamsShare:()->Unit={}) {
     val photos=batch.ordered.flatMap{c->c.photos.sortedBy{it.step}.map{c.container.containerNumber to it}}
     val acknowledgements=uploads.filter{it.jobId==batch.job.id}.associateBy{it.photoId}
     val sent=photos.count{acknowledgements[it.second.id]?.uploadedAt!=null}
@@ -30,6 +31,10 @@ fun UploadScreen(batch:JobWithContainers,queue:UploadJobEntity?,uploads:List<Upl
                 Icon(if(batch.complete)Icons.Outlined.CheckCircle else Icons.Outlined.PhotoCamera,null,Modifier.size(48.dp),tint=if(batch.complete)Lime else Warning)
                 Column {Text("Auftrag ${orderIdentifier(batch)}",color=Muted,style=MaterialTheme.typography.bodyMedium);Text(if(batch.containers.size==1)"Container ${batch.ordered.first().container.containerNumber}" else "${batch.containers.size} Container",fontSize=36.sp,lineHeight=42.sp,fontWeight=FontWeight.ExtraBold)}
             }
+        }
+        item {
+            PrimaryIconButton("In Teams teilen",Icons.Outlined.Groups,!busy && photos.isNotEmpty(),onTeamsShare)
+            Text("Chat oder Kanal in Teams wählen. Falls Teams fehlt, öffnet sich Android-Teilen. Manuelles Teilen ändert den Uploadstatus nicht.",color=Muted,style=MaterialTheme.typography.bodySmall)
         }
         item {GlassSurface {Column(Modifier.padding(16.dp),verticalArrangement=Arrangement.spacedBy(14.dp)) {
             Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically) {

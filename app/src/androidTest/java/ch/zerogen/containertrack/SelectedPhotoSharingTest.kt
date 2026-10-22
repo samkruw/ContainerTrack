@@ -29,6 +29,9 @@ class SelectedPhotoSharingTest {
             assertEquals("image/jpeg",intent.type);assertEquals(Intent.ACTION_SEND,intent.action)
             val uri=intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)!!
             assertArrayEquals(byteArrayOf(2),app.contentResolver.openInputStream(uri)!!.use{it.readBytes()})
+            val teamsIntent=repo.prepareSelectedPhotoShare(setOf(photo.id),teamsPackage="com.microsoft.teams")
+            assertEquals("com.microsoft.teams",teamsIntent.`package`)
+            assertArrayEquals(byteArrayOf(2),app.contentResolver.openInputStream(teamsIntent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)!!)!!.use{it.readBytes()})
             assertEquals(before,db.dao().job(id)!!.job.completionTriggeredAt)
             assertTrue(db.dao().uploadPhotos(id).all{it.uploadedAt==null})
         } finally {repo.deleteJob(id);db.close()}

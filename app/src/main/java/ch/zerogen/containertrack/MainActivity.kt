@@ -67,7 +67,7 @@ fun TrackApp(vm: TrackViewModel = viewModel()) {
     LaunchedEffect(vm, lifecycle) {
         lifecycle.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
             vm.shares.collect { intent ->
-                try { context.startActivity(Intent.createChooser(intent, "Auftrag teilen")) }
+                try { launchShareIntent(intent) { context.startActivity(it) } }
                 catch (_: android.content.ActivityNotFoundException) {
                     vm.error.value = "Keine App zum Teilen gefunden. Bitte eine passende App installieren."
                 } catch (_: SecurityException) {
@@ -125,7 +125,7 @@ fun TrackApp(vm: TrackViewModel = viewModel()) {
                 composable("jobs") { OrderListScreen(jobs,uploads,uploadedPhotos,reminders,now,online,query,
                     runCatching { OrderFilter.valueOf(filterName) }.getOrDefault(OrderFilter.ACTIVE),vm::search,{vm.filter(it.name)},{actionJob=it},identity,onResume=::resumeJob,onRetry=vm::uploadPhotos) }
                 composable("gallery") { GalleryScreen(jobs,uploadedPhotos,onShare={vm.sharePhotos(it.jobId,photoId=it.photoId)},
-                    onSaveSelected={savingPhotos=ArrayList(it);savePhotos.launch(null)},onShareSelected=vm::shareSelectedPhotos) }
+                    onSaveSelected={savingPhotos=ArrayList(it);savePhotos.launch(null)},onShareSelected=vm::shareSelectedPhotos,onTeamsShareSelected=vm::shareSelectedPhotosToTeams) }
                 composable("profile") { ProfileScreen(identity,microsoftStatus,vm.microsoftConfigured,busy,vm::signIn,vm::signOut,vm::switchAccount,onContinue={nav.navigate("jobs"){popUpTo("jobs");launchSingleTop=true}},onAccess={nav.navigate("access")}) }
                 composable("access") {UserAccessScreen(identity)}
                 composable("scan") { ScanJobsScreen(jobs,active,onJob={resumeJob(it.job.id)}) }
@@ -164,7 +164,7 @@ fun TrackApp(vm: TrackViewModel = viewModel()) {
                 composable("upload/{jobId}") { back ->
                     val id=back.arguments?.getString("jobId") ?: return@composable
                     jobs.find{it.job.id==id}?.let{batch->UploadScreen(batch,uploads.find{it.jobId==id},uploadedPhotos,identity,vm.microsoftConfigured,online,busy,
-                        onUpload={vm.uploadPhotos(id)},onShare={vm.sharePhotos(id)},onOrders={nav.navigate("jobs"){popUpTo("jobs");launchSingleTop=true}},onProfile={nav.navigate("profile")})}
+                        onUpload={vm.uploadPhotos(id)},onShare={vm.sharePhotos(id)},onOrders={nav.navigate("jobs"){popUpTo("jobs");launchSingleTop=true}},onProfile={nav.navigate("profile")},onTeamsShare={vm.sharePhotos(id,teams=true)})}
                 }
                 composable("export/{jobId}") { back ->
                     val id = back.arguments?.getString("jobId") ?: return@composable
