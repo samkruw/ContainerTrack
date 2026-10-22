@@ -25,6 +25,7 @@ val Warning = Color(0xFFE6BB68)
 fun ContainerTheme(content: @Composable () -> Unit) {
     MaterialTheme(colorScheme = darkColorScheme(
         primary = Lime, onPrimary = Navy, primaryContainer = Color(0xFF303A23), onPrimaryContainer = Color(0xFFEDF3D8),
+        secondary = Lime, onSecondary = Navy, secondaryContainer = Color(0xFF303A23), onSecondaryContainer = Color(0xFFEDF3D8),
         background = Navy, onBackground = Color(0xFFF0F2EA), surface = Navy, onSurface = Color(0xFFF0F2EA),
         surfaceVariant = Graphite, onSurfaceVariant = Color(0xFFBEC7BC), outline = Color(0xFF667365), error = Color(0xFFFF9990)
     ), shapes = Shapes(small = RoundedCornerShape(8.dp),medium = RoundedCornerShape(12.dp),large = RoundedCornerShape(20.dp))) {

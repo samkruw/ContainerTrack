@@ -54,7 +54,7 @@ fun ContainerDetails(item: ContainerWithPhotos, kind: JobKind, readonly: Boolean
                             val photo=item.photos.find { it.step == step }
                             val allowed = photo != null || (!readonly && nextPhotoStep(kind,steps) == step)
                             OutlinedButton(onClick = { onPhoto(step) },enabled = allowed && !busy,
-                                modifier = Modifier.weight(1f).heightIn(min = 108.dp),contentPadding = PaddingValues(8.dp)) {
+                                modifier = Modifier.weight(1f).heightIn(min = 108.dp),contentPadding = PaddingValues(8.dp),shape = MaterialTheme.shapes.medium) {
                                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                                     if (photo != null) PhotoImage(photo.localPath,photoLabel(kind,step),Modifier.fillMaxWidth().height(68.dp))
                                     Text("${step.toString().padStart(2,'0')} · ${if (kind == JobKind.RETURN) "Inhalt" else listOf("Leer","Front","Rückseite / Türen","Links","Rechts","Befüllt")[step-1]}",style = MaterialTheme.typography.labelMedium)
