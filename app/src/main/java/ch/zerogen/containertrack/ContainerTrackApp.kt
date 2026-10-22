@@ -9,7 +9,7 @@ import kotlinx.coroutines.launch
 
 class ContainerTrackApp : Application() {
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    val database by lazy { Room.databaseBuilder(this, TrackDatabase::class.java, "container-track.db").build() }
+    val database by lazy { Room.databaseBuilder(this, TrackDatabase::class.java, "container-track.db").addMigrations(MIGRATION_1_2).build() }
     val repository by lazy { TrackRepository(this, database) }
     val alarms by lazy { ReminderAlarms(this) }
     override fun onCreate() {

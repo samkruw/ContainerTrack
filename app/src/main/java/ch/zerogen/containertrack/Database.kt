@@ -12,7 +12,8 @@ data class JobEntity(
     val updatedAt: Long = createdAt,
     val completedAt: Long? = null,
     val exportedAt: Long? = null,
-    val loggerStoppedAt: Long? = null
+    val loggerStoppedAt: Long? = null,
+    val completionTriggeredAt: Long? = null
 )
 
 @Entity(tableName = "containers", foreignKeys = [ForeignKey(entity = JobEntity::class,
@@ -74,8 +75,44 @@ data class JobWithContainers(
     }
 }
 
+@Entity(tableName = "upload_jobs", foreignKeys = [ForeignKey(entity = JobEntity::class,
+    parentColumns = ["id"], childColumns = ["jobId"], onDelete = ForeignKey.CASCADE)])
+data class UploadJobEntity(
+    @PrimaryKey val jobId: String,
+    val ownerAccountId: String? = null,
+    val state: String = "COMPLETE_PENDING_UPLOAD",
+    val lastError: String? = null,
+    val lastAttemptAt: Long? = null
+)
+
+@Entity(tableName = "upload_photos", foreignKeys = [
+    ForeignKey(entity = PhotoEntity::class, parentColumns = ["id"], childColumns = ["photoId"], onDelete = ForeignKey.CASCADE),
+    ForeignKey(entity = JobEntity::class, parentColumns = ["id"], childColumns = ["jobId"], onDelete = ForeignKey.CASCADE)],
+    indices = [Index("jobId")])
+data class UploadPhotoEntity(
+    @PrimaryKey val photoId: String,
+    val jobId: String,
+    val remotePath: String,
+    val uploadedAt: Long? = null,
+    val remoteItemId: String? = null,
+    val uploadedByAccountId: String? = null
+)
+
 @Dao
 interface TrackDao {
+    @Query("SELECT * FROM upload_jobs") fun observeUploadJobs(): Flow<List<UploadJobEntity>>
+    @Query("SELECT * FROM upload_photos") fun observePhotoUploads(): Flow<List<UploadPhotoEntity>>
+    @Query("SELECT * FROM upload_jobs") suspend fun uploadJobs(): List<UploadJobEntity>
+    @Query("SELECT * FROM upload_jobs WHERE jobId=:jobId") suspend fun uploadJob(jobId: String): UploadJobEntity?
+    @Query("SELECT * FROM upload_photos WHERE jobId=:jobId") suspend fun uploadPhotos(jobId: String): List<UploadPhotoEntity>
+    @Insert(onConflict = OnConflictStrategy.IGNORE) suspend fun insertUploadJob(job: UploadJobEntity): Long
+    @Insert(onConflict = OnConflictStrategy.IGNORE) suspend fun insertUploadPhoto(photo: UploadPhotoEntity): Long
+    @Query("UPDATE upload_jobs SET state=:state,lastError=:error,lastAttemptAt=:at WHERE jobId=:jobId")
+    suspend fun uploadState(jobId: String, state: String, error: String?, at: Long)
+    @Query("UPDATE upload_jobs SET ownerAccountId=:accountId,state='COMPLETE_PENDING_UPLOAD',lastError=NULL WHERE jobId=:jobId AND ownerAccountId IS NULL")
+    suspend fun bindUpload(jobId: String, accountId: String): Int
+    @Query("UPDATE upload_photos SET uploadedAt=:at,remoteItemId=:remoteId,uploadedByAccountId=:accountId WHERE photoId=:photoId AND EXISTS (SELECT 1 FROM upload_jobs WHERE upload_jobs.jobId=upload_photos.jobId AND ownerAccountId=:accountId)")
+    suspend fun confirmUpload(photoId: String, accountId: String, remoteId: String, at: Long): Int
     @Transaction @Query("SELECT * FROM jobs ORDER BY updatedAt DESC")
     fun observeJobs(): Flow<List<JobWithContainers>>
     @Transaction @Query("SELECT * FROM jobs WHERE id = :id")
@@ -101,5 +138,5 @@ interface TrackDao {
     @Query("DELETE FROM jobs WHERE id = :id") suspend fun deleteJob(id: String)
 }
 
-@Database(entities = [JobEntity::class, ContainerEntity::class, PhotoEntity::class, LoggerReminder::class], version = 1, exportSchema = true)
+@Database(entities = [JobEntity::class, ContainerEntity::class, PhotoEntity::class, LoggerReminder::class, UploadJobEntity::class, UploadPhotoEntity::class], version = 2, exportSchema = true)
 abstract class TrackDatabase : RoomDatabase() { abstract fun dao(): TrackDao }

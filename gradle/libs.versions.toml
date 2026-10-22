@@ -22,6 +22,7 @@ lifecycle-runtime = { module = "androidx.lifecycle:lifecycle-runtime-compose", v
 lifecycle-viewmodel = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycle" }
 navigation = { module = "androidx.navigation:navigation-compose", version = "2.9.5" }
 room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
+room-testing = { module = "androidx.room:room-testing", version.ref = "room" }
 room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
 room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 camera-core = { module = "androidx.camera:camera-core", version.ref = "camera" }
