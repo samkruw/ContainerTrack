@@ -1,3 +1,14 @@
+# V1.3.2 — manuell direkt in Teams teilen
+
+| Anforderung | Nachweis | Status |
+| --- | --- | --- |
+| Teams ohne ContainerTrack-Firmenkonfiguration öffnen | PhotoSharingTest, ReferenceScreenshotsTest | bestanden: CI39843067438 |
+| Fehlende Teams-App: Android-Chooser mit unveränderten Leserechten | PhotoSharingTest | bestanden: CI39843067438 |
+| Nur ausgewählte Original-JPGs, kein bestätigter Upload-/Timer-Effekt | SelectedPhotoSharingTest, GalleryProfileTest | bestanden: CI39843067438 |
+| Reale Zielauswahl im installierten Teams | Teams-Version, Konto und Rechte auf Nutzergerät | Hardware-Abnahme offen |
+
+[Debug-APK und vollständiger Prüfstatus](QA_STATUS.md), [Bildschirmnachweis](../design/verification/reference-ui-v1.3.2.jpg).
+
 # V1.3.1 — ausgewählte Bildvorlagen
 
 Nachweis: [QA_STATUS.md](QA_STATUS.md), [visueller Abgleich](../design-qa.md), [acht native Ansichten](../design/verification/reference-ui-v1.3.1.jpg).

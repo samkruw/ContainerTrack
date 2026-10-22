@@ -29,8 +29,12 @@ Sechs Delivery-Pflichtfotos bleiben verbindlich; Beispielzahlen4/5 werden nicht 
 
 ## Verifikation
 
-GitHub-Lauf [39839563123](https://github.com/samkruw/ContainerTrack/actions/runs/39839563123), geprüfter Commit `42114afb1a0674e83356c46ad4825abcf79a176d`: Build und Gerätetests erfolgreich. 39 Unit-Tests je Variante, 56 Android-Tests ohne Fehler/übersprungene Tests, neun Python-QA-Tests, Lint und APK-Prüfung bestanden. 25 Screenshot-PNGs erzeugt, darunter alle acht vollständigen Referenzansichten.
+GitHub-Lauf [39843067438](https://github.com/samkruw/ContainerTrack/actions/runs/39843067438), geprüfter Commit `98c3e4e1768e3feefb3072efb1fa9a757e6420a8`: Build und Gerätetests erfolgreich. 39 Unit-Tests je Variante, 58 Android-Tests ohne Fehler/übersprungene Tests, neun Python-QA-Tests, Lint und APK-Prüfung bestanden. 25 Screenshot-PNGs erzeugt, darunter alle acht vollständigen Referenzansichten.
 
-Die finale Übersicht wurde tatsächlich geöffnet und mit den gelieferten Referenzen verglichen. [Bildschirmnachweis mit synthetischen Testdaten](design/verification/reference-ui-v1.3.1.jpg). Kontrolliert: Graphit/Lime, Inter-Gewichte, große Kennungen, einzeiliger Auftragstitel bei Standardschrift, Segmente, echte Foto-Raster und Auswahlmarken, eigenständige Anmeldung, Markenleiste und Navigation mit Unterstrich. Kein automatischer Pixelvergleich: dafür sind keine freigegebenen Goldens vorhanden.
+Die finale Übersicht wurde tatsächlich geöffnet und mit den gelieferten Referenzen verglichen. [Bildschirmnachweis mit synthetischen Testdaten](design/verification/reference-ui-v1.3.2.jpg). Kontrolliert: Graphit/Lime, Inter-Gewichte, große Kennungen, einzeiliger Auftragstitel bei Standardschrift, Segmente, echte Foto-Raster und Auswahlmarken, eigenständige Anmeldung, Markenleiste und Navigation mit Unterstrich. Kein automatischer Pixelvergleich: dafür sind keine freigegebenen Goldens vorhanden.
 
 Die fachlichen Unterschiede oben bleiben ausdrücklich bestehen. Galerie-/Upload-/Rechteansichten zeigen reale lokale oder bestätigte Daten; ohne Firmenkonfiguration keine behaupteten Team-Rechte oder Erfolge. Reale Microsoft-/SAF-/Hardware-Abnahme siehe [QA_STATUS.md](docs/QA_STATUS.md).
+
+## Zusatz 1.3.2: manueller Teams-Button
+
+Die zusätzlichen Aktionen in Galerie und Übertragungsansicht wurden im finalen Emulatorbild tatsächlich angesehen. Galerie aktiviert Teams nur für ausgewählte Originalfotos; der Upload-Screen bietet die Aktion unabhängig von der Firmenanmeldung. 58 Gerätetests erfolgreich. Neue Funktion und Grenzen: [UPDATE_1_3_2.md](docs/UPDATE_1_3_2.md).
