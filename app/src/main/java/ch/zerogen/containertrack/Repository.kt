@@ -201,6 +201,58 @@ class TrackRepository(private val context: Context, val database: TrackDatabase,
         }
     }
 
+    suspend fun prepareSelectedPhotoShare(photoIds: Set<String>): Intent = withContext(Dispatchers.IO) {
+        mutations.withLock {
+            val selected = selectedPhotos(photoIds)
+            pruneSharedExports(System.currentTimeMillis())
+            val directory = File(context.cacheDir,"shared-photos/selection-${UUID.randomUUID()}")
+            check(directory.mkdirs())
+            try {
+                val files = selected.map { (jobId, number, photo) ->
+                    val folder=File(directory,jobId).apply { check(mkdirs() || isDirectory) }
+                    File(folder,photoName(number,photo.step)).also { File(photo.localPath).copyTo(it) }
+                }
+                photoShareIntent(context,files)
+            } catch(e:Exception) { directory.deleteRecursively();throw e }
+        }
+    }
+
+    private suspend fun selectedPhotos(ids:Set<String>):List<Triple<String,String,PhotoEntity>> {
+        require(ids.isNotEmpty())
+        val photos=dao.observeJobs().first().flatMap { batch -> batch.ordered.flatMap { item ->
+            item.photos.filter { it.id in ids }.map { Triple(batch.job.id,item.container.containerNumber,it) }
+        } }
+        require(photos.map { it.third.id }.toSet()==ids)
+        require(photos.all { File(it.third.localPath).isFile && File(it.third.localPath).length()>0 })
+        return photos
+    }
+
+    suspend fun saveSelectedPhotos(photoIds:Set<String>,tree:Uri):Int = withContext(Dispatchers.IO) {
+        mutations.withLock {
+            val photos=selectedPhotos(photoIds)
+            val parent=android.provider.DocumentsContract.buildDocumentUriUsingTree(tree,android.provider.DocumentsContract.getTreeDocumentId(tree))
+            val created=mutableListOf<Uri>()
+            try {
+                for ((job,group) in photos.groupBy { it.first }) {
+                    val folder=android.provider.DocumentsContract.createDocument(context.contentResolver,parent,android.provider.DocumentsContract.Document.MIME_TYPE_DIR,job)
+                        ?: error("Speicherordner konnte nicht erstellt werden")
+                    created+=folder
+                    for((_,number,photo) in group) {
+                        val target=android.provider.DocumentsContract.createDocument(context.contentResolver,folder,"image/jpeg",photoName(number,photo.step))
+                            ?: error("Fotodatei konnte nicht erstellt werden")
+                        created+=target
+                        val stream=context.contentResolver.openOutputStream(target,"w") ?: error("Speicherziel nicht verfügbar")
+                        stream.use { output -> File(photo.localPath).inputStream().use { it.copyTo(output) };output.flush() }
+                    }
+                }
+                photos.size
+            } catch(e:Exception) {
+                created.asReversed().forEach { runCatching { android.provider.DocumentsContract.deleteDocument(context.contentResolver,it) } }
+                throw e
+            }
+        }
+    }
+
     private fun writeArchive(batch: JobWithContainers, file: File, preparedAt: Long) {
         val containers = batch.ordered.map { item -> ExportContainer(item.container.containerNumber,
             item.photos.sortedBy { it.step }.map { ExportPhoto(it.step, File(it.localPath)) }) }
@@ -286,6 +338,10 @@ class TrackRepository(private val context: Context, val database: TrackDatabase,
                 File(context.filesDir, "pending/$jobId").deleteRecursively()
                 File(context.cacheDir, "shared-exports/$jobId").deleteRecursively()
                 File(context.cacheDir, "shared-photos/$jobId").deleteRecursively()
+                File(context.cacheDir,"shared-photos").listFiles()?.filter { it.name.startsWith("selection-") }?.forEach { selection ->
+                    File(selection,jobId).deleteRecursively()
+                    if(selection.listFiles()?.isEmpty()==true) selection.delete()
+                }
             }
             reminder
         }

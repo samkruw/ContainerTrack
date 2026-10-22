@@ -32,6 +32,7 @@ class ShareChooserTest {
             val container = app.repository.addContainer(job, "0708")
             val photo = File.createTempFile("chooser-photo", ".jpg", app.cacheDir).apply { writeBytes(byteArrayOf(1)) }
             app.repository.savePhoto(job, container, 1, photo)
+            compose.onNodeWithContentDescription("Aufträge filtern").performClick()
             compose.onNodeWithText("Alle").performClick()
             compose.waitUntil(10_000) { compose.onAllNodesWithText(reference).fetchSemanticsNodes().isNotEmpty() }
             compose.onNodeWithText(reference).performClick()

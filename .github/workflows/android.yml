@@ -80,6 +80,7 @@ jobs:
           disable-animations: true
           script: |
             chmod +x gradlew
+            adb shell wm size 1080x2340
             ./gradlew connectedDebugAndroidTest --no-daemon --stacktrace -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true
             mkdir -p app/build/screenshots
             adb pull /sdcard/Android/data/ch.zerogen.containertrack/files/screenshots/. app/build/screenshots/

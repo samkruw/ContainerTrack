@@ -17,8 +17,8 @@ android {
         applicationId = "ch.zerogen.containertrack"
         minSdk = 26
         targetSdk = 36
-        versionCode = 4
-        versionName = "1.3.0"
+        versionCode = 5
+        versionName = "1.3.1"
         for (part in listOf("TENANT_ID", "CLIENT_ID", "REDIRECT_URI", "TEAM_ID", "CHANNEL_ID")) {
             buildConfigField("String", "MICROSOFT_$part", javaLiteral(publicSetting("CT_MICROSOFT_$part")))
         }

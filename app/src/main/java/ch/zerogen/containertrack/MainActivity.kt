@@ -58,7 +58,6 @@ fun TrackApp(vm: TrackViewModel = viewModel()) {
     val online by vm.online.collectAsStateWithLifecycle()
     val query by vm.search.collectAsStateWithLifecycle()
     val filterName by vm.filter.collectAsStateWithLifecycle()
-    var createSheet by rememberSaveable { mutableStateOf(false) }
     var actionJob by rememberSaveable { mutableStateOf<String?>(null) }
     var shareJob by rememberSaveable { mutableStateOf<String?>(null) }
     val context = LocalContext.current
@@ -94,40 +93,31 @@ fun TrackApp(vm: TrackViewModel = viewModel()) {
         }
     }
     fun openJob(id: String) { vm.selectJob(id); nav.navigate("job/$id") { launchSingleTop = true } }
-    val tabs = listOf("jobs" to "Aufträge", "gallery" to "Galerie", "profile" to "Profil")
-    Scaffold(containerColor = Color.Transparent, topBar = {
-        GlassSurface(shape = androidx.compose.foundation.shape.RoundedCornerShape(0.dp)) {
-            TopAppBar(colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
-                title = {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Image(painterResource(R.drawable.ic_container), contentDescription = null, modifier = Modifier.size(32.dp))
-                        Text("Container Track", style = MaterialTheme.typography.titleLarge)
-                    }
-                }, navigationIcon = {
-                if (route !in tabs.map { it.first }) IconButton(onClick = { if (!busy) nav.popBackStack() }, enabled = !busy) { Icon(Icons.Default.ArrowBack, "Zurück") }
-            })
-        }
-    }, floatingActionButton = { if(route in tabs.map { it.first }) FloatingActionButton(onClick={ if(!busy) createSheet=true }) { Icon(Icons.Default.Add,"Neuer Auftrag") } }, bottomBar = {
-        GlassSurface(shape = androidx.compose.foundation.shape.RoundedCornerShape(0.dp)) {
-            NavigationBar(containerColor = Color.Transparent) {
-                tabs.forEachIndexed { index, (path, label) ->
-                    NavigationBarItem(selected = route == path, enabled = !busy,
-                        onClick = { nav.navigate(path) { popUpTo(nav.graph.startDestinationId) { saveState = true }; launchSingleTop = true; restoreState = true } },
-                        icon = { Icon(when (index) { 0 -> Icons.Default.List; 1 -> Icons.Default.Search; else -> Icons.Default.Person }, label) },
-                        label = { Text(label, maxLines = 1) })
-                }
-            }
-        }
-    }) { insets ->
+    val tabs = listOf("jobs" to "Aufträge", "scan" to "Kamera", "gallery" to "Galerie")
+    var savingPhotos by rememberSaveable { mutableStateOf(arrayListOf<String>()) }
+    val savePhotos = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+        if(uri!=null && savingPhotos.isNotEmpty()) vm.saveSelectedPhotos(savingPhotos.toSet(),uri)
+        savingPhotos=arrayListOf()
+    }
+    Scaffold(containerColor=Navy,topBar={BrandHeader(identity){if(!busy)nav.navigate("profile"){launchSingleTop=true}}},
+        floatingActionButton={if(route=="jobs")FloatingActionButton(onClick={if(!busy){vm.begin(JobKind.DELIVERY);nav.navigate("setup")}},containerColor=Lime,contentColor=Navy,shape=MaterialTheme.shapes.small){Icon(Icons.Default.Add,"Neuer Auftrag")}},
+        bottomBar={ReferenceBottomBar(route,!busy){path->nav.navigate(path){popUpTo(nav.graph.startDestinationId){saveState=true};launchSingleTop=true;restoreState=true}}}
+    ) { insets ->
         Column(Modifier.padding(insets).imePadding().fillMaxSize()) {
+            if(route !in tabs.map{it.first}) Row(verticalAlignment=Alignment.CenterVertically) {
+                IconButton(onClick={if(!busy)nav.popBackStack()},enabled=!busy){Icon(Icons.Default.ArrowBack,"Zurück")}
+                Text(when {route=="profile"->"Profil";route=="access"->"Benutzer & Rechte";route.startsWith("upload/")->"Teams-Übertragung";route.startsWith("job/")->"Auftragsdetails";else->"Zurück zum Auftrag"},style=MaterialTheme.typography.titleMedium)
+            }
             if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
             reminders.firstOrNull()?.let { ReminderStrip(it, reminders.size - 1, now) }
             NavHost(nav, startDestination = "jobs", modifier = Modifier.weight(1f)) {
                 composable("home") { HomeScreen(jobs, onBegin = { kind -> vm.begin(kind); nav.navigate("setup") }, onJob = ::openJob) }
                 composable("jobs") { OrderListScreen(jobs,uploads,uploadedPhotos,reminders,now,online,query,
-                    runCatching { OrderFilter.valueOf(filterName) }.getOrDefault(OrderFilter.ACTIVE),vm::search,{vm.filter(it.name)},{actionJob=it}) }
-                composable("gallery") { GalleryScreen(jobs,uploadedPhotos) { vm.sharePhotos(it.jobId,photoId=it.photoId) } }
-                composable("profile") { ProfileScreen(identity,microsoftStatus,vm.microsoftConfigured,busy,vm::signIn,vm::signOut,vm::switchAccount) }
+                    runCatching { OrderFilter.valueOf(filterName) }.getOrDefault(OrderFilter.ACTIVE),vm::search,{vm.filter(it.name)},{actionJob=it},identity,onResume={id-> vm.selectJob(id);nav.navigate("job/$id")},onRetry=vm::uploadPhotos) }
+                composable("gallery") { GalleryScreen(jobs,uploadedPhotos,onShare={vm.sharePhotos(it.jobId,photoId=it.photoId)},
+                    onSaveSelected={savingPhotos=ArrayList(it);savePhotos.launch(null)},onShareSelected=vm::shareSelectedPhotos) }
+                composable("profile") { ProfileScreen(identity,microsoftStatus,vm.microsoftConfigured,busy,vm::signIn,vm::signOut,vm::switchAccount,onContinue={nav.navigate("jobs"){popUpTo("jobs");launchSingleTop=true}},onAccess={nav.navigate("access")}) }
+                composable("access") {UserAccessScreen(identity)}
                 composable("scan") { ScanJobsScreen(jobs, active, onJob = { batch ->
                     vm.selectJob(batch.job.id)
                     val unfinished = batch.ordered.firstOrNull { it.container.completedAt == null }
@@ -143,7 +133,7 @@ fun TrackApp(vm: TrackViewModel = viewModel()) {
                     if (batch != null) JobScreen(batch, vm, busy,
                         onScan = { nav.navigate("scan/$id") },
                         onContainer = { nav.navigate("photo/$id/$it?step=0") },
-                        onExport = { nav.navigate("export/$id") }, onDeleted = { nav.popBackStack() }, onPhoto = { container, step -> nav.navigate("photo/$id/$container?step=$step") })
+                        onExport = { nav.navigate("export/$id") }, onDeleted = { nav.popBackStack() }, onPhoto = { container, step -> nav.navigate("photo/$id/$container?step=$step") },onUpload={nav.navigate("upload/$id")})
                 }
                 composable("scan/{jobId}") { back ->
                     val id = back.arguments?.getString("jobId") ?: return@composable
@@ -161,6 +151,11 @@ fun TrackApp(vm: TrackViewModel = viewModel()) {
                         })
                     }
                 }
+                composable("upload/{jobId}") { back ->
+                    val id=back.arguments?.getString("jobId") ?: return@composable
+                    jobs.find{it.job.id==id}?.let{batch->UploadScreen(batch,uploads.find{it.jobId==id},uploadedPhotos,identity,vm.microsoftConfigured,online,busy,
+                        onUpload={vm.uploadPhotos(id)},onShare={vm.sharePhotos(id)},onOrders={nav.navigate("jobs"){popUpTo("jobs");launchSingleTop=true}},onProfile={nav.navigate("profile")})}
+                }
                 composable("export/{jobId}") { back ->
                     val id = back.arguments?.getString("jobId") ?: return@composable
                     jobs.find { it.job.id == id }?.let { batch ->
@@ -168,15 +163,6 @@ fun TrackApp(vm: TrackViewModel = viewModel()) {
                     }
                 }
             }
-        }
-    }
-    if(createSheet) ModalBottomSheet(onDismissRequest={createSheet=false}) {
-        Column(Modifier.padding(20.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
-            ScreenTitle("Neuer Auftrag","Auftragsart wählen")
-            JobKind.entries.forEach { kind -> PrimaryButton(kind.label,enabled=!busy) {
-                createSheet=false;vm.begin(kind);nav.navigate("setup")
-            } }
-            Spacer(Modifier.height(24.dp))
         }
     }
     jobs.find { it.job.id==actionJob }?.let { batch -> ModalBottomSheet(onDismissRequest={actionJob=null}) {
@@ -199,6 +185,7 @@ fun TrackApp(vm: TrackViewModel = viewModel()) {
         Column(Modifier.padding(20.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
             ScreenTitle("Fotos teilen","Ausschließlich nummerierte JPEG-Dateien")
             uploads.find { it.jobId==batch.job.id }?.let { Text(syncLabel(it,online));it.lastError?.let { message -> Information(message,warning=true) } }
+            OutlineAction("Übertragungsdetails",androidx.compose.material.icons.Icons.Default.Info) {shareJob=null;nav.navigate("upload/${batch.job.id}")}
             PrimaryButton("An Teams-Kanal übertragen",enabled=!busy && batch.complete && identity!=null && vm.microsoftConfigured) { vm.uploadPhotos(batch.job.id);shareJob=null }
             if(identity==null) Text("Für den automatischen Upload zuerst im Profil anmelden.")
             val teamsAvailable = remember(batch.containers.sumOf { it.photos.size }) {

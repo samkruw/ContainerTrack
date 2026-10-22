@@ -9,11 +9,13 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material3.*
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
@@ -74,12 +76,13 @@ fun JobsScreen(jobs: List<JobWithContainers>, onJob: (String) -> Unit) {
 fun ScanJobsScreen(jobs: List<JobWithContainers>, active: String?, onJob: (JobWithContainers) -> Unit) {
     val candidates = jobs.filter { !it.complete && it.job.exportedAt == null }.sortedByDescending { it.job.id == active }
     LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        item { ScreenTitle("Scannen", "Auftrag für die nächste Erfassung wählen") }
-        if (candidates.isEmpty()) item { Information("Kein offener Auftrag zum Scannen. Unter Start einen neuen Auftrag anlegen.") }
+        item { ScreenTitle("Kamera", "Auftrag für die nächste Erfassung wählen") }
+        if (candidates.isEmpty()) item { Information("Kein offener Auftrag zum Scannen. Unter Aufträge mit + einen neuen Auftrag anlegen.") }
         items(candidates, key = { it.job.id }) { JobRow(it) { onJob(it) } }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SetupScreen(vm: TrackViewModel, busy: Boolean, onCreated: (String) -> Unit) {
     val kindName by vm.formKind.collectAsStateWithLifecycle()
@@ -96,15 +99,21 @@ fun SetupScreen(vm: TrackViewModel, busy: Boolean, onCreated: (String) -> Unit) 
     val draft = JobDraft(kind, reference, kt, order, quantity.toIntOrNull() ?: 0, quick, work)
     val errors = if (attempted) draft.errors(stopped) else emptyMap()
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        ScreenTitle("${kind.label} anlegen", "Alle Felder sind Pflichtfelder.")
+        ScreenTitle("Neuer Auftrag")
+        SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+            JobKind.entries.forEachIndexed { index,value ->
+                SegmentedButton(kind==value,{if(!busy && kind!=value)vm.begin(value)},SegmentedButtonDefaults.itemShape(index,2),modifier=Modifier.heightIn(min=52.dp),icon={Icon(if(value==JobKind.DELIVERY)Icons.Outlined.LocalShipping else Icons.Outlined.Undo,null)}) {Text(value.label,fontWeight=FontWeight.Bold)}
+            }
+        }
+        Text("Auftragsdaten",style=MaterialTheme.typography.titleLarge)
+        Text("Bestehende Pflichtfelder ausfüllen.",color=Muted,style=MaterialTheme.typography.bodySmall)
         if (kind == JobKind.RETURN) {
             if (locked) {
                 Information("Zuerst den Logger stoppen. Das Formular wird erst nach Ihrer Bestätigung freigegeben.", warning = true)
                 PrimaryButton("Logger gestoppt – bestätigen", enabled = !busy) { vm.confirmStopped() }
             } else Information("Logger gestoppt · ${localTime(stopped!!)}")
         }
-        GlassSurface {
-            Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                 FormField(if (kind == JobKind.DELIVERY) "Order Number" else "Return Number", reference, !locked && !busy, errors["referenceNumber"]) { vm.field("formReference", it) }
                 if (kind == JobKind.DELIVERY) FormField("ZRH Number", kt, !busy, errors["kt"]) { vm.field("formKt", it) }
                 FormField("Order / Container-Typ", order, !locked && !busy, errors["orderValue"]) { vm.field("formOrder", it) }
@@ -117,8 +126,8 @@ fun SetupScreen(vm: TrackViewModel, busy: Boolean, onCreated: (String) -> Unit) 
                     FormField("additional Work", work, !locked && !busy, errors["additionalWork"], multiline = true) { vm.field("formWork", it) }
                     Text("Nothing und Empty sind gültige Angaben.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-            }
         }
+        HorizontalDivider(color=Hairline)
         PrimaryButton("Auftrag speichern", enabled = !locked && !busy) {
             attempted = true
             if (draft.errors(stopped).isEmpty()) vm.create(onCreated)
@@ -130,19 +139,22 @@ fun SetupScreen(vm: TrackViewModel, busy: Boolean, onCreated: (String) -> Unit) 
 @Composable
 fun FormField(label: String, value: String, enabled: Boolean, error: String?, multiline: Boolean = false, onChange: (String) -> Unit) {
     OutlinedTextField(value = value, onValueChange = onChange, label = { Text(label) }, enabled = enabled,
-        modifier = Modifier.fillMaxWidth(), singleLine = !multiline, minLines = 1, maxLines = if (multiline) 4 else 1,
+        modifier = Modifier.fillMaxWidth(), textStyle = MaterialTheme.typography.bodyLarge.copy(fontSize=if(label=="ZRH Number" || label=="Return Number")30.sp else 18.sp,fontWeight=if(label=="ZRH Number" || label=="Return Number")FontWeight.Bold else FontWeight.Normal), singleLine = !multiline, minLines = 1, maxLines = if (multiline) 4 else 1,
         isError = error != null, supportingText = if (error != null) ({ Text(error) }) else null)
 }
 
 @Composable
 fun JobScreen(batch: JobWithContainers, vm: TrackViewModel, busy: Boolean, onScan: () -> Unit,
               onContainer: (String) -> Unit, onExport: () -> Unit, onDeleted: () -> Unit,
-              onPhoto: (String,Int) -> Unit = { id, _ -> onContainer(id) }) {
+              onPhoto: (String,Int) -> Unit = { id, _ -> onContainer(id) }, onUpload: (() -> Unit)? = null) {
     var deleting by remember { mutableStateOf(false) }
     val job = batch.job
     var expanded by rememberSaveable(job.id) { mutableStateOf<String?>(batch.ordered.firstOrNull()?.container?.id) }
     LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        item { ScreenTitle(job.draft.referenceNumber, "${job.draft.kind.label} · ${batch.status}") }
+        item {
+            Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){StatusBadge(job.draft.kind.label.uppercase());StatusBadge(batch.status,confirmed=batch.complete)}
+            ScreenTitle(orderIdentifier(batch),if(job.draft.kt!=job.draft.referenceNumber)job.draft.referenceNumber else null)
+        }
         item { Information("${job.draft.orderValue}\n${batch.completedCount} / ${job.draft.quantity} Container vollständig\n${if (job.draft.kind == JobKind.DELIVERY) "ZRH · ${job.draft.kt}" else "Logger gestoppt · ${job.loggerStoppedAt?.let(::localTime) ?: "–"}"}") }
         items(batch.ordered, key = { it.container.id }) { item ->
             ContainerDetails(item,job.draft.kind,job.exportedAt != null,expanded == item.container.id,
@@ -158,6 +170,7 @@ fun JobScreen(batch: JobWithContainers, vm: TrackViewModel, busy: Boolean, onSca
         if (job.exportedAt == null && unfinished != null) item {
             PrimaryButton("Container ${unfinished.container.containerNumber} fortsetzen", !busy) { onContainer(unfinished.container.id) }
         }
+        if (batch.complete && onUpload!=null) item { PrimaryButton("Teams-Übertragung", !busy, onUpload) }
         if (batch.complete) item { PrimaryButton(if (job.exportedAt == null) "Export prüfen" else "Erneut exportieren", !busy, onExport) }
         if (job.draft.kind == JobKind.RETURN) item {
             Text("Quick · ${job.draft.quick}\nadditional Work · ${job.draft.additionalWork}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)

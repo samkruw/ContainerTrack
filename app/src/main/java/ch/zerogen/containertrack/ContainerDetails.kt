@@ -4,6 +4,11 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.ui.Alignment
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
@@ -39,13 +44,16 @@ fun ContainerDetails(item: ContainerWithPhotos, kind: JobKind, readonly: Boolean
     val steps=item.photos.map { it.step }.toSet()
     GlassSurface {
         Column(Modifier.fillMaxWidth().padding(12.dp),verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Column(Modifier.fillMaxWidth().clickable(onClick = onExpand).heightIn(min = 56.dp)) {
-                Text("${item.container.containerNumber} · ${item.photos.size}/${kind.photoCount} Fotos",style = MaterialTheme.typography.titleMedium)
-                Text(when {
-                    steps.containsAll((1..kind.photoCount).toSet()) -> "Vollständig"
-                    kind == JobKind.DELIVERY && steps.containsAll((1..5).toSet()) && 6 !in steps -> "Befüllt-Foto fehlt"
-                    else -> "In Bearbeitung"
-                } + if (expanded) " · Schliessen ▴" else " · Öffnen ▾",color = if (item.photos.size == kind.photoCount) Success else Warning,style = MaterialTheme.typography.labelMedium)
+            Row(Modifier.fillMaxWidth().clickable(onClick=onExpand).heightIn(min=64.dp),verticalAlignment=Alignment.CenterVertically) {
+                Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(5.dp)) {
+                    Text("${item.container.containerNumber} · ${item.photos.size}/${kind.photoCount} Fotos",style=MaterialTheme.typography.titleMedium,fontWeight=FontWeight.Bold)
+                    Text(when {
+                        steps.containsAll((1..kind.photoCount).toSet())->"Vollständig"
+                        kind==JobKind.DELIVERY && steps.containsAll((1..5).toSet()) && 6 !in steps->"Befüllt-Foto fehlt"
+                        else->"In Bearbeitung"
+                    },color=if(item.photos.size==kind.photoCount)Lime else Warning,style=MaterialTheme.typography.labelMedium)
+                }
+                Icon(if(expanded)Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,if(expanded)"Container zuklappen" else "Container aufklappen",tint=Muted)
             }
             if (expanded) {
                 for (row in (1..kind.photoCount).chunked(2)) {
@@ -53,14 +61,21 @@ fun ContainerDetails(item: ContainerWithPhotos, kind: JobKind, readonly: Boolean
                         row.forEach { step ->
                             val photo=item.photos.find { it.step == step }
                             val allowed = photo != null || (!readonly && nextPhotoStep(kind,steps) == step)
-                            OutlinedButton(onClick = { onPhoto(step) },enabled = allowed && !busy,
-                                modifier = Modifier.weight(1f).heightIn(min = 108.dp),contentPadding = PaddingValues(8.dp),shape = MaterialTheme.shapes.medium) {
-                                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                    if (photo != null) PhotoImage(photo.localPath,photoLabel(kind,step),Modifier.fillMaxWidth().height(68.dp))
-                                    Text("${step.toString().padStart(2,'0')} · ${if (kind == JobKind.RETURN) "Inhalt" else listOf("Leer","Front","Rückseite / Türen","Links","Rechts","Befüllt")[step-1]}",style = MaterialTheme.typography.labelMedium)
-                                    Text(if (photo == null) "Aufnehmen" else "Ansehen / Ersetzen",style = MaterialTheme.typography.labelSmall)
+                            Surface(onClick={onPhoto(step)},enabled=allowed && !busy,modifier=Modifier.weight(1f),shape=MaterialTheme.shapes.small,color=Navy,border=BorderStroke(1.dp,if(photo==null && allowed)Lime else Hairline)) {
+                                Column {
+                                    Box(Modifier.fillMaxWidth().height(if(photo==null)100.dp else 152.dp),contentAlignment=Alignment.Center) {
+                                        if(photo!=null) {
+                                            PhotoImage(photo.localPath,photoLabel(kind,step),Modifier.fillMaxSize())
+                                            Icon(Icons.Outlined.CheckCircle,"Foto gespeichert",Modifier.align(Alignment.TopEnd).padding(6.dp).size(23.dp),tint=Lime)
+                                        } else Icon(if(allowed)Icons.Outlined.AddAPhoto else Icons.Outlined.Lock,null,Modifier.size(30.dp),tint=if(allowed)Lime else Muted)
+                                    }
+                                    Column(Modifier.padding(8.dp),verticalArrangement=Arrangement.spacedBy(4.dp)) {
+                                        Text("${step.toString().padStart(2,'0')} · ${if(kind==JobKind.RETURN)"Inhalt" else listOf("Leer","Front","Rückseite / Türen","Links","Rechts","Befüllt")[step-1]}",style=MaterialTheme.typography.labelMedium,color=MaterialTheme.colorScheme.onSurface)
+                                        Text(if(photo!=null)photoName(item.container.containerNumber,step) else if(allowed)"Foto aufnehmen" else "Vorherige Fotos fehlen",style=MaterialTheme.typography.labelSmall,color=Muted)
+                                    }
                                 }
                             }
+
                         }
                         if (row.size == 1 && kind.photoCount > 1) Spacer(Modifier.weight(1f))
                     }

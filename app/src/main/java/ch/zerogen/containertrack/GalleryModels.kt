@@ -14,3 +14,6 @@ fun galleryPhotos(jobs: List<JobWithContainers>, photoUploads: List<UploadPhotoE
             photo.step,photo.localPath,confirmed[photo.id]?.uploadedByAccountId,batch.job.draft.referenceNumber)
     } } }
 }
+
+fun selectedGalleryPhotos(rows: List<GalleryPhoto>, selected: Set<String>): List<GalleryPhoto> =
+    rows.filter { it.photoId in selected && java.io.File(it.localPath).isFile }.distinctBy { it.photoId }

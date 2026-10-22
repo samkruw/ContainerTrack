@@ -56,14 +56,16 @@ class NavigationTest {
     }
 
     @Test fun bottomNavigationOpensAllDestinations() {
-        compose.onNodeWithText("Container dokumentieren und fortsetzen").assertIsDisplayed()
+        compose.onNodeWithText("Meine Aufträge").assertIsDisplayed()
+        compose.onNodeWithText("Kamera").performClick()
+        compose.onNodeWithText("Auftrag für die nächste Erfassung wählen").assertIsDisplayed()
         compose.onNodeWithText("Galerie").performClick()
-        compose.onNodeWithText("Lokal gespeicherte Fotos").assertIsDisplayed()
-        compose.onNodeWithText("Profil").performClick()
-        compose.onNodeWithText("Microsoft und Geräteeinstellungen").assertIsDisplayed()
-        compose.onNodeWithText("Nicht verbunden").assertIsDisplayed()
+        compose.onNodeWithText("AUF DIESEM GERÄT").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Profil und Einstellungen").performClick()
+        compose.onNodeWithText("Willkommen zurück").assertExists()
+        compose.onNodeWithText("Mit Microsoft anmelden").assertIsNotEnabled()
         compose.onNodeWithText("Aufträge").performClick()
-        compose.onNodeWithText("Container dokumentieren und fortsetzen").assertIsDisplayed()
+        compose.onNodeWithText("Meine Aufträge").assertIsDisplayed()
     }
 
     @Test fun activityRecreationPreservesReturnGateAndInput() {

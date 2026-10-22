@@ -23,10 +23,11 @@ class GalleryProfileTest {
         val missing=photo.copy(id="missing",step=2,localPath=file.path+"-missing")
         var shared:String?=null
         try {
-            compose.setContent { ContainerTheme { Surface { GalleryScreen(listOf(JobWithContainers(job,listOf(ContainerWithPhotos(container,listOf(photo,missing))))),emptyList()) {shared=it.photoId} } } }
-            compose.waitUntil(10_000) { compose.onAllNodesWithText("0708 · 01").fetchSemanticsNodes().isNotEmpty() }
-            compose.onNodeWithText("0708 · 02").assertDoesNotExist()
-            compose.onNodeWithText("0708 · 01").performClick()
+            compose.setContent { ContainerTheme { Surface { GalleryScreen(listOf(JobWithContainers(job,listOf(ContainerWithPhotos(container,listOf(photo,missing))))),emptyList(),onShare={shared=it.photoId}) } } }
+            compose.waitUntil(10_000) { compose.onAllNodesWithText("RET-GALLERY · 0708").fetchSemanticsNodes().isNotEmpty() }
+            compose.onNodeWithText("RET-GALLERY · 0708").performClick()
+            compose.onNodeWithText("0708_02.jpg").assertDoesNotExist()
+            compose.onNodeWithContentDescription("0708 Foto 1").performClick()
             compose.waitUntil(10_000) { compose.onAllNodesWithContentDescription("Foto in Vollansicht").fetchSemanticsNodes().isNotEmpty() }
             compose.onNodeWithContentDescription("Foto in Vollansicht").assertIsDisplayed()
             compose.onNodeWithText("Foto teilen").performClick()
@@ -36,7 +37,7 @@ class GalleryProfileTest {
     @Test fun disconnectedProfileShowsNoInventedIdentityAndDisablesLogin() {
         compose.setContent { ContainerTheme { Surface { ProfileScreen(null,"Microsoft nicht eingerichtet",false,false,{},{},{}) } } }
         compose.onNodeWithText("Nicht verbunden").assertIsDisplayed()
-        compose.onNodeWithText("Mit Firmenkonto anmelden").assertIsNotEnabled()
+        compose.onNodeWithText("Mit Microsoft anmelden").assertIsNotEnabled()
         compose.onNodeWithText("Admin",substring=true).assertDoesNotExist()
     }
 }
