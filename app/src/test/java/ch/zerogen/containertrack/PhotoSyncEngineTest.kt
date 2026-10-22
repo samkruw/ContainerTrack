@@ -84,4 +84,37 @@ class PhotoSyncEngineTest {
             assertTrue(store.snapshot.uploads.all{it.uploadedAt!=null})
         }finally{file.delete()}
     }
+    @Test fun retryAfterSurvivesAnotherEngineInstance(): Unit = runBlocking {
+        val file=File.createTempFile("sync", ".jpg").apply{writeBytes(byteArrayOf(1))}
+        try {
+            val store=store(file);var requests=0
+            val client=object:GraphPhotoClient {
+                override suspend fun resolveFolder(config:MicrosoftConfig,accountId:String):ResolvedTeamsFolder {
+                    requests++;throw SyncFailure("Gedrosselt",true,3600)
+                }
+                override suspend fun upload(candidate:UploadCandidate,folder:ResolvedTeamsFolder,accountId:String):RemotePhoto = error("must not upload")
+            }
+            val before=System.currentTimeMillis()
+            assertEquals(SyncOutcome.Retry,PhotoSyncEngine(config,TestMicrosoftAccounts(),client,store).sync("job","account-a"))
+            assertTrue(store.snapshot.queue.nextAttemptAt!! >= before+3_600_000)
+            assertEquals(SyncOutcome.Retry,PhotoSyncEngine(config,TestMicrosoftAccounts(),client,store).sync("job","account-a"))
+            assertEquals(1,requests)
+            assertTrue(store.snapshot.uploads.all{it.uploadedAt==null})
+        } finally {file.delete()}
+    }
+    @Test fun missingConfigurationAndIncompleteJobMakeNoRequests(): Unit = runBlocking {
+        val file=File.createTempFile("sync", ".jpg").apply{writeBytes(byteArrayOf(1))}
+        try {
+            val store=store(file)
+            val client=object:GraphPhotoClient {
+                override suspend fun resolveFolder(config:MicrosoftConfig,accountId:String):ResolvedTeamsFolder = error("must not request")
+                override suspend fun upload(candidate:UploadCandidate,folder:ResolvedTeamsFolder,accountId:String):RemotePhoto = error("must not upload")
+            }
+            assertTrue(PhotoSyncEngine(MicrosoftConfig(),TestMicrosoftAccounts(),client,store).sync("job","account-a") is SyncOutcome.Blocked)
+            store.snapshot=store.snapshot.copy(batch=store.snapshot.batch.copy(containers=emptyList()))
+            assertTrue(PhotoSyncEngine(config,TestMicrosoftAccounts(),client,store).sync("job","account-a") is SyncOutcome.Blocked)
+            assertTrue(store.snapshot.uploads.all{it.uploadedAt==null})
+        } finally {file.delete()}
+    }
+
 }

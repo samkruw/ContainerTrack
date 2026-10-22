@@ -5,8 +5,8 @@ from pathlib import Path
 from PIL import Image, ImageOps, ImageDraw
 
 directory = Path('app/build/screenshots')
-names = ['01-start', '02-delivery-setup', '06-return-setup', '07b-export-actions']
-sheet = Image.new('RGB', (1280, 680), '#061f3b')
+names = ['01-start', '09-job-detail', '12-permissions', '14-gallery', '15-ready-for-fill', '16-upload-error']
+sheet = Image.new('RGB', (len(names) * 320, 680), '#0c100f')
 draw = ImageDraw.Draw(sheet)
 for index, name in enumerate(names):
     with Image.open(directory / f'{name}.png') as screenshot:

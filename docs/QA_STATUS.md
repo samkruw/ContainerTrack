@@ -6,7 +6,7 @@ Repository [samkruw/ContainerTrack](https://github.com/samkruw/ContainerTrack), 
 
 Vollständiger aktueller GitHub-Lauf: [39804758790](https://github.com/samkruw/ContainerTrack/actions/runs/39804758790), Ergebnis bei Erstellung dieses Dokuments noch offen. Artefakte: `Container-Track-debug-APK`, `Android-reports`, `Android-device-reports-and-screenshots`.
 
-35 reine Kotlin/JUnit-Tests lokal bestanden; sieben Python-QA-Tests sowie Quell- und Merged-Manifest-Prüfungen bestanden. Vollständiger Gradle-Build inklusive Unit-Tests, Lint und Android-Test-APK wird zusätzlich ausgeführt. Lokale Emulator-Ausführung wird nicht als bestanden gezählt (kein KVM/writable ADB-Konfigurationspfad).
+38 reine Kotlin/JUnit-Tests lokal bestanden; sieben Python-QA-Tests sowie Quell- und Merged-Manifest-Prüfungen bestanden. Vollständiger Gradle-Build inklusive Unit-Tests (36 pro Variante vor zwei zusätzlichen Retry-/Konfigurationstests), Lint und Android-Test-APK lokal erfolgreich. Lokale Emulator-Ausführung wird nicht als bestanden gezählt (kein KVM/writable ADB-Konfigurationspfad).
 
 Der erste V1.3-Lauf 39799206863 kompilierte MSAL/App und führte 37 Android-Tests aus, ohne übersprungene Tests; zwei scheiterten. Korrigiert: alte Offline-Berechtigungsannahme durch echten Netz-aus-OCR-Test ersetzt; Serialization-Versionen für Room-Migration angeglichen. Unnötiges transitives NFC-Recht explizit entfernt. Dieser Lauf gilt ausdrücklich nicht als erfolgreicher V1.3-Nachweis.
 
