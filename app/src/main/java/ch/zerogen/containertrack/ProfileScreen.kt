@@ -7,13 +7,13 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
+import androidx.activity.compose.LocalActivity
 import androidx.compose.ui.unit.dp
 
 @Composable
 fun ProfileScreen(identity: MicrosoftIdentity?, status: String, configured: Boolean, busy: Boolean,
                   onLogin: (Activity)->Unit, onLogout: ()->Unit, onSwitch: (Activity)->Unit) {
-    val activity=LocalContext.current as? Activity
+    val activity=LocalActivity.current
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),verticalArrangement=Arrangement.spacedBy(14.dp)) {
         ScreenTitle("Profil","Microsoft und Geräteeinstellungen")
         GlassSurface { Column(Modifier.padding(16.dp),verticalArrangement=Arrangement.spacedBy(10.dp)) {

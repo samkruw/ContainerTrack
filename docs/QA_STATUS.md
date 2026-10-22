@@ -1,34 +1,24 @@
-# Prüfstatus — Update 1.2.0 — 21.10.2026
+# Prüfstatus — Update 1.3.0 — 22.10.2026
 
-Repository: [samkruw/ContainerTrack](https://github.com/samkruw/ContainerTrack), Branch `codex/native-android-app`, [Draft-PR #1](https://github.com/samkruw/ContainerTrack/pull/1). Kein Merge und keine Release-Veröffentlichung. Änderungen: [UPDATE_1_2.md](UPDATE_1_2.md).
+Repository [samkruw/ContainerTrack](https://github.com/samkruw/ContainerTrack), Branch `codex/native-android-app`, [Draft-PR #1](https://github.com/samkruw/ContainerTrack/pull/1). Nur Debug-APK; kein Merge, kein Release.
 
-## Lokal ausgeführt
+## Prüfungen
 
-- `test lint assembleDebug assembleDebugAndroidTest`: erfolgreich. 14 Kernregeltests jeweils für Debug und Release, ohne Fehler oder übersprungene Tests. App- und Instrumentation-APK kompiliert.
-- Lint erfolgreich; Warnungen zu neueren Abhängigkeiten und bestehenden Plattform-/API-Hinweisen bleiben ausgewiesen.
-- Fünf Tests der Python-QA-Werkzeuge bestanden.
-- Room-Schema 1 stimmt als JSON vollständig mit dem Schema-Artefakt des GitHub-Builds von 1.1.0 überein.
-- Quell- und Merged-Manifest-Privacy-Gate bestanden. Auch das gebaute APK wurde geprüft: kein INTERNET-Recht, App-ID unverändert, Version 1.2.0 / versionCode 3.
-- Der vorhandene ShareChooserTest hatte einen nicht-void Rückgabetyp: Ursache des fehlgeschlagenen [CI-Laufs 39557005372](https://github.com/samkruw/ContainerTrack/actions/runs/39557005372). Mit explizitem Unit-Rückgabetyp kompiliert er als öffentliche void-Methode. Der neue CI-Lauf muss die tatsächliche Chooser-Interaktion bestätigen.
+Vollständiger aktueller GitHub-Lauf: [39804758790](https://github.com/samkruw/ContainerTrack/actions/runs/39804758790), Ergebnis bei Erstellung dieses Dokuments noch offen. Artefakte: `Container-Track-debug-APK`, `Android-reports`, `Android-device-reports-and-screenshots`.
 
-## GitHub / Emulator
+35 reine Kotlin/JUnit-Tests lokal bestanden; sieben Python-QA-Tests sowie Quell- und Merged-Manifest-Prüfungen bestanden. Vollständiger Gradle-Build inklusive Unit-Tests, Lint und Android-Test-APK wird zusätzlich ausgeführt. Lokale Emulator-Ausführung wird nicht als bestanden gezählt (kein KVM/writable ADB-Konfigurationspfad).
 
-Der neue PR-Check ist für den aktualisierten Commit massgeblich. Die Suite umfasst 33 Instrumentationstests einschliesslich 13 Screenshot-Szenarien / 14 PNGs. Build-Artefakt: `Container-Track-debug-APK`; Gerätetests und Screenshots: `Android-device-reports-and-screenshots`.
+Der erste V1.3-Lauf 39799206863 kompilierte MSAL/App und führte 37 Android-Tests aus, ohne übersprungene Tests; zwei scheiterten. Korrigiert: alte Offline-Berechtigungsannahme durch echten Netz-aus-OCR-Test ersetzt; Serialization-Versionen für Room-Migration angeglichen. Unnötiges transitives NFC-Recht explizit entfernt. Dieser Lauf gilt ausdrücklich nicht als erfolgreicher V1.3-Nachweis.
 
-Lokale Emulatortests wurden nicht als bestanden gezählt: kein KVM; Software-Emulation wurde gestartet, ADB scheiterte an seinem schreibgeschützten Benutzer-Konfigurationspfad. Der selbst gestartete Emulator wurde wieder beendet. GitHub bietet den vorgesehenen KVM-Testweg.
+Neue Tests prüfen zweiphasige Lieferung über drei Container, einmaligen Completion-/Timer-/Queue-Effekt, Return, echte Room-1→2-Migration, per-Foto-Bestätigung über Wiederöffnung, falsches Konto, partiellen Retry und Fotoersatz. Native Navigation, Activity-Neustart, manuelle JPEG-Freigaben und ZIP-Chooser bleiben geprüft. Screenshot-Szenarien umfassen die neue Auftragsliste, fehlendes Befüllt-Foto, Upload-Fehler, leere lokale Galerie und Profil.
 
-## Geprüfte bestehende Regeln
+Unabhängiger statischer Abschlussreview: keine P1-Befunde; zwei P2 behoben (dauerhafte Fehler nur explizit erneut versuchen; installierten Teams-Empfänger vor Angebot prüfen).
 
-Delivery ohne Quick/additional Work; historische Werte bleiben im Delivery-TXT/META leer. Return verlangt beide Felder und Logger-Stopp, akzeptiert Nothing/Empty. Nummern, Duplikate, Fotofolge, ZIP und Timer sind durch Unit- und Integrationstests abgedeckt. Re-Share/Re-Export darf Reminder-ID und Frist nicht verändern.
+## Noch nicht abgenommen
 
-## Offen vor produktiver Freigabe
+- Echte Microsoft-Anmeldung und Graph-Übertragung ins Firmen-Team: öffentliche Tenant-/Client-/Redirect-/Team-/Channel-Konfiguration fehlt. Die App zeigt diesen Zustand ehrlich; keine Testdaten oder simulierte Erfolge in Produktion. Einrichtung und Abnahme: [MICROSOFT_SETUP.md](MICROSOFT_SETUP.md).
+- Update-Installation über bestehender APK mit identischem Debug-Zertifikat; bei frischem Runner nicht automatisch gewährleistet. Keine Deinstallation zum vermeintlichen Update empfehlen.
+- Reale Kamera/Licht/Fotoqualität, Standby/Boot/OEM-Verhalten und Benachrichtigungsfreigaben auf Hardware.
+- TalkBack, große Schrift und visuelle Freigabe. Screenshots sind Prüfartefakte, keine freigegebenen Goldens.
 
-- Update-Installation über der ersten APK mit identischem ursprünglichem Signaturschlüssel; lokale Daten, Fotos und Reminder danach prüfen. Signaturvergleich bestätigt: lokale 1.2.0 und bisherige GitHub-1.1.0-APK haben verschiedene Zertifikate. Der ursprüngliche private Schlüssel ist nicht verfügbar; GitHub verweigert dieser Integration zudem das Lesen der Secret-/Variablennamen (HTTP 403). Room/App-ID unverändert ist notwendig, beweist allein jedoch keine Installationskompatibilität.
-- Reale Kamera/OCR, Lichtverhältnisse, Torch, EXIF und Fotoqualität auf Android-Hardware.
-- Vollständige Lieferung/Return im Flugmodus; reale Mail-App mit ZIP-Anhang, Speichern über lokalen Dokumentanbieter und Chooser-Abbruch.
-- Standby, Neustart, genaue Alarme und verweigerte Berechtigungen auf Hardware; Android-Force-Stop-Grenze bleibt bestehen.
-- TalkBack, grosse Schrift und visuelle Freigabe der Screenshots anhand der mitgelieferten Referenzen. Noch keine freigegebenen Goldens.
-
-Gebündeltes ML Kit bringt technische Firebase-Komponenten-/Encoder-/Annotations-Hilfsartefakte und Google DataTransport mit. Keine Firebase Analytics, Crashlytics, Cloud-Datenhaltung oder konfigurierte Firebase-Projekte; kein INTERNET im App-Manifest. Der CI-Abhängigkeitsbericht dokumentiert transitive Artefakte.
-
-Historische vollständig erfolgreiche Baselines: [39427920313](https://github.com/samkruw/ContainerTrack/actions/runs/39427920313), [39428951222](https://github.com/samkruw/ContainerTrack/actions/runs/39428951222). Diese ersetzen keine Prüfung des neuen Commits.
+INTERNET/ACCESS_NETWORK_STATE/WAKE_LOCK sind absichtlich für Microsoft vorhanden. Keine Standort-/Mikrofon-/NFC-/breiten Speicherrechte. Quellen-Gate und APK-Permission-Gate sind getrennt; keine Behauptung einer technischen Netzwerksperre für Bibliotheken.
