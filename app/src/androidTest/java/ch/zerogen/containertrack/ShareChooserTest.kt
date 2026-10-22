@@ -35,7 +35,10 @@ class ShareChooserTest {
             compose.onNodeWithContentDescription("Aufträge filtern").performClick()
             compose.onNodeWithText("Alle").performClick()
             compose.onNodeWithText("Aufträge suchen").performTextInput(reference)
-            compose.onNodeWithText("Aufträge suchen").performImeAction()
+            compose.runOnIdle {
+                compose.activity.getSystemService(android.view.inputmethod.InputMethodManager::class.java)
+                    .hideSoftInputFromWindow(compose.activity.currentFocus?.windowToken, 0)
+            }
             compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasText(reference))
             compose.onNodeWithText(reference).assertExists()
             compose.onNodeWithText(reference).performClick()
