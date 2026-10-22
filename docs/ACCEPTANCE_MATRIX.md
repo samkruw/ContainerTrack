@@ -2,14 +2,14 @@
 
 | Anforderung | Nachweis | Status |
 | --- | --- | --- |
-| Delivery 01–05 je Container, 06 später | WorkflowRulesTest, CompletionTest, TwoPhaseDeliveryTest | implementiert; aktueller CI-Lauf maßgeblich |
-| Timer/Queue einmal beim vollständigen Abschluss | CompletionTest, ExportSharingTest | implementiert |
-| Migration ohne Verlust / keine historischen Massen-Uploads | MigrationTest mit originalem Schema 1 | aktueller Gerätelauf offen |
-| Konto-Bindung, Foto-Version, partieller Retry | GraphPhotoClientTest, PhotoSyncEngineTest, PhotoSyncTest | implementiert |
-| Nur JPEG an Teams, separater ZIP-Export | PhotoSharingTest, GraphPhotoClientTest, ShareChooserTest | implementiert |
-| Drei Tabs, Plus, Filter, Karten, echte Galerie/Profil | NavigationTest, OrderFiltersTest, GalleryFiltersTest, Screenshots | implementiert |
+| Delivery 01–05 je Container, 06 später | WorkflowRulesTest, CompletionTest, TwoPhaseDeliveryTest | bestanden: CI39807919494 |
+| Timer/Queue einmal beim vollständigen Abschluss | CompletionTest, ExportSharingTest | bestanden: CI39807919494 |
+| Migration ohne Verlust / keine historischen Massen-Uploads | MigrationTest mit originalem Schema 1 | bestanden: CI39807919494 |
+| Konto-Bindung, Foto-Version, partieller Retry | GraphPhotoClientTest, PhotoSyncEngineTest, PhotoSyncTest | bestanden: CI39807919494 |
+| Nur JPEG an Teams, separater ZIP-Export | PhotoSharingTest, GraphPhotoClientTest, ShareChooserTest | bestanden: CI39807919494 |
+| Drei Tabs, Plus, Filter, Karten, echte Galerie/Profil | NavigationTest, OrderFiltersTest, GalleryFiltersTest, Screenshots | bestanden: CI39807919494 |
 | Echte Firmenanmeldung und Kanalübertragung | Microsoft-End-to-End-Abnahme | offen: öffentliche Konfiguration fehlt |
-| Debug-APK aus GitHub | aktueller Actions-Lauf laut QA_STATUS.md | laufend |
+| Debug-APK aus GitHub | aktueller Actions-Lauf laut QA_STATUS.md | erfolgreich: CI39807919494 |
 
 Historische Matrix folgt; Aussagen zum alten fehlenden Internetrecht und Export-Timer gelten nur für den damaligen Stand.
 
