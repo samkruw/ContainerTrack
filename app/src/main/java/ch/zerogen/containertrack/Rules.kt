@@ -100,3 +100,19 @@ fun writeExportZip(output: OutputStream, draft: JobDraft, containers: List<Expor
         }
     }
 }
+
+enum class WorkflowPhase { LOCAL_INCOMPLETE, READY_FOR_FILL, COMPLETE }
+
+fun workflowPhase(kind: JobKind, quantity: Int, stepsByContainer: List<Set<Int>>): WorkflowPhase {
+    val required = (1..kind.photoCount).toSet()
+    if (quantity !in 1..50 || stepsByContainer.size != quantity || stepsByContainer.any { !required.containsAll(it) })
+        return WorkflowPhase.LOCAL_INCOMPLETE
+    if (stepsByContainer.all { it == required }) return WorkflowPhase.COMPLETE
+    return if (kind == JobKind.DELIVERY && stepsByContainer.all { it.containsAll((1..5).toSet()) })
+        WorkflowPhase.READY_FOR_FILL else WorkflowPhase.LOCAL_INCOMPLETE
+}
+
+fun canAddContainer(kind: JobKind, existingSteps: List<Set<Int>>): Boolean {
+    val required = if (kind == JobKind.DELIVERY) (1..5).toSet() else setOf(1)
+    return existingSteps.all { it.containsAll(required) }
+}

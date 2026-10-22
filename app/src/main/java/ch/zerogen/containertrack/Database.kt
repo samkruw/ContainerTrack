@@ -63,10 +63,12 @@ data class JobWithContainers(
     val complete get() = containers.size == job.draft.quantity && containers.all {
         it.photos.map { p -> p.step }.sorted() == (1..job.draft.kind.photoCount).toList()
     }
+    val phase get() = workflowPhase(job.draft.kind, job.draft.quantity, containers.map { it.photos.map { photo -> photo.step }.toSet() })
     val completedCount get() = containers.count { it.container.completedAt != null }
     val status get() = when {
         job.exportedAt != null -> "Exportiert"
         complete -> "Vollständig"
+        phase == WorkflowPhase.READY_FOR_FILL -> "Bereit zum Befüllen"
         containers.isEmpty() -> "Geplant"
         else -> "In Bearbeitung"
     }
