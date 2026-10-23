@@ -1,4 +1,4 @@
-# Native Android — Referenzabgleich 1.4.2
+# Native Android — Referenzabgleich 1.4.3
 
 final result: passed (manueller visueller Abgleich)
 
@@ -27,10 +27,14 @@ Sechs Delivery-Pflichtfotos bleiben verbindlich. Die Beispiele mit vier oder fü
 
 ## Verifikation
 
-[GitHub-Lauf 39913259080](https://github.com/samkruw/ContainerTrack/actions/runs/39913259080), geprüfter App-/Test-Commit `f45872cd434b105cba383da751ab89921190702e`: 41 Unit-Tests je Variante, 60 Android-Tests, neun Python-QA-Tests, Lint und APK-Berechtigungsprüfung erfolgreich. 24 Screenshot-PNGs, darunter sieben aktuelle Referenzansichten.
+[GitHub-Lauf 39915194786](https://github.com/samkruw/ContainerTrack/actions/runs/39915194786), geprüfter App-/Test-Commit `b19ff733d8d763dc008e894795938a1aea9256ce`: 41 Unit-Tests je Variante, 60 Android-Tests, neun Python-QA-Tests, Lint und APK-Berechtigungsprüfung erfolgreich. 24 Screenshot-PNGs, darunter sieben aktuelle Referenzansichten.
 
-Die [finale Übersicht mit synthetischen Testdaten](design/verification/reference-ui-v1.4.2.jpg) wurde tatsächlich geöffnet und visuell geprüft: Graphit/Lime, Inter, große Kennungen, Segmente, Foto-Raster, Auswahlmarken, Markenleiste, Navigation mit Unterstrich sowie Einstellungen ohne Login/Rollen. Kein automatischer Pixelvergleich; keine freigegebenen Goldens vorhanden. Reale Teams-/SAF-/Hardware-Prüfung siehe [QA_STATUS.md](docs/QA_STATUS.md).
+Die [finale Übersicht mit synthetischen Testdaten](design/verification/reference-ui-v1.4.3.jpg) wurde tatsächlich geöffnet und visuell geprüft: Graphit/Lime, Inter, große Kennungen, Segmente, Foto-Raster, Auswahlmarken, Markenleiste, Navigation mit Unterstrich sowie Einstellungen ohne Login/Rollen. Kein automatischer Pixelvergleich; keine freigegebenen Goldens vorhanden. Reale Teams-/SAF-/Hardware-Prüfung siehe [QA_STATUS.md](docs/QA_STATUS.md).
 
 ## Ergänzung 1.4.2: Auftragsinfos
 
 Übertragung zeigt den tatsächlichen Begleittext und „Auftragsinfos kopieren“. In der Galerie stehen „Infos kopieren“ und Teams nebeneinander, damit keine weitere volle Buttonzeile den Fotobereich verkleinert. Die finale native Ansicht wurde visuell geprüft. Teams bestimmt seine eigenen Ziele und kann Text bei Bildern ignorieren; die App verspricht keine Kanalauswahl und bietet ausdrücklich Kopieren sowie den manuellen Kanalablauf an. Die reale Teams-Darstellung ist dadurch nicht als getestet behauptet.
+
+## Ergänzung 1.4.3: Fotoinfos ohne KT
+
+Die aktuelle Übertragungsansicht wurde tatsächlich visuell geprüft: Auftragsreferenz statt KT im Kopf, Begleittext und Kopieren ohne KT-Zeile. Übrige Erfassungs-/Übersichtsansichten und gespeicherte KT-Daten bleiben erhalten. Die Android-Schnittstelle meldet nummerierte JPG-Namen; eine „Shared Photos“-Anzeige in der fremden Teams-App wurde nicht als behoben behauptet.

@@ -1,3 +1,14 @@
+# V1.4.3 — Fotoinfos ohne KT und Dateinamen-Nachweis
+
+Bestanden: [CI39915194786](https://github.com/samkruw/ContainerTrack/actions/runs/39915194786), 41 Unit-Tests je Variante, 60 Android-Tests ohne übersprungene Tests, neun Python-QA-Tests, Lint und APK-Berechtigungsprüfung. 24 Screenshots, finale Übersicht tatsächlich visuell geprüft.
+
+- Begleittext und kopierte Auftragsinfos ohne KT: PhotoShareTextTest, ReferenceScreenshotsTest.
+- Übertragungsansicht zeigt Auftragsreferenz statt KT: tatsächliche native Screenshot-Prüfung.
+- JPG-Dateinamen und ContentProvider-DISPLAY_NAME nummeriert nach Container: PhotoSharingTest.
+- „Shared Photos“ in Teams: konkrete Teams-Anzeige bleibt ungeklärt; kein behaupteter Eingriff in Teams oder vollständige KT-Entfernung aus der App.
+
+Aktueller Build: [QA_STATUS.md](QA_STATUS.md). Die folgenden Tabellen sind historische Prüfstände.
+
 # V1.4.2 — Foto-Begleittext und Kopieren
 
 Bestanden: [CI39913259080](https://github.com/samkruw/ContainerTrack/actions/runs/39913259080), 41 Unit-Tests je Variante, 60 Android-Tests ohne übersprungene Tests, neun Python-QA-Tests, Lint und APK-Berechtigungsprüfung. 24 Screenshots, sieben aktuelle Ansichten tatsächlich visuell geprüft.
