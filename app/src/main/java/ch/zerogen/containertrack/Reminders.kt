@@ -78,7 +78,7 @@ class ReminderReceiver : BroadcastReceiver() {
                 if (reminder.confirmedAt != null) return@launch
                 if (intent.action == ReminderAlarms.CONFIRM) {
                     try {app.repository.confirmReminder(id)}
-                    catch (_:IllegalStateException) { /* Authentication/ownership required; reminder stays pending. */ }
+                    catch (_:IllegalStateException) { /* Invalid job state: leave the reminder pending. */ }
                 } else if (reminder.dueAt <= System.currentTimeMillis()) app.alarms.notifyDue(reminder)
                 else app.alarms.schedule(reminder)
             } finally { pending.finish() }

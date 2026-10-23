@@ -1,3 +1,7 @@
+# Prüfstatus — Update 1.4.1 — 23.10.2026
+
+Aktueller Auftrag: lokale Benutzerverwaltung, PINs und Rollen entfernen; direkter Start, alte Daten behalten, Teams-Teilen unverändert. Lokale Prüfungen und GitHub-Geräteprüfung laufen. Der folgende Nachweis beschreibt ausschließlich den vorherigen Stand; er bestätigt noch nicht Version 1.4.1.
+
 # Prüfstatus — Update 1.4.0 — 23.10.2026
 
 Repository [samkruw/ContainerTrack](https://github.com/samkruw/ContainerTrack), Branch `codex/native-android-app`, [Draft-PR #1](https://github.com/samkruw/ContainerTrack/pull/1). Nur Debug-APK; kein Merge, kein Release.

@@ -82,26 +82,6 @@ class ReminderReceiverTest {
         } finally { app.repository.deleteJob(job) }
     }
 
-    @Test fun loggedOutAndForeignEmployeeCannotConfirmNotification() = runBlocking {
-        val users=app.localUsers
-        val admin=users.requireUser()
-        val (job,reminder)=createDueReminder()
-        users.add("Worker-${UUID.randomUUID()}",LocalRole.EMPLOYEE,"654321")
-        val employee=users.users.value.last()
-        try {
-            users.login(employee.id,"654321")
-            dispatch(ReminderAlarms.CONFIRM,reminder.id)
-            assertNull(app.database.dao().reminder(reminder.id)!!.confirmedAt)
-            users.logout()
-            dispatch(ReminderAlarms.CONFIRM,reminder.id)
-            assertNull(app.database.dao().reminder(reminder.id)!!.confirmedAt)
-        } finally {
-            users.login(admin.id,"123456")
-            users.update(employee.id,employee.name,employee.role,false)
-            app.repository.deleteJob(job)
-        }
-    }
-
     @Test fun deniedNotificationLeavesReminderPending() = runBlocking {
         setNotificationAppOp(false)
         assertFalse(app.alarms.notificationsAllowed())

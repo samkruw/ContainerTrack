@@ -1,3 +1,9 @@
+# V1.4.1 — ohne Benutzerverwaltung
+
+Aktueller Umfang: direkter Start ohne Anmeldung, PINs und Rollen; sämtliche lokalen Aufträge und Fotos unabhängig von früherer Zuordnung sichtbar. Geräteeinstellungen ersetzen das Profil. Manueller Teams-Share und einmalige Erinnerungen bleiben erhalten, automatische Uploads deaktiviert.
+
+Nachweise und aktueller Build: [QA_STATUS.md](QA_STATUS.md). Regression: LocalJobAccessTest prüft alte lokale/Microsoft-/leere Eigentümer, vollständige Fotodokumentation, Teilen, Datenbestand und fehlende Upload-Queues. NavigationTest und ReferenceScreenshotsTest prüfen direkten Start sowie Einstellungen ohne Benutzerverwaltung. Die folgenden Tabellen sind historische Prüfstände; Rollen und Anmeldung sind ab 1.4.1 aufgehoben.
+
 # V1.4.0 — lokale Benutzer und Abschluss über Teams
 
 | Anforderung | Nachweis | Status |

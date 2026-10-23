@@ -7,35 +7,32 @@ import kotlinx.coroutines.runBlocking
 import org.junit.Assert.*
 import org.junit.Test
 import java.io.File
-import java.util.UUID
 
 class LocalJobAccessTest {
-    @Test fun ownershipIsEnforcedInRepositoryIncludingShareAndLegacyJobs():Unit=runBlocking {
+    @Test fun legacyOwnersRemainAccessibleWithoutLoginAndCompletionCreatesNoUploadQueue():Unit=runBlocking {
         val context=ApplicationProvider.getApplicationContext<ContainerTrackApp>()
-        val users=LocalUserStore(context,"access-${UUID.randomUUID()}")
         val db=Room.inMemoryDatabaseBuilder(context,TrackDatabase::class.java).build()
-        val repo=TrackRepository(context,db,access=users,accountId={users.currentUser.value?.id})
+        val repo=TrackRepository(context,db,automaticUploads=false)
+        val ids=mutableListOf<String>()
         try {
-            try {repo.createJob(JobDraft(JobKind.RETURN,"DENIED",orderValue="20 ft",quick="Nothing",additionalWork="Empty"),1);fail("Login required")} catch(_:IllegalStateException){}
-            users.bootstrap("Admin","123456");val admin=users.requireUser()
-            val legacy=TrackRepository(context,db).createJob(JobDraft(JobKind.RETURN,"OLD",orderValue="20 ft",quick="Nothing",additionalWork="Empty"),1)
-            users.add("Employee",LocalRole.EMPLOYEE,"654321");val employee=users.users.value.last()
-            users.login(employee.id,"654321")
-            val own=repo.createJob(JobDraft(JobKind.RETURN,"OWN",orderValue="20 ft",quick="Nothing",additionalWork="Empty"),1)
-            val c=repo.addContainer(own,"0708")
-            repo.savePhoto(own,c,1,File.createTempFile("access", ".jpg",context.cacheDir).apply{writeBytes(byteArrayOf(1))})
-            assertNull(db.dao().uploadJob(own))
-            val photo=db.dao().job(own)!!.ordered.single().photos.single()
-            assertEquals(listOf(own),repo.jobs.first().map{it.job.id})
-            try {repo.deleteJob(legacy);fail("Foreign delete must fail")}catch(_:IllegalStateException){}
-            try {repo.preparePhotoShare(legacy);fail("Foreign share must fail")}catch(_:IllegalStateException){}
-            users.login(admin.id,"123456")
-            assertEquals(2,repo.jobs.first().size)
-            users.add("Second",LocalRole.EMPLOYEE,"112233");val second=users.users.value.last();users.login(second.id,"112233")
-            try {repo.prepareSelectedPhotoShare(setOf(photo.id));fail("Foreign selected photo must fail")}catch(_:IllegalStateException){}
-            assertTrue(repo.jobs.first().isEmpty())
-            users.logout();assertTrue(repo.jobs.first().isEmpty())
-            assertNotNull(db.dao().job(legacy));assertNotNull(db.dao().job(own))
-        } finally {db.close()}
+            for(owner in listOf(null,"local:former-admin","local:former-employee","old-microsoft-account")) {
+                val legacy=TrackRepository(context,db,automaticUploads=false,accountId={owner})
+                val id=legacy.createJob(JobDraft(JobKind.DELIVERY,"OLD-${ids.size}",kt="2481",orderValue="20 ft",quantity=1),null)
+                ids+=id
+                val c=repo.addContainer(id,"0708")
+                val count=db.dao().job(id)!!.job.draft.kind.photoCount
+                for(step in 1..count) repo.savePhoto(id,c,step,File.createTempFile("legacy", ".jpg",context.cacheDir).apply{writeBytes(byteArrayOf(1,2,3))})
+                assertTrue(db.dao().job(id)!!.complete)
+                assertEquals(owner,db.dao().job(id)!!.job.createdByAccountId)
+                assertNull(db.dao().uploadJob(id))
+                val photo=db.dao().job(id)!!.ordered.single().photos.first()
+                assertNotNull(repo.prepareSelectedPhotoShare(setOf(photo.id)))
+                assertNotNull(repo.preparePhotoShare(id,requireComplete=true))
+                assertNull(db.dao().uploadJob(id))
+                assertEquals(owner,db.dao().job(id)!!.job.createdByAccountId)
+                assertEquals(count,db.dao().job(id)!!.ordered.single().photos.size)
+            }
+            assertEquals(ids.toSet(),repo.jobs.first().map{it.job.id}.toSet())
+        } finally {ids.forEach{repo.deleteJob(it)};db.close()}
     }
 }

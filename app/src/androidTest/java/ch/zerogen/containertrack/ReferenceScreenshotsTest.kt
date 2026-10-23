@@ -100,15 +100,12 @@ class ReferenceScreenshotsTest {
         compose.onNodeWithText("2 von 6 Fotos ausgewählt").assertExists()
         capture("24-reference-photo-selection")
     }
-    @Test fun signInMatchesReference(){
-        compose.onNodeWithContentDescription("Profil und Einstellungen").performClick()
-        compose.onNodeWithText("Benutzer wechseln").performScrollTo().performClick()
-        capture("25-reference-sign-in")
-        compose.onNodeWithText("Testadmin").performClick()
-        compose.onNodeWithText("PIN").performTextInput("123456")
-        keyboardAway()
-        compose.onNodeWithText("Anmelden").performScrollTo().performClick()
-        compose.waitUntil(10_000){compose.onAllNodesWithText("Meine Aufträge").fetchSemanticsNodes().isNotEmpty()}
+    @Test fun settingsWithoutLogin(){
+        compose.onNodeWithContentDescription("Einstellungen").performClick()
+        compose.onNodeWithText("Einstellungen").assertExists()
+        compose.onNodeWithText("PIN").assertDoesNotExist()
+        compose.onNodeWithText("Benutzer & Rechte").assertDoesNotExist()
+        capture("25-reference-settings")
     }
     @Test fun uploadMatchesReferenceWithoutPretendingSuccess(){
         openCompleteDetails()
@@ -117,12 +114,6 @@ class ReferenceScreenshotsTest {
         compose.onNodeWithText("Alle 6 Fotos erfolgreich gesendet").assertDoesNotExist()
         compose.onNodeWithText("In Teams teilen").assertIsEnabled()
         capture("26-reference-upload")
-    }
-    @Test fun userAccessShowsOnlyVerifiedPermissions(){
-        compose.onNodeWithContentDescription("Profil und Einstellungen").performClick()
-        compose.onNodeWithText("Benutzer & Rechte").performScrollTo().performClick()
-        compose.onNodeWithText("Lokale Benutzer").assertExists()
-        capture("27-reference-access")
     }
 
 }

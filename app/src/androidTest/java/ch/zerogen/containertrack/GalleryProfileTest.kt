@@ -39,10 +39,10 @@ class GalleryProfileTest {
             compose.runOnIdle { assertEquals("gallery-photo",shared) }
         } finally {file.delete()}
     }
-    @Test fun disconnectedProfileShowsNoInventedIdentityAndDisablesLogin() {
-        compose.setContent { ContainerTheme { Surface { ProfileScreen(null,"Microsoft nicht eingerichtet",false,false,{},{},{}) } } }
-        compose.onNodeWithText("Nicht verbunden").assertIsDisplayed()
-        compose.onNodeWithText("Mit Microsoft anmelden").assertIsNotEnabled()
+    @Test fun settingsRequiresNoAccountAndOffersNoRoles() {
+        compose.setContent { ContainerTheme { Surface { DeviceSettingsScreen() } } }
+        compose.onNodeWithText("Einstellungen").assertIsDisplayed()
+        compose.onNodeWithText("Mit Microsoft anmelden").assertDoesNotExist()
         compose.onNodeWithText("Admin",substring=true).assertDoesNotExist()
     }
 }

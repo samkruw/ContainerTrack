@@ -99,7 +99,7 @@ class ScreenshotCaptureTest {
         capture("11-return-photo")
     }
     @Test fun permissions() {
-        compose.setContent { ContainerTheme { Surface(color = Color.Transparent) { ProfileScreen(null,"Nicht verbunden",false,false,{},{},{}) } } }
+        compose.setContent { ContainerTheme { Surface(color = Color.Transparent) { DeviceSettingsScreen() } } }
         capture("12-permissions")
     }
     @Test fun activeLogger() {

@@ -20,23 +20,19 @@ import java.util.UUID
 
 class TrackRepository(private val context: Context, val database: TrackDatabase,
     private val uploadScheduler: UploadScheduler = UploadScheduler {},
-    private val access: LocalUserStore? = null,
+    private val automaticUploads: Boolean = true,
     private val accountId: () -> String? = { null }) {
     private val dao = database.dao()
     private val mutations = Mutex()
     private val alarms = ReminderAlarms(context)
-    val jobs = if(access==null) dao.observeJobs() else combine(dao.observeJobs(),access.currentUser) { batches,user -> batches.filter{mayAccessLocalJob(user,it.job.createdByAccountId)} }
-    val reminders = if(access==null) dao.observeReminders() else combine(dao.observeReminders(),jobs) { reminders,batches ->
-        val ids=batches.map{it.job.id}.toSet();reminders.filter{it.jobId in ids}
-    }
+    val jobs = dao.observeJobs()
+    val reminders = dao.observeReminders()
     private suspend fun checkedJob(id:String):JobWithContainers {
         val batch=requireNotNull(dao.job(id))
-        access?.requireAccess(batch.job.createdByAccountId)
         return batch
     }
 
     suspend fun createJob(draft: JobDraft, stoppedAt: Long?, initialNumber: String? = null): String = withContext(Dispatchers.IO) {
-        access?.requireUser()
         require(initialNumber.isNullOrBlank() || containerError(initialNumber,emptySet())==null)
         require(draft.errors(stoppedAt).isEmpty()) { "Bitte alle Pflichtfelder prüfen." }
         val normalized = draft.copy(referenceNumber = draft.referenceNumber.trim(),
@@ -235,7 +231,6 @@ class TrackRepository(private val context: Context, val database: TrackDatabase,
     }
 
     private suspend fun selectedPhotos(ids:Set<String>):List<Triple<String,String,PhotoEntity>> {
-        access?.requireUser()
         require(ids.isNotEmpty())
         val photos=dao.observeJobs().first().flatMap { batch -> batch.ordered.flatMap { item ->
             item.photos.filter { it.id in ids }.map { Triple(batch.job.id,item.container.containerNumber,it) }
@@ -293,7 +288,7 @@ class TrackRepository(private val context: Context, val database: TrackDatabase,
     }
 
     private suspend fun queuePhotos(batch: JobWithContainers) {
-        if(access!=null)return // Local users use explicit Teams sharing, not a transport queue.
+        if(!automaticUploads)return // This app uses explicit Android/Teams sharing.
         dao.insertUploadJob(UploadJobEntity(batch.job.id, ownerAccountId = batch.job.createdByAccountId))
         for (item in batch.ordered) for (photo in item.photos) {
             dao.insertUploadPhoto(UploadPhotoEntity(photo.id, batch.job.id,
@@ -310,7 +305,7 @@ class TrackRepository(private val context: Context, val database: TrackDatabase,
     }
 
     suspend fun enqueuePhotoUpload(jobId: String, owner: String) = withContext(Dispatchers.IO) {
-        check(access==null) { "Bitte die Fotos über Teams teilen." }
+        check(automaticUploads) { "Bitte die Fotos über Teams teilen." }
         mutations.withLock {
             database.withTransaction {
                 val batch = checkedJob(jobId)

@@ -61,9 +61,9 @@ class NavigationTest {
         compose.onNodeWithText("Auftrag für die nächste Erfassung wählen").assertIsDisplayed()
         compose.onNodeWithText("Galerie").performClick()
         compose.onNodeWithText("AUF DIESEM GERÄT").assertIsDisplayed()
-        compose.onNodeWithContentDescription("Profil und Einstellungen").performClick()
-        compose.onNodeWithText("Testadmin").assertExists()
-        compose.onNodeWithText("Lokal angemeldet · offline nutzbar").assertExists()
+        compose.onNodeWithContentDescription("Einstellungen").performClick()
+        compose.onNodeWithText("Einstellungen").assertExists()
+        compose.onNodeWithText("Lokal auf diesem Gerät").assertExists()
         compose.onNodeWithText("Zurück zu Aufträgen").performScrollTo().performClick()
         compose.onNodeWithText("Meine Aufträge").assertIsDisplayed()
     }

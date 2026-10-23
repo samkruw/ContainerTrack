@@ -1,6 +1,6 @@
 # Native Android – Referenzabgleich
 
-final result: passed (manueller visueller Abgleich)
+final result: Prüfung für 1.4.1 läuft; letzter vollständiger Nachweis siehe QA_STATUS.md
 
 ## Ziel
 
@@ -15,9 +15,9 @@ Die acht am 22.10.2026 vom Benutzer ausgewählten Bildvorlagen 1000036738–1000
 | 1000036740 Fotos prüfen | PhotoReviewScreen mit echten Bildern, sechs Delivery-Plätzen und Status | 22-reference-photo-review |
 | 1000036742 Galerie | Galerie-Containerliste, Filter, echte Thumbnail-/Upload-Daten | 23-reference-gallery |
 | 1000036745 Fotoauswahl | Auftragsraster mit Auswahl, Original-JPG-Speichern/Teilen | 24-reference-photo-selection |
-| 1000036744 Anmeldung | LocalLoginScreen mit Logo und lokaler PIN-Anmeldung | 25-reference-sign-in |
+| 1000036744 Anmeldung | Entfällt auf ausdrücklichen Nutzerwunsch; stattdessen Geräteeinstellungen | 25-reference-settings |
 | 1000036741 Teams-Übertragung | UploadScreen mit lokal gespeicherten JPGs und bewusster Übergabe an Teams | 26-reference-upload |
-| 1000036743 Benutzer & Rechte | LocalUserAccessScreen mit echten lokalen Profilen und Admin-Rechteprüfung | 27-reference-access |
+| 1000036743 Benutzer & Rechte | Entfällt auf ausdrücklichen Nutzerwunsch | kein Capture |
 
 ## Visuelle Messwerte
 
@@ -25,7 +25,7 @@ Referenzen 592×1280; Android-Capture 1080×2340 mit nahezu identischem Seitenve
 
 ## Zulässige fachliche Unterschiede
 
-Sechs Delivery-Pflichtfotos bleiben verbindlich; Beispielzahlen4/5 werden nicht übernommen. Namen, drei Benutzer, Administratorrolle und gesendete Dateien werden nicht erfunden. Die Benutzeranweisung vom 23.10.2026 ersetzt die Firmenanmeldung durch lokale PIN-Anmeldung; ein Server ist nicht nötig. Die Galerie enthält ausschließlich lokale Aufträge/Fotos gemäß lokaler Rolle. Pflichtangaben stehen im Formular weiterhin zur Verfügung.
+Sechs Delivery-Pflichtfotos bleiben verbindlich; Beispielzahlen4/5 werden nicht übernommen. Namen, drei Benutzer, Administratorrolle und gesendete Dateien werden nicht erfunden. Die letzte Benutzeranweisung vom 23.10.2026 entfernt sämtliche Anmeldung, PINs und Rollen. Die Galerie enthält ausschließlich die auf diesem Gerät gespeicherten Aufträge/Fotos, unabhängig von früheren Benutzerzuordnungen. Pflichtangaben stehen im Formular weiterhin zur Verfügung.
 
 ## Verifikation
 

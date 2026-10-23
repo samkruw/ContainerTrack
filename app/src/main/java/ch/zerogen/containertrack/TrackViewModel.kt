@@ -18,17 +18,6 @@ import kotlinx.coroutines.withContext
 
 class TrackViewModel(application: Application, private val saved: SavedStateHandle) : AndroidViewModel(application) {
     private val app = application as ContainerTrackApp
-    val localUsers=app.localUsers.users
-    val localUser=app.localUsers.currentUser
-    fun bootstrapLocal(name:String,pin:String)=runLocalAction {app.localUsers.bootstrap(name,pin)}
-    fun loginLocal(id:String,pin:String)=runLocalAction {app.localUsers.login(id,pin)}
-    fun logoutLocal() {
-        if(busy.value)return
-        app.localUsers.logout();saved["activeJob"]=null;begin(JobKind.DELIVERY);error.value=null;notice.value=null
-    }
-    fun addLocal(name:String,role:LocalRole,pin:String)=runLocalAction {app.localUsers.add(name,role,pin)}
-    fun updateLocal(id:String,name:String,role:LocalRole,active:Boolean,pin:String?)=runLocalAction {app.localUsers.update(id,name,role,active,pin)}
-    fun changeLocalPin(old:String,new:String)=runLocalAction {app.localUsers.changeOwnPin(old,new)}
     val uploadJobs = app.database.dao().observeUploadJobs().map{rows->rows.filter{it.state=="SYNCED"}}.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
     val photoUploads = app.database.dao().observePhotoUploads().map{rows->rows.filter{it.uploadedAt!=null}}.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
     val microsoftIdentity = app.accounts.identity
@@ -95,13 +84,6 @@ class TrackViewModel(application: Application, private val saved: SavedStateHand
     fun draft() = JobDraft(JobKind.valueOf(formKind.value), formReference.value, formKt.value,
         formOrder.value, formQuantity.value.toIntOrNull() ?: 0, formQuick.value, formWork.value)
 
-    private fun runLocalAction(action:()->Unit)=runAction {
-        withContext(Dispatchers.IO) {
-            try {action()}
-            catch(e:IllegalArgumentException){throw LocalUserProblem(e.message ?: "Benutzereingaben bitte prüfen.")}
-            catch(e:IllegalStateException){throw LocalUserProblem(e.message ?: "Benutzeraktion ist nicht möglich.")}
-        }
-    }
     private fun runAction(action: suspend () -> Unit) {
         if (busy.value) return
         busy.value = true; error.value = null
@@ -110,7 +92,6 @@ class TrackViewModel(application: Application, private val saved: SavedStateHand
             catch (e: Exception) {
                 if (e is kotlinx.coroutines.CancellationException) throw e
                 error.value = when (e) {
-                    is LocalUserProblem -> e.message ?: "Benutzeraktion fehlgeschlagen."
                     is MicrosoftAuthenticationRequired -> "Microsoft-Anmeldung oder Firmenfreigabe prüfen."
                     is IllegalArgumentException -> "Eingaben, Container-Nummer und Fotoreihenfolge bitte prüfen."
                     is IllegalStateException -> "Vorgang im aktuellen Auftragsstatus nicht möglich. Auftrag und verfügbaren Speicher prüfen."
