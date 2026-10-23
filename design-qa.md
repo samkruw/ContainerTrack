@@ -1,4 +1,4 @@
-# Native Android — Referenzabgleich 1.4.1
+# Native Android — Referenzabgleich 1.4.2
 
 final result: passed (manueller visueller Abgleich)
 
@@ -27,6 +27,10 @@ Sechs Delivery-Pflichtfotos bleiben verbindlich. Die Beispiele mit vier oder fü
 
 ## Verifikation
 
-[GitHub-Lauf 39909135079](https://github.com/samkruw/ContainerTrack/actions/runs/39909135079), geprüfter App-/Test-Commit `8d82240fdbabe7c583e48eb6cce67017ef915a85`: 39 Unit-Tests je Variante, 60 Android-Tests, neun Python-QA-Tests, Lint und APK-Berechtigungsprüfung erfolgreich. 24 Screenshot-PNGs, darunter sieben aktuelle Referenzansichten.
+[GitHub-Lauf 39913259080](https://github.com/samkruw/ContainerTrack/actions/runs/39913259080), geprüfter App-/Test-Commit `f45872cd434b105cba383da751ab89921190702e`: 41 Unit-Tests je Variante, 60 Android-Tests, neun Python-QA-Tests, Lint und APK-Berechtigungsprüfung erfolgreich. 24 Screenshot-PNGs, darunter sieben aktuelle Referenzansichten.
 
-Die [finale Übersicht mit synthetischen Testdaten](design/verification/reference-ui-v1.4.1.jpg) wurde tatsächlich geöffnet und visuell geprüft: Graphit/Lime, Inter, große Kennungen, Segmente, Foto-Raster, Auswahlmarken, Markenleiste, Navigation mit Unterstrich sowie Einstellungen ohne Login/Rollen. Kein automatischer Pixelvergleich; keine freigegebenen Goldens vorhanden. Reale Teams-/SAF-/Hardware-Prüfung siehe [QA_STATUS.md](docs/QA_STATUS.md).
+Die [finale Übersicht mit synthetischen Testdaten](design/verification/reference-ui-v1.4.2.jpg) wurde tatsächlich geöffnet und visuell geprüft: Graphit/Lime, Inter, große Kennungen, Segmente, Foto-Raster, Auswahlmarken, Markenleiste, Navigation mit Unterstrich sowie Einstellungen ohne Login/Rollen. Kein automatischer Pixelvergleich; keine freigegebenen Goldens vorhanden. Reale Teams-/SAF-/Hardware-Prüfung siehe [QA_STATUS.md](docs/QA_STATUS.md).
+
+## Ergänzung 1.4.2: Auftragsinfos
+
+Übertragung zeigt den tatsächlichen Begleittext und „Auftragsinfos kopieren“. In der Galerie stehen „Infos kopieren“ und Teams nebeneinander, damit keine weitere volle Buttonzeile den Fotobereich verkleinert. Die finale native Ansicht wurde visuell geprüft. Teams bestimmt seine eigenen Ziele und kann Text bei Bildern ignorieren; die App verspricht keine Kanalauswahl und bietet ausdrücklich Kopieren sowie den manuellen Kanalablauf an. Die reale Teams-Darstellung ist dadurch nicht als getestet behauptet.

@@ -1,3 +1,16 @@
+# V1.4.2 — Foto-Begleittext und Kopieren
+
+Bestanden: [CI39913259080](https://github.com/samkruw/ContainerTrack/actions/runs/39913259080), 41 Unit-Tests je Variante, 60 Android-Tests ohne übersprungene Tests, neun Python-QA-Tests, Lint und APK-Berechtigungsprüfung. 24 Screenshots, sieben aktuelle Ansichten tatsächlich visuell geprüft.
+
+| Anforderung | Nachweis | Status |
+| --- | --- | --- |
+| Auftrag/KT/Container/Typ/Fotoanzahl und Return-Arbeiten als Begleittext | PhotoShareTextTest, SelectedPhotoSharingTest | bestanden |
+| Nur Daten der gewählten Fotos; Text und Leserechte bleiben im Android-Fallback | SelectedPhotoSharingTest, PhotoSharingTest | bestanden |
+| Expliziter Kopierbutton und tatsächliche Systemzwischenablage | GalleryProfileTest, ReferenceScreenshotsTest | bestanden |
+| Keine garantierte Kanalauswahl oder Textübernahme durch fremde Teams-App | Hinweise und manueller Kopier-/Kanalablauf | echte Teams-Version auf Nutzergerät prüfen |
+
+Aktueller Build: [QA_STATUS.md](QA_STATUS.md). Die folgenden Tabellen sind historische Prüfstände.
+
 # V1.4.1 — ohne Benutzerverwaltung
 
 Aktueller Umfang: direkter Start ohne Anmeldung, PINs und Rollen; sämtliche lokalen Aufträge und Fotos unabhängig von früherer Zuordnung sichtbar. Geräteeinstellungen ersetzen das Profil. Manueller Teams-Share und einmalige Erinnerungen bleiben erhalten, automatische Uploads deaktiviert.
