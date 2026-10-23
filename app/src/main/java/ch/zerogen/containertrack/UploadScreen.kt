@@ -23,7 +23,7 @@ fun UploadScreen(batch:JobWithContainers,busy:Boolean,onShare:()->Unit,onOrders:
             HorizontalDivider(Modifier.padding(top=12.dp),color=Hairline)
         }
         item {
-            Text("Auftrag ${orderIdentifier(batch)}",color=Muted,style=MaterialTheme.typography.bodyMedium)
+            Text("Auftrag ${batch.job.draft.referenceNumber}",color=Muted,style=MaterialTheme.typography.bodyMedium)
             Text(if(batch.containers.size==1)"Container ${batch.ordered.first().container.containerNumber}" else "${batch.containers.size} Container",fontSize=36.sp,lineHeight=42.sp,fontWeight=FontWeight.ExtraBold)
         }
         item {

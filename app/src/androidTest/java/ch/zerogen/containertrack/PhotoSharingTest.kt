@@ -51,7 +51,12 @@ class PhotoSharingTest {
             assertEquals(Intent.ACTION_SEND_MULTIPLE,intent.action);assertEquals("image/jpeg",intent.type)
             val uris=intent.getParcelableArrayListExtra<Uri>(Intent.EXTRA_STREAM)!!
             assertEquals(2,uris.size);assertEquals(2,intent.clipData!!.itemCount)
-            for(uri in uris) {
+            for((index,uri) in uris.withIndex()) {
+                assertEquals(photos[index].name,uri.lastPathSegment)
+                context.contentResolver.query(uri,arrayOf(android.provider.OpenableColumns.DISPLAY_NAME),null,null,null)!!.use { cursor->
+                    assertTrue(cursor.moveToFirst())
+                    assertEquals(photos[index].name,cursor.getString(0))
+                }
                 assertEquals("content",uri.scheme);assertEquals("image/jpeg",context.contentResolver.getType(uri))
                 context.contentResolver.openInputStream(uri)!!.use {assertArrayEquals(byteArrayOf(1,2,3),it.readBytes())}
             }

@@ -118,7 +118,8 @@ class ReferenceScreenshotsTest {
         compose.runOnIdle {
             val clipboard=compose.activity.getSystemService(android.content.ClipboardManager::class.java)
             val text=clipboard.primaryClip!!.getItemAt(0).text.toString()
-            org.junit.Assert.assertTrue(text.contains("KT: 2480"))
+            org.junit.Assert.assertFalse(text.contains("KT:"))
+            org.junit.Assert.assertTrue(text.contains("Auftrag: ORDER-2480"))
             org.junit.Assert.assertTrue(text.contains("Container: 0042"))
             org.junit.Assert.assertTrue(text.contains("Fotos: 6"))
         }

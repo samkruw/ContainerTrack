@@ -1,3 +1,7 @@
+# Update 1.4.3 — Prüfung läuft
+
+KT entfällt aus Foto-Begleittext, Kopiertext und Übertragungsansicht. Der Dateiname wird zusätzlich am Android-ContentProvider geprüft. Der folgende Nachweis beschreibt noch Version 1.4.2.
+
 # Prüfstatus — Update 1.4.2 — 23.10.2026
 
 Geprüfter App-/Test-Commit: `f45872cd434b105cba383da751ab89921190702e`. [GitHub-Lauf 39913259080](https://github.com/samkruw/ContainerTrack/actions/runs/39913259080): Build und Gerätetests erfolgreich. Spätere Dokumentations-Commits ändern weder App noch Tests.
