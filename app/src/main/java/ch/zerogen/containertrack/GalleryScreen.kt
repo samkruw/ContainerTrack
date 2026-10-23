@@ -109,9 +109,13 @@ fun GalleryScreen(jobs:List<JobWithContainers>,uploads:List<UploadPhotoEntity>,o
             val info=chosen.groupBy{it.jobId}.mapNotNull{(jobId,photos)->
                 jobs.find{it.job.id==jobId}?.let{photoShareText(it.job.draft,photos.map{p->p.containerNumber},photos.size)}
             }.joinToString("\n\n")
-            PhotoShareInfoAction(info,chosen.isNotEmpty())
-            OutlineAction("In Teams teilen",Icons.Outlined.Groups,chosen.isNotEmpty() && onTeamsShareSelected!=null) {
-                onTeamsShareSelected?.invoke(chosen.map{it.photoId}.toSet())
+            Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+                Box(Modifier.weight(1f)) { PhotoShareInfoAction(info,chosen.isNotEmpty(),compact=true) }
+                Box(Modifier.weight(1f)) {
+                    OutlineAction("In Teams teilen",Icons.Outlined.Groups,chosen.isNotEmpty() && onTeamsShareSelected!=null) {
+                        onTeamsShareSelected?.invoke(chosen.map{it.photoId}.toSet())
+                    }
+                }
             }
             OutlineAction("Über Android teilen",Icons.Outlined.Share,chosen.isNotEmpty() && (onShareSelected!=null || chosen.size==1)) {
                 if(onShareSelected!=null)onShareSelected(chosen.map{it.photoId}.toSet()) else chosen.singleOrNull()?.let(onShare)

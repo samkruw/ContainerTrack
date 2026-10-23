@@ -29,11 +29,11 @@ class GalleryProfileTest {
             compose.onNodeWithText("RET-GALLERY · 0708").performClick()
             compose.onNodeWithText("0708_02.jpg").assertDoesNotExist()
             compose.onNodeWithText("In Teams teilen").assertIsNotEnabled()
-            compose.onNodeWithText("Auftragsinfos kopieren").assertIsNotEnabled()
+            compose.onNodeWithText("Infos kopieren").assertIsNotEnabled()
             compose.onNodeWithContentDescription("Foto 1 auswählen").performClick()
             compose.onNodeWithText("In Teams teilen").assertIsEnabled().performClick()
             compose.runOnIdle { assertEquals(setOf("gallery-photo"),teamsShared) }
-            compose.onNodeWithText("Auftragsinfos kopieren").assertIsEnabled().performClick()
+            compose.onNodeWithText("Infos kopieren").assertIsEnabled().performClick()
             compose.runOnIdle {
                 val clipboard=app.getSystemService(android.content.ClipboardManager::class.java)
                 val text=clipboard.primaryClip!!.getItemAt(0).text.toString()

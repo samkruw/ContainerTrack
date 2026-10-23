@@ -8,10 +8,11 @@ import androidx.compose.ui.text.AnnotatedString
 
 @Suppress("DEPRECATION")
 @Composable
-fun PhotoShareInfoAction(text:String,enabled:Boolean=true) {
+fun PhotoShareInfoAction(text:String,enabled:Boolean=true,compact:Boolean=false) {
     val clipboard=LocalClipboardManager.current
     var copied by remember(text){mutableStateOf(false)}
-    OutlineAction(if(copied)"Auftragsinfos kopiert" else "Auftragsinfos kopieren",Icons.Outlined.ContentCopy,enabled && text.isNotBlank()) {
+    val label=if(compact) {if(copied)"Infos kopiert" else "Infos kopieren"} else {if(copied)"Auftragsinfos kopiert" else "Auftragsinfos kopieren"}
+    OutlineAction(label,Icons.Outlined.ContentCopy,enabled && text.isNotBlank()) {
         clipboard.setText(AnnotatedString(text))
         copied=true
     }
