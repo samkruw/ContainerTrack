@@ -17,14 +17,15 @@ android {
         applicationId = "ch.zerogen.containertrack"
         minSdk = 26
         targetSdk = 36
-        versionCode = 6
-        versionName = "1.3.2"
+        versionCode = 7
+        versionName = "1.4.0"
         for (part in listOf("TENANT_ID", "CLIENT_ID", "REDIRECT_URI", "TEAM_ID", "CHANNEL_ID")) {
             buildConfigField("String", "MICROSOFT_$part", javaLiteral(publicSetting("CT_MICROSOFT_$part")))
         }
         manifestPlaceholders["msalRedirectPath"] = runCatching { URI(publicSetting("CT_MICROSOFT_REDIRECT_URI")).path }
             .getOrNull()?.takeIf { it.startsWith("/") && it.length > 1 } ?: "/not-configured"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunnerArguments["listener"] = "ch.zerogen.containertrack.LocalUserTestListener"
     }
     buildFeatures { compose = true; buildConfig = true }
     compileOptions {

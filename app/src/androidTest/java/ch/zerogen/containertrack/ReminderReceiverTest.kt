@@ -69,7 +69,9 @@ class ReminderReceiverTest {
             withTimeout(5_000) { while (notifications.activeNotifications.none { it.id == reminder.id }) delay(50) }
             val notification = notifications.activeNotifications.first { it.id == reminder.id }.notification
             assertEquals("Logger starten", notification.extras.getString("android.title"))
+            assertFalse(notification.extras.getString("android.text").orEmpty().contains(reminder.referenceNumber))
             assertEquals("Logger gestartet", notification.actions.single().title.toString())
+            if(Build.VERSION.SDK_INT>=31)assertTrue(notification.actions.single().actionIntent.isActivity)
             assertNull(app.database.dao().reminder(reminder.id)!!.confirmedAt)
             dispatch(ReminderAlarms.CONFIRM, reminder.id)
             val confirmed = app.database.dao().reminder(reminder.id)!!.confirmedAt
@@ -78,6 +80,26 @@ class ReminderReceiverTest {
             assertEquals(confirmed, app.database.dao().reminder(reminder.id)!!.confirmedAt)
             withTimeout(5_000) { while (notifications.activeNotifications.any { it.id == reminder.id }) delay(50) }
         } finally { app.repository.deleteJob(job) }
+    }
+
+    @Test fun loggedOutAndForeignEmployeeCannotConfirmNotification() = runBlocking {
+        val users=app.localUsers
+        val admin=users.requireUser()
+        val (job,reminder)=createDueReminder()
+        users.add("Worker-${UUID.randomUUID()}",LocalRole.EMPLOYEE,"654321")
+        val employee=users.users.value.last()
+        try {
+            users.login(employee.id,"654321")
+            dispatch(ReminderAlarms.CONFIRM,reminder.id)
+            assertNull(app.database.dao().reminder(reminder.id)!!.confirmedAt)
+            users.logout()
+            dispatch(ReminderAlarms.CONFIRM,reminder.id)
+            assertNull(app.database.dao().reminder(reminder.id)!!.confirmedAt)
+        } finally {
+            users.login(admin.id,"123456")
+            users.update(employee.id,employee.name,employee.role,false)
+            app.repository.deleteJob(job)
+        }
     }
 
     @Test fun deniedNotificationLeavesReminderPending() = runBlocking {

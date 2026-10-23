@@ -45,8 +45,12 @@ fun TrackApp(vm: TrackViewModel = viewModel()) {
     val nav = rememberNavController()
     val entry by nav.currentBackStackEntryAsState()
     val route = entry?.destination?.route ?: "jobs"
-    val jobs by vm.jobs.collectAsStateWithLifecycle()
-    val reminders by vm.reminders.collectAsStateWithLifecycle()
+    val localUsers by vm.localUsers.collectAsStateWithLifecycle()
+    val localUser by vm.localUser.collectAsStateWithLifecycle()
+    val allJobs by vm.jobs.collectAsStateWithLifecycle()
+    val jobs=allJobs.filter{mayAccessLocalJob(localUser,it.job.createdByAccountId)}
+    val allReminders by vm.reminders.collectAsStateWithLifecycle()
+    val reminders=allReminders.filter{reminder->jobs.any{it.job.id==reminder.jobId}}
     val now by vm.now.collectAsStateWithLifecycle()
     val busy by vm.busy.collectAsStateWithLifecycle()
     val error by vm.error.collectAsStateWithLifecycle()
@@ -54,7 +58,7 @@ fun TrackApp(vm: TrackViewModel = viewModel()) {
     val active by vm.activeJob.collectAsStateWithLifecycle()
     val uploads by vm.uploadJobs.collectAsStateWithLifecycle()
     val uploadedPhotos by vm.photoUploads.collectAsStateWithLifecycle()
-    val identity by vm.microsoftIdentity.collectAsStateWithLifecycle()
+    val identity=localUser?.let{MicrosoftIdentity(it.id,it.name,it.role.label)}
     val microsoftStatus by vm.microsoftStatus.collectAsStateWithLifecycle()
     val online by vm.online.collectAsStateWithLifecycle()
     val query by vm.search.collectAsStateWithLifecycle()
@@ -109,6 +113,20 @@ fun TrackApp(vm: TrackViewModel = viewModel()) {
         if(uri!=null && savingPhotos.isNotEmpty()) vm.saveSelectedPhotos(savingPhotos.toSet(),uri)
         savingPhotos=arrayListOf()
     }
+    var navigationUserId by rememberSaveable{mutableStateOf(localUser?.id)}
+    LaunchedEffect(localUser?.id) {
+        if(localUser==null) navigationUserId=null
+        else if(navigationUserId!=localUser?.id) {
+            actionJob=null;shareJob=null
+            nav.navigate("jobs"){popUpTo(nav.graph.id){inclusive=true};launchSingleTop=true}
+            navigationUserId=localUser?.id
+        }
+    }
+    if(localUser==null) {
+        LocalLoginScreen(localUsers,busy,vm::bootstrapLocal,vm::loginLocal)
+        error?.let{message->AlertDialog(onDismissRequest={vm.error.value=null},title={Text("Hinweis")},text={Text(message)},confirmButton={TextButton(onClick={vm.error.value=null}){Text("Schliessen")}})}
+        return
+    }
     Scaffold(containerColor=Navy,topBar={if(route!="profile" || identity!=null)BrandHeader(identity){if(!busy)nav.navigate("profile"){launchSingleTop=true}}},
         floatingActionButton={if(route=="jobs")FloatingActionButton(onClick={if(!busy){vm.begin(JobKind.DELIVERY);nav.navigate("setup")}},containerColor=Lime,contentColor=Navy,shape=MaterialTheme.shapes.small){Icon(Icons.Default.Add,"Neuer Auftrag")}},
         bottomBar={if(route!="profile" || identity!=null)ReferenceBottomBar(route,!busy){path->nav.navigate(path){popUpTo(nav.graph.startDestinationId){saveState=true};launchSingleTop=true;restoreState=true}}}
@@ -123,11 +141,11 @@ fun TrackApp(vm: TrackViewModel = viewModel()) {
             NavHost(nav, startDestination = "jobs", modifier = Modifier.weight(1f)) {
                 composable("home") { HomeScreen(jobs, onBegin = { kind -> vm.begin(kind); nav.navigate("setup") }, onJob = ::openJob) }
                 composable("jobs") { OrderListScreen(jobs,uploads,uploadedPhotos,reminders,now,online,query,
-                    runCatching { OrderFilter.valueOf(filterName) }.getOrDefault(OrderFilter.ACTIVE),vm::search,{vm.filter(it.name)},{actionJob=it},identity,onResume=::resumeJob,onRetry=vm::uploadPhotos) }
+                    runCatching { OrderFilter.valueOf(filterName) }.getOrDefault(OrderFilter.ACTIVE),vm::search,{vm.filter(it.name)},{actionJob=it},identity,onResume=::resumeJob,onRetry={vm.sharePhotos(it,teams=true)}) }
                 composable("gallery") { GalleryScreen(jobs,uploadedPhotos,onShare={vm.sharePhotos(it.jobId,photoId=it.photoId)},
                     onSaveSelected={savingPhotos=ArrayList(it);savePhotos.launch(null)},onShareSelected=vm::shareSelectedPhotos,onTeamsShareSelected=vm::shareSelectedPhotosToTeams) }
-                composable("profile") { ProfileScreen(identity,microsoftStatus,vm.microsoftConfigured,busy,vm::signIn,vm::signOut,vm::switchAccount,onContinue={nav.navigate("jobs"){popUpTo("jobs");launchSingleTop=true}},onAccess={nav.navigate("access")}) }
-                composable("access") {UserAccessScreen(identity)}
+                composable("profile") { LocalProfileScreen(localUser!!,busy,onUsers={nav.navigate("access")},onLogout=vm::logoutLocal,onContinue={nav.navigate("jobs"){popUpTo("jobs");launchSingleTop=true}},onPin=vm::changeLocalPin) }
+                composable("access") {LocalUserAccessScreen(localUser!!,localUsers,busy,vm::addLocal,vm::updateLocal)}
                 composable("scan") { ScanJobsScreen(jobs,active,onJob={resumeJob(it.job.id)}) }
                 composable("exports") { ExportJobsScreen(jobs, onJob = { nav.navigate("export/${it.job.id}") }) }
                 composable("more") { MoreScreen() }
@@ -159,12 +177,12 @@ fun TrackApp(vm: TrackViewModel = viewModel()) {
                 composable("review/{jobId}") { back ->
                     val id=back.arguments?.getString("jobId") ?: return@composable
                     jobs.find{it.job.id==id}?.let{batch->PhotoReviewScreen(batch,busy,
-                        onPhoto={container,step->nav.navigate("photo/$id/$container?step=$step")},onContinue={nav.navigate("upload/$id")},onBack={batch.ordered.firstOrNull()?.let{nav.navigate("photo/$id/${it.container.id}?step=0")} ?: resumeJob(id)})}
+                        onPhoto={container,step->nav.navigate("photo/$id/$container?step=$step")},onContinue={vm.finishAndSharePhotos(id);nav.navigate("upload/$id")},onBack={batch.ordered.firstOrNull()?.let{nav.navigate("photo/$id/${it.container.id}?step=0")} ?: resumeJob(id)})}
                 }
                 composable("upload/{jobId}") { back ->
                     val id=back.arguments?.getString("jobId") ?: return@composable
-                    jobs.find{it.job.id==id}?.let{batch->UploadScreen(batch,uploads.find{it.jobId==id},uploadedPhotos,identity,vm.microsoftConfigured,online,busy,
-                        onUpload={vm.uploadPhotos(id)},onShare={vm.sharePhotos(id)},onOrders={nav.navigate("jobs"){popUpTo("jobs");launchSingleTop=true}},onProfile={nav.navigate("profile")},onTeamsShare={vm.sharePhotos(id,teams=true)})}
+                    jobs.find{it.job.id==id}?.let{batch->UploadScreen(batch,busy,
+                        onShare={vm.sharePhotos(id)},onOrders={nav.navigate("jobs"){popUpTo("jobs");launchSingleTop=true}},onTeamsShare={vm.sharePhotos(id,teams=true)})}
                 }
                 composable("export/{jobId}") { back ->
                     val id = back.arguments?.getString("jobId") ?: return@composable
@@ -196,7 +214,7 @@ fun TrackApp(vm: TrackViewModel = viewModel()) {
             ScreenTitle("Fotos teilen","Ausschließlich nummerierte JPEG-Dateien")
             uploads.find { it.jobId==batch.job.id }?.let { Text(syncLabel(it,online));it.lastError?.let { message -> Information(message,warning=true) } }
             OutlineAction("Übertragungsdetails",androidx.compose.material.icons.Icons.Default.Info) {shareJob=null;nav.navigate("upload/${batch.job.id}")}
-            PrimaryButton("An Teams-Kanal übertragen",enabled=!busy && batch.complete && identity!=null && vm.microsoftConfigured) { vm.uploadPhotos(batch.job.id);shareJob=null }
+
             if(identity==null) Text("Für den automatischen Upload zuerst im Profil anmelden.")
             val teamsAvailable = remember(batch.containers.sumOf { it.photos.size }) {
                 Intent(if (batch.containers.sumOf { it.photos.size } > 1) Intent.ACTION_SEND_MULTIPLE else Intent.ACTION_SEND)

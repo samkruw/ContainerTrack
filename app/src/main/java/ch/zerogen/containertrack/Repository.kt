@@ -5,6 +5,7 @@ import android.content.Intent
 import android.net.Uri
 import androidx.room.withTransaction
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.sync.Mutex
@@ -19,14 +20,23 @@ import java.util.UUID
 
 class TrackRepository(private val context: Context, val database: TrackDatabase,
     private val uploadScheduler: UploadScheduler = UploadScheduler {},
+    private val access: LocalUserStore? = null,
     private val accountId: () -> String? = { null }) {
     private val dao = database.dao()
     private val mutations = Mutex()
     private val alarms = ReminderAlarms(context)
-    val jobs = dao.observeJobs()
-    val reminders = dao.observeReminders()
+    val jobs = if(access==null) dao.observeJobs() else combine(dao.observeJobs(),access.currentUser) { batches,user -> batches.filter{mayAccessLocalJob(user,it.job.createdByAccountId)} }
+    val reminders = if(access==null) dao.observeReminders() else combine(dao.observeReminders(),jobs) { reminders,batches ->
+        val ids=batches.map{it.job.id}.toSet();reminders.filter{it.jobId in ids}
+    }
+    private suspend fun checkedJob(id:String):JobWithContainers {
+        val batch=requireNotNull(dao.job(id))
+        access?.requireAccess(batch.job.createdByAccountId)
+        return batch
+    }
 
     suspend fun createJob(draft: JobDraft, stoppedAt: Long?, initialNumber: String? = null): String = withContext(Dispatchers.IO) {
+        access?.requireUser()
         require(initialNumber.isNullOrBlank() || containerError(initialNumber,emptySet())==null)
         require(draft.errors(stoppedAt).isEmpty()) { "Bitte alle Pflichtfelder prüfen." }
         val normalized = draft.copy(referenceNumber = draft.referenceNumber.trim(),
@@ -45,7 +55,7 @@ class TrackRepository(private val context: Context, val database: TrackDatabase,
 
     suspend fun addContainer(jobId: String, number: String): String = withContext(Dispatchers.IO) {
         mutations.withLock { database.withTransaction {
-            val batch = requireNotNull(dao.job(jobId))
+            val batch = checkedJob(jobId)
             check(batch.job.exportedAt == null) { "Exportierte Aufträge sind abgeschlossen." }
             require(batch.containers.size < batch.job.draft.quantity) { "Alle Container sind bereits erfasst." }
             require(canAddContainer(batch.job.draft.kind, batch.containers.map { it.photos.map { p -> p.step }.toSet() })) { "Zuerst die Leerdokumentation des aktuellen Containers abschliessen." }
@@ -62,7 +72,7 @@ class TrackRepository(private val context: Context, val database: TrackDatabase,
     suspend fun renameContainer(jobId: String, containerId: String, number: String) = withContext(Dispatchers.IO) {
         mutations.withLock {
             database.withTransaction {
-                val batch = requireNotNull(dao.job(jobId))
+                val batch = checkedJob(jobId)
                 check(batch.job.exportedAt == null) { "Exportierte Aufträge sind abgeschlossen." }
                 val item = batch.containers.first { it.container.id == containerId }
                 require(containerError(number,batch.containers.filter { it.container.id != containerId }.map { it.container.containerNumber }.toSet()) == null)
@@ -70,7 +80,7 @@ class TrackRepository(private val context: Context, val database: TrackDatabase,
                     dao.updateContainer(item.container.copy(containerNumber = number))
                     // Names are part of the upload version; stale in-flight acknowledgements must not survive a rename.
                     for (photo in item.photos) dao.putPhoto(photo.copy(id = UUID.randomUUID().toString()))
-                    if (batch.complete && dao.uploadJob(jobId) != null) queuePhotos(requireNotNull(dao.job(jobId)))
+                    if (batch.complete && dao.uploadJob(jobId) != null) queuePhotos(checkedJob(jobId))
                     dao.updateJob(batch.job.copy(updatedAt = System.currentTimeMillis()))
                 }
             }
@@ -92,7 +102,7 @@ class TrackRepository(private val context: Context, val database: TrackDatabase,
                 var effects = CompletionEffects()
                 withContext(NonCancellable) {
                   database.withTransaction {
-                    val batch = requireNotNull(dao.job(jobId))
+                    val batch = checkedJob(jobId)
                     check(batch.job.exportedAt == null) { "Exportierte Aufträge sind abgeschlossen." }
                     val item = batch.containers.first { it.container.id == containerId }
                     require(step in 1..batch.job.draft.kind.photoCount)
@@ -102,7 +112,7 @@ class TrackRepository(private val context: Context, val database: TrackDatabase,
                     dao.putPhoto(PhotoEntity(containerId = containerId, step = step, localPath = destination.absolutePath, capturedAt = at))
                     val complete = (item.photos.map { it.step }.toSet() + step).size == batch.job.draft.kind.photoCount
                     dao.updateContainer(item.container.copy(completedAt = if (complete) at else null))
-                    val updated = requireNotNull(dao.job(jobId))
+                    val updated = checkedJob(jobId)
                     dao.updateJob(batch.job.copy(updatedAt = at, completedAt = if (updated.complete) at else null))
                     if (updated.complete) {
                         val first = batch.job.completionTriggeredAt == null
@@ -113,7 +123,7 @@ class TrackRepository(private val context: Context, val database: TrackDatabase,
                                 dueAt = reminderDueAt(batch.job.completionTriggeredAt ?: at)))
                             reminder = dao.jobReminder(jobId)
                         }
-                        if (first || dao.uploadJob(jobId) != null) queuePhotos(requireNotNull(dao.job(jobId)))
+                        if (first || dao.uploadJob(jobId) != null) queuePhotos(checkedJob(jobId))
                         effects = CompletionEffects(reminder, if (dao.uploadJob(jobId) != null) jobId else null)
                     }
                   }
@@ -133,7 +143,7 @@ class TrackRepository(private val context: Context, val database: TrackDatabase,
     suspend fun deletePhotos(jobId: String, containerId: String, fromStep: Int) = withContext(Dispatchers.IO) {
         mutations.withLock {
             val deleted = database.withTransaction {
-                val batch = requireNotNull(dao.job(jobId))
+                val batch = checkedJob(jobId)
                 check(batch.job.exportedAt == null) { "Exportierte Aufträge sind abgeschlossen." }
                 val item = batch.containers.first { it.container.id == containerId }
                 val paths = item.photos.filter { it.step >= fromStep }.map { it.localPath }
@@ -149,7 +159,7 @@ class TrackRepository(private val context: Context, val database: TrackDatabase,
 
     suspend fun export(jobId: String, uri: Uri): LoggerReminder? = withContext(Dispatchers.IO) {
         mutations.withLock {
-            val batch = requireNotNull(dao.job(jobId))
+            val batch = checkedJob(jobId)
             check(batch.complete) { "Alle Container und Pflichtfotos müssen vollständig sein." }
             val preparedAt = System.currentTimeMillis()
             val zipFile = File(context.cacheDir, "${UUID.randomUUID()}.zip")
@@ -165,7 +175,7 @@ class TrackRepository(private val context: Context, val database: TrackDatabase,
     /** The chooser may be cancelled; a successfully prepared ZIP still counts as an export. */
     suspend fun prepareShare(jobId: String): Intent = withContext(Dispatchers.IO) {
         mutations.withLock {
-            val batch = requireNotNull(dao.job(jobId))
+            val batch = checkedJob(jobId)
             check(batch.complete) { "Alle Container und Pflichtfotos müssen vollständig sein." }
             pruneSharedExports(System.currentTimeMillis())
             val directory = File(context.cacheDir, "shared-exports/$jobId/${UUID.randomUUID()}")
@@ -187,9 +197,10 @@ class TrackRepository(private val context: Context, val database: TrackDatabase,
         }
     }
 
-    suspend fun preparePhotoShare(jobId: String, teamsPackage: String? = null, photoId: String? = null): Intent = withContext(Dispatchers.IO) {
+    suspend fun preparePhotoShare(jobId: String, teamsPackage: String? = null, photoId: String? = null, requireComplete: Boolean = false): Intent = withContext(Dispatchers.IO) {
         mutations.withLock {
-            val batch = requireNotNull(dao.job(jobId))
+            val batch = checkedJob(jobId)
+            require(!requireComplete || batch.complete) { "Zuerst alle Pflichtfotos aufnehmen." }
             pruneSharedExports(System.currentTimeMillis())
             val directory = File(context.cacheDir,"shared-photos/$jobId/${UUID.randomUUID()}")
             check(directory.mkdirs()) { "Fotos konnten nicht vorbereitet werden." }
@@ -224,10 +235,12 @@ class TrackRepository(private val context: Context, val database: TrackDatabase,
     }
 
     private suspend fun selectedPhotos(ids:Set<String>):List<Triple<String,String,PhotoEntity>> {
+        access?.requireUser()
         require(ids.isNotEmpty())
         val photos=dao.observeJobs().first().flatMap { batch -> batch.ordered.flatMap { item ->
             item.photos.filter { it.id in ids }.map { Triple(batch.job.id,item.container.containerNumber,it) }
         } }
+        photos.map{it.first}.distinct().forEach{checkedJob(it)}
         require(photos.map { it.third.id }.toSet()==ids)
         require(photos.all { File(it.third.localPath).isFile && File(it.third.localPath).length()>0 })
         return photos
@@ -271,7 +284,7 @@ class TrackRepository(private val context: Context, val database: TrackDatabase,
     private suspend fun finishExport(jobId: String): LoggerReminder? = withContext(NonCancellable) {
         val now = System.currentTimeMillis()
         val reminder = database.withTransaction {
-            val job = requireNotNull(dao.job(jobId)).job
+            val job = checkedJob(jobId).job
             dao.updateJob(job.copy(exportedAt = firstExportAt(job.exportedAt, now), updatedAt = now))
             dao.jobReminder(job.id)
         }
@@ -280,6 +293,7 @@ class TrackRepository(private val context: Context, val database: TrackDatabase,
     }
 
     private suspend fun queuePhotos(batch: JobWithContainers) {
+        if(access!=null)return // Local users use explicit Teams sharing, not a transport queue.
         dao.insertUploadJob(UploadJobEntity(batch.job.id, ownerAccountId = batch.job.createdByAccountId))
         for (item in batch.ordered) for (photo in item.photos) {
             dao.insertUploadPhoto(UploadPhotoEntity(photo.id, batch.job.id,
@@ -296,9 +310,10 @@ class TrackRepository(private val context: Context, val database: TrackDatabase,
     }
 
     suspend fun enqueuePhotoUpload(jobId: String, owner: String) = withContext(Dispatchers.IO) {
+        check(access==null) { "Bitte die Fotos über Teams teilen." }
         mutations.withLock {
             database.withTransaction {
-                val batch = requireNotNull(dao.job(jobId))
+                val batch = checkedJob(jobId)
                 check(batch.complete) { "Zuerst alle Pflichtfotos aufnehmen." }
                 queuePhotos(batch)
                 val existing = requireNotNull(dao.uploadJob(jobId))
@@ -335,6 +350,7 @@ class TrackRepository(private val context: Context, val database: TrackDatabase,
 
     suspend fun deleteJob(jobId: String): LoggerReminder? = withContext(Dispatchers.IO) {
         mutations.withLock {
+            checkedJob(jobId)
             val reminder = dao.jobReminder(jobId)
             uploadScheduler.cancel(jobId)
             withContext(NonCancellable) {
@@ -354,6 +370,8 @@ class TrackRepository(private val context: Context, val database: TrackDatabase,
     }
 
     suspend fun confirmReminder(id: Int) = withContext(Dispatchers.IO + NonCancellable) {
+        val reminder=dao.reminder(id) ?: return@withContext
+        checkedJob(reminder.jobId)
         dao.confirmReminder(id, System.currentTimeMillis())
         alarms.cancel(id)
     }

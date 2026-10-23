@@ -48,12 +48,12 @@ class ReminderAlarms(private val context: Context) {
         val notification = NotificationCompat.Builder(context, CHANNEL)
             .setSmallIcon(R.drawable.ic_container)
             .setContentTitle("Logger starten")
-            .setContentText("Auftrag ${reminder.referenceNumber} · JETZT")
+            .setContentText("Fällige Logger-Erinnerung · in der App bestätigen")
             .setContentIntent(launch)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_REMINDER)
             .setOngoing(true)
-            .addAction(R.drawable.ic_container, "Logger gestartet", pending(reminder.id, CONFIRM))
+            .addAction(R.drawable.ic_container, "Logger gestartet", launch)
             .build()
         try { notifications.notify(reminder.id, notification) } catch (_: SecurityException) { }
     }
@@ -77,7 +77,8 @@ class ReminderReceiver : BroadcastReceiver() {
                 val reminder = app.database.dao().reminder(id) ?: return@launch
                 if (reminder.confirmedAt != null) return@launch
                 if (intent.action == ReminderAlarms.CONFIRM) {
-                    app.repository.confirmReminder(id)
+                    try {app.repository.confirmReminder(id)}
+                    catch (_:IllegalStateException) { /* Authentication/ownership required; reminder stays pending. */ }
                 } else if (reminder.dueAt <= System.currentTimeMillis()) app.alarms.notifyDue(reminder)
                 else app.alarms.schedule(reminder)
             } finally { pending.finish() }

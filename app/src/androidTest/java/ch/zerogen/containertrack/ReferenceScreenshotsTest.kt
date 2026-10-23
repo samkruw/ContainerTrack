@@ -68,6 +68,22 @@ class ReferenceScreenshotsTest {
         compose.onNodeWithText("Fotos prüfen").performClick()
         capture("22-reference-photo-review")
     }
+    @Test fun finishReviewStartsTeamsSharingWithoutCompanyLogin():Unit=runBlocking {
+        openCompleteDetails()
+        compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasText("Fotos prüfen"))
+        compose.onNodeWithText("Fotos prüfen").performClick()
+        val marker=app.database.dao().job(completeId)!!.job.completionTriggeredAt
+        val instrumentation=InstrumentationRegistry.getInstrumentation()
+        val filter=android.content.IntentFilter(android.content.Intent.ACTION_SEND_MULTIPLE).apply{addDataType("image/jpeg")}
+        val monitor=instrumentation.addMonitor(filter,android.app.Instrumentation.ActivityResult(android.app.Activity.RESULT_CANCELED,null),true)
+        try {
+            compose.onNodeWithText("Abschließen & in Teams teilen").assertIsEnabled().performClick()
+            compose.waitUntil(10_000){monitor.hits>0}
+            org.junit.Assert.assertEquals(1,monitor.hits)
+            org.junit.Assert.assertEquals(marker,app.database.dao().job(completeId)!!.job.completionTriggeredAt)
+            org.junit.Assert.assertTrue(app.database.dao().uploadPhotos(completeId).all{it.uploadedAt==null})
+        } finally {instrumentation.removeMonitor(monitor)}
+    }
     @Test fun galleryMatchesReference(){
         compose.onNodeWithText("Galerie").performClick()
         compose.onNode(hasSetTextAction()).performTextInput("248")
@@ -86,7 +102,13 @@ class ReferenceScreenshotsTest {
     }
     @Test fun signInMatchesReference(){
         compose.onNodeWithContentDescription("Profil und Einstellungen").performClick()
+        compose.onNodeWithText("Benutzer wechseln").performScrollTo().performClick()
         capture("25-reference-sign-in")
+        compose.onNodeWithText("Testadmin").performClick()
+        compose.onNodeWithText("PIN").performTextInput("123456")
+        keyboardAway()
+        compose.onNodeWithText("Anmelden").performScrollTo().performClick()
+        compose.waitUntil(10_000){compose.onAllNodesWithText("Meine Aufträge").fetchSemanticsNodes().isNotEmpty()}
     }
     @Test fun uploadMatchesReferenceWithoutPretendingSuccess(){
         openCompleteDetails()
@@ -99,7 +121,7 @@ class ReferenceScreenshotsTest {
     @Test fun userAccessShowsOnlyVerifiedPermissions(){
         compose.onNodeWithContentDescription("Profil und Einstellungen").performClick()
         compose.onNodeWithText("Benutzer & Rechte").performScrollTo().performClick()
-        compose.onNodeWithText("Kein Firmenkonto verbunden.").assertExists()
+        compose.onNodeWithText("Lokale Benutzer").assertExists()
         capture("27-reference-access")
     }
 

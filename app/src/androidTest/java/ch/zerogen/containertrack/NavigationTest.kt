@@ -62,9 +62,9 @@ class NavigationTest {
         compose.onNodeWithText("Galerie").performClick()
         compose.onNodeWithText("AUF DIESEM GERÄT").assertIsDisplayed()
         compose.onNodeWithContentDescription("Profil und Einstellungen").performClick()
-        compose.onNodeWithText("Willkommen zurück").assertExists()
-        compose.onNodeWithText("Mit Microsoft anmelden").assertIsNotEnabled()
-        compose.onNodeWithText("Offline weiterarbeiten").performScrollTo().performClick()
+        compose.onNodeWithText("Testadmin").assertExists()
+        compose.onNodeWithText("Lokal angemeldet · offline nutzbar").assertExists()
+        compose.onNodeWithText("Zurück zu Aufträgen").performScrollTo().performClick()
         compose.onNodeWithText("Meine Aufträge").assertIsDisplayed()
     }
 

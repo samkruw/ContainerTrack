@@ -46,7 +46,7 @@ fun PhotoReviewScreen(batch:JobWithContainers,busy:Boolean,onPhoto:(String,Int)-
             }
         }
         Text(if(batch.job.exportedAt==null)"Foto antippen zum Ansehen oder Ersetzen" else "Foto antippen zum Ansehen",style=MaterialTheme.typography.labelSmall,color=Muted)
-        PrimaryIconButton("Weiter zur Teams-Übertragung",Icons.Outlined.CheckCircle,!busy && batch.complete,onContinue)
+        PrimaryIconButton("Abschließen & in Teams teilen",Icons.Outlined.CheckCircle,!busy && batch.complete,onContinue)
         OutlineAction("Zurück zur Kamera",Icons.Outlined.ArrowBack,!busy,onBack)
     }
 }
