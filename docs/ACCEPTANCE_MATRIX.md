@@ -1,3 +1,16 @@
+# V1.4.0 — lokale Benutzer und Abschluss über Teams
+
+| Anforderung | Nachweis | Status |
+| --- | --- | --- |
+| Ohne Server: lokale PIN-Profile, Admin/Mitarbeiter, Benutzerwechsel | LocalUserStoreTest, LocalUsersUiTest, ReferenceScreenshotsTest | bestanden: CI39905918718 |
+| Mitarbeiter nur eigene Aufträge; Admin auch vorhandene Daten | LocalJobAccessTest, LocalUserPolicyTest | bestanden: CI39905918718 |
+| PIN-Hash/Sperre, letzter Admin, Rollen-/Aktivierungs-/PIN-Verwaltung | LocalUserPolicyTest, LocalUserStoreTest, LocalUsersUiTest | bestanden: CI39905918718 |
+| Logger-Aktion verlangt passenden angemeldeten Benutzer | ReminderReceiverTest | bestanden: CI39905918718 |
+| Abschluss startet Teilen; kein neuer automatischer Transport | SelectedPhotoSharingTest, ReferenceScreenshotsTest, LocalJobAccessTest | bestanden: CI39905918718 |
+| Native Oberfläche und vorhandene Migration/OCR/Export/Timer | 67 Android-Tests, 42 Unit-Tests je Variante, manuelle Sichtprüfung | bestanden: CI39905918718 |
+
+[Debug-APK und vollständiger Prüfstatus](QA_STATUS.md), [aktuelle Ansichten](../design/verification/reference-ui-v1.4.0.jpg). Ältere Tabellen dokumentieren frühere Anforderungen und Prüfstände.
+
 # V1.3.2 — manuell direkt in Teams teilen
 
 | Anforderung | Nachweis | Status |

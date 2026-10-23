@@ -1,13 +1,13 @@
 # Container Track — Android
 
-Native Kotlin-App zur lokalen Erfassung von Lieferungen und Returns. Ein `:app`-Modul mit Compose, Room, CameraX und gebündeltem ML Kit. Kein WebView. Optionaler Foto-Upload über Microsoft-Firmenkonto und Teams.
+Native Kotlin-App zur lokalen Erfassung von Lieferungen und Returns. Ein `:app`-Modul mit Compose, Room, CameraX und gebündeltem ML Kit. Kein WebView. Vollständig lokale Benutzer mit PIN und Rollen; Fotos werden bewusst an die Teams-App übergeben.
 
-**Stand:** Update 1.4.0 / versionCode 7. Lokale Benutzer mit PIN und Rollen sowie Teams-Teilen beim Abschluss: [UPDATE_1_4_0.md](docs/UPDATE_1_4_0.md). Kein zusätzlicher Online-Dienst erforderlich. Bestehende native Architektur und App-ID bleiben erhalten; Room migriert ohne Datenlöschung von Schema 1 auf 2. Direktes manuelles Teams-Teilen: [UPDATE_1_3_2.md](docs/UPDATE_1_3_2.md). Designkorrektur nach den acht Bildvorlagen: [UPDATE_1_3_1.md](docs/UPDATE_1_3_1.md). Fachliche Änderungen: [UPDATE_1_3.md](docs/UPDATE_1_3.md). Microsoft-Einrichtung: [MICROSOFT_SETUP.md](docs/MICROSOFT_SETUP.md). Aktuelle Prüfnachweise: [QA_STATUS.md](docs/QA_STATUS.md).
+**Stand:** Update 1.4.0 / versionCode 7. Lokale Benutzer mit PIN und Rollen sowie Teams-Teilen beim Abschluss: [UPDATE_1_4_0.md](docs/UPDATE_1_4_0.md). Kein zusätzlicher Online-Dienst erforderlich. Bestehende native Architektur und App-ID bleiben erhalten; Room migriert ohne Datenlöschung von Schema 1 auf 2. Direktes manuelles Teams-Teilen: [UPDATE_1_3_2.md](docs/UPDATE_1_3_2.md). Designkorrektur nach den acht Bildvorlagen: [UPDATE_1_3_1.md](docs/UPDATE_1_3_1.md). Fachliche Änderungen: [UPDATE_1_3.md](docs/UPDATE_1_3.md). Historische Microsoft-Einrichtung (für den aktuellen Ablauf nicht nötig): [MICROSOFT_SETUP.md](docs/MICROSOFT_SETUP.md). Aktuelle Prüfnachweise: [QA_STATUS.md](docs/QA_STATUS.md).
 
 ## Projekt öffnen und APK bauen
 
 1. Ordner in Android Studio öffnen.
-2. JDK 17 oder neuer, Android SDK Platform 36 und Build Tools 36.0.0 bereitstellen. Gradle 8.13 wird über den mitgelieferten Wrapper geladen. Der Entwicklungs-Build benötigt Internet für Werkzeuge und Abhängigkeiten; der optionale Microsoft-Upload benötigt ebenfalls Internet.
+2. JDK 17 oder neuer, Android SDK Platform 36 und Build Tools 36.0.0 bereitstellen. Gradle 8.13 wird über den mitgelieferten Wrapper geladen. Der Entwicklungs-Build benötigt Internet für Werkzeuge und Abhängigkeiten; die eigentliche Übertragung durch Teams benötigt die Teams-App und deren Verbindung.
 3. Gradle synchronisieren und ausführen:
 
 ```sh
@@ -29,7 +29,7 @@ Bei Push/PR führt [android.yml](.github/workflows/android.yml) Build, Unit-Test
 - **Fotos:** Lieferung benötigt sechs Fotos: zuerst je Container 01–05, anschließend darf 06 (befüllt) später folgen. Return benötigt genau ein Inhaltsfoto. Foto prüfen und ausdrücklich verwenden. Neuaufnahme ersetzt erst nach Bestätigung das bisherige Foto. Löschen ab einem Schritt entfernt auch die folgenden Fotos und setzt den Abschlussstatus zurück.
 - **Aufträge:** lokal gespeicherte Vorgänge fortsetzen, ansehen oder nach gesonderter Bestätigung löschen. Exportierte Aufträge sind zur Ansicht und zum erneuten Export verfügbar.
 - **Export:** nur vollständige Aufträge exportieren. Mit **ZIP teilen** die Android-Auswahl öffnen und beispielsweise ein E-Mail-Programm wählen. Mit **ZIP speichern** legt Androids Dateiauswahl den Speicherort fest. Für vollständigen Offline-Betrieb einen lokalen Ordner auswählen; externe Dokumentanbieter werden vom Benutzer gewählt und liegen ausserhalb der App.
-- **Galerie:** vorhandene lokale Fotos ansehen, filtern und einzeln teilen. **Zahnrad / Profil:** Microsoft-Konto sowie Kamera, Benachrichtigungen und genaue Alarme verwalten.
+- **Galerie:** vorhandene lokale Fotos ansehen, filtern und einzeln teilen. **Zahnrad / Profil:** lokalen Benutzer, eigene PIN, Benutzerwechsel und Geräteeinstellungen verwalten; Admins erhalten die lokale Benutzerverwaltung.
 
 ## Exportformat
 
@@ -67,7 +67,7 @@ Room und Fotos liegen intern, Fotos nicht als BLOB. Fotos werden als JPEG mit au
 
 Zum Teilen liegen separate ZIP- oder nummerierte JPEG-Kopien im privaten Cache. FileProvider gibt nur diese Dateien mit temporärem Lesezugriff an die gewählte App weiter. Jede Freigabe bekommt einen eigenen Pfad. Auftragslöschung entfernt die internen Kopien; weitere Freigaben bereinigen Kopien älter als sieben Tage. Android darf den Cache früher löschen. Das E-Mail-Programm verarbeitet und versendet den Anhang selbst.
 
-INTERNET, ACCESS_NETWORK_STATE und WAKE_LOCK unterstützen den optionalen Microsoft-Upload. Standort-, Mikrofon-, NFC- und breite Speicherrechte werden nicht angefordert. Android-Backup ist deaktiviert. Die Berechtigungsprüfung lässt nur die ausdrücklich benötigten Rechte zu.
+INTERNET, ACCESS_NETWORK_STATE und WAKE_LOCK bleiben aus dem bisherigen Microsoft-Adapter vorhanden. Der automatische Transport ist in Version 1.4.0 deaktiviert; lokale Benutzer und Rollen benötigen keinen Online-Dienst. Standort-, Mikrofon-, NFC- und breite Speicherrechte werden nicht angefordert. Android-Backup ist deaktiviert. Die Berechtigungsprüfung lässt nur die ausdrücklich benötigten Rechte zu.
 
 Der geprüfte Abhängigkeitsbericht enthält keine Firebase-Analytics-, Crashlytics- oder Cloud-Datenhaltungs-SDKs. Das vorgeschriebene gebündelte ML Kit bringt jedoch technische Hilfsbibliotheken `firebase-components`, `firebase-encoders`, `firebase-encoders-json`, `firebase-annotations` und Google DataTransport transitiv mit. Diese sind im Bericht ausgewiesen; eine völlige Abwesenheit aller Artefakte mit Firebase-Gruppennamen wird daher nicht behauptet. Der Quellcode-Audit begrenzt Netzwerkadapter auf die Microsoft-Anbindung; dies ist keine technische Netzwerksperre für Bibliothekscode. Es ist kein Firebase-Projekt konfiguriert.
 

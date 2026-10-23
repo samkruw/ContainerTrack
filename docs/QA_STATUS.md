@@ -1,37 +1,27 @@
-# Prüfstatus — Update 1.3.2 — 22.10.2026
+# Prüfstatus — Update 1.4.0 — 23.10.2026
 
 Repository [samkruw/ContainerTrack](https://github.com/samkruw/ContainerTrack), Branch `codex/native-android-app`, [Draft-PR #1](https://github.com/samkruw/ContainerTrack/pull/1). Nur Debug-APK; kein Merge, kein Release.
 
 ## Nachweis
 
-[GitHub-Lauf 39843067438](https://github.com/samkruw/ContainerTrack/actions/runs/39843067438) ist vollständig erfolgreich. Geprüfter App-/Test-Commit: `98c3e4e1768e3feefb3072efb1fa9a757e6420a8`. Nachfolgende Dokumentationsänderungen verändern diesen App-Stand nicht.
+[GitHub-Lauf 39905918718](https://github.com/samkruw/ContainerTrack/actions/runs/39905918718) vollständig erfolgreich. Geprüfter App-/Test-Commit: `ed7340c267bcef8a6bc670df3dc27c6e01a75aeb`. Nachfolgende Dokumentationsänderungen verändern diesen App-Stand nicht.
 
-[Debug-APK herunterladen](https://github.com/samkruw/ContainerTrack/actions/runs/39843067438/artifacts/12454336918). Das Artefakt enthält `app-debug.apk`, Version 1.3.2 / versionCode 6. GitHub-Artefakte haben begrenzte Aufbewahrungszeit.
+[Debug-APK herunterladen](https://github.com/samkruw/ContainerTrack/actions/runs/39905918718/artifacts/12481320545): ZIP mit `app-debug.apk`, Version 1.4.0 / versionCode 7. Artefakte haben begrenzte Aufbewahrungszeit.
 
-- 39 Unit-Tests je Debug/Release; keine Fehler oder übersprungenen Tests. Lint, Debug-APK, Android-Test-APK und neun Python-QA-Tests erfolgreich.
-- 58 Android-Tests erfolgreich, keine übersprungenen Tests; 25 Screenshot-PNGs erzeugt. Weitere Artefakte: Android-reports und Android-device-reports-and-screenshots.
-- Reale Room-Migration 1→2 bewahrt Aufträge, Foto-Pfade und Reminder ohne historischen Massen-Upload. Schema 2 bleibt unverändert.
-- Gebündelte ML-Kit-Erkennung von 0708 bei deaktiviertem validierten Netzwerk. Führende Null des optionalen Erstcontainers bleibt erhalten; Job und Erstcontainer werden atomar gespeichert.
-- Zweiphasige Delivery, sechs Pflichtfotos, einmaliger Completion-/Timer-/Queue-Effekt, Return, Konto-Bindung, per-Foto-Bestätigung, partieller Retry, persistiertes Retry-After und Fotoersatz geprüft.
-- Echte lokale JPEG-Galerie, Vollbild, Auswahl/Share-ID, ausgewählte Originalbytes, Cache-Bereinigung, ZIP-Chooser, Export, Alarm-Aktionen und zehn Container bei großer Schrift geprüft.
+- 42 Unit-Tests je Debug/Release ohne Fehler oder übersprungene Tests. Lint, Debug-APK, Android-Test-APK, Berechtigungsprüfung und neun Python-QA-Tests erfolgreich.
+- 67 Android-Tests erfolgreich, keine übersprungenen Tests. 25 Screenshot-PNGs erzeugt, darunter alle acht vollständigen nativen Ansichten. Die finale Übersicht wurde tatsächlich geöffnet und visuell geprüft: [Bildschirmnachweis mit Testdaten](../design/verification/reference-ui-v1.4.0.jpg).
+- Lokale Profile überstehen einen Store-/Prozessneustart; die Anmeldung bleibt ausschließlich im laufenden Prozess. PINs werden gesalzen gehasht, Fehlversuchssperren persistiert. Tests prüfen falsche PINs, PIN-Wechsel/-Reset, doppelte Namen, letzten Admin, Deaktivierung und unzulässige Mitarbeiter-Administration.
+- Reale Repository-Zugriffe prüfen Eigentümer, ausgewählte Foto-IDs, fremdes Teilen/Löschen, leere Sicht nach Logout und Admin-Zugriff auf vorhandene Aufträge. Editor-Test legt einen Benutzer an und deaktiviert ihn; echte MainActivity prüft Logout/PIN-Login und Navigation inklusive Activity-Neuerstellung.
+- Benachrichtigungsaktionen öffnen die App. Direkte alte CONFIRM-Aufrufe als fremder Mitarbeiter oder ohne Anmeldung verändern keine Reminder. Hinweise enthalten keine Auftragsreferenz.
+- Vollständiger Abschluss öffnet Teams-Sharing ohne Firmenanmeldung. Unvollständige Aufträge können den Abschluss nicht erzwingen. Dateien haben temporäre Lesefreigaben; bei fehlendem Teams-Empfänger öffnet sich Android-Teilen. Übergabe setzt keine Upload-Bestätigung und verändert Completion-/Timer-Marker nicht.
+- Neue lokale Aufträge erzeugen keine automatische Upload-Queue; alte Worker senden nicht mehr. Historische Daten bleiben erhalten. Explizite Room-Migration 1→2, Schema 2 unverändert, echte Offline-OCR von 0708, zweiphasige Delivery mit sechs Pflichtfotos, Return-Gate, ZIP-Export und Logger-Timer weiterhin geprüft.
 
-## Manuelles Teams-Teilen
+Unabhängiger statischer Review: keine wichtigen Restbefunde nach Korrektur von Reminder-Zugriff und unpassenden Transport-Warteanzeigen. Die Instrumentation authentifiziert vor jedem Test einen echten, ausschließlich testseitig angelegten lokalen Admin. Das ausgelieferte APK enthält keine Standardbenutzer oder Standard-PIN. Die synthetische Containerabbildung liegt ausschließlich in androidTest/assets. Kein behaupteter automatischer Pixelvergleich; es gibt keine freigegebenen Goldens.
 
-„In Teams teilen“ öffnet den Teams-JPEG-Empfänger direkt, ohne ContainerTrack-Firmenkonfiguration. Galerie: ausschließlich ausgewählte Fotos; Übertragungsansicht: vorhandene Auftragsfotos. Bei fehlendem Teams-Empfänger wird Android-Teilen geöffnet. Tests prüfen Direktstart, Fehler-Fallback mit unveränderten URI-Leserechten, Originalbytes und Galerie-Button/Foto-IDs. Der Button ist im echten unverbundenen Upload-Screen aktiv. Timer und bestätigter Uploadstatus bleiben unverändert. Die konkrete Empfänger-/Kanalauswahl in der installierten Teams-App muss auf dem Nutzergerät geprüft werden; ContainerTrack erzwingt keine Kanalliste.
+## Grenzen und Hardware-Abnahme
 
-## Visueller Abgleich
+Konten und Rollen gelten ausschließlich für die jeweilige App-Installation. Es gibt keine zentrale Anmeldung, Team-Galerie oder Synchronisierung zwischen Geräten. Rollen vergeben keine Microsoft-/Teams-Rechte. Eigene Teams-Anmeldung, angebotene Empfänger/Kanäle, reale SAF-Provider und Kamera/OEM/TalkBack-Verhalten müssen auf dem Nutzergerät geprüft werden. Ein lokaler PIN-Schutz ersetzt keinen Betriebssystemschutz auf einem kompromittierten Gerät.
 
-Alle acht ausgewählten Referenzansichten wurden im echten MainActivity inklusive Markenleiste/Navigation erfasst und manuell mit den gelieferten Bildern verglichen. [Bildschirmnachweis mit synthetischen Testdaten](../design/verification/reference-ui-v1.3.2.jpg), [Zuordnung und fachliche Unterschiede](../design-qa.md).
+Die letzte vergessene Admin-PIN kann nicht über einen Online-Dienst zurückgesetzt werden. Eine Update-Installation benötigt dasselbe Debug-Zertifikat; ein frischer Runner garantiert dies nicht. Keine Deinstallation als Update empfehlen: sie würde lokale Daten und Profile löschen.
 
-Graphit-/Lime-Palette, Inter mit echten variablen Schriftgewichten, flaches Container-Logo, große KT-/Container-Zahlen, rechteckige Aktionen, Trennlinien, Foto-Raster und drei Tabs mit ausgewähltem Unterstrich sind umgesetzt. Die Testabbildung ist ausschließlich in androidTest/assets; sie ist nicht im Produkt-APK enthalten. Keine freigegebenen Goldens: manueller Vergleich, kein behaupteter automatischer Pixelvergleich.
-
-Der vorangegangene Designstand erhielt einen unabhängigen statischen Review ohne verbleibende wichtige Befunde nach Korrektur der Share-Cache-Bereinigung. Original-JPG-Speichern über Androids Ordnerauswahl ist implementiert und statisch geprüft; eine reale SAF-Provider-/Hardware-Abnahme steht aus.
-
-## Noch nicht abgenommen
-
-- Echte Microsoft-Anmeldung und Graph-Übertragung ins Firmen-Team: öffentliche Tenant-/Client-/Redirect-/Team-/Channel-Konfiguration fehlt. Keine simulierte Anmeldung oder Übertragung. Einrichtung: [MICROSOFT_SETUP.md](MICROSOFT_SETUP.md).
-- Zentraler Team-Galerie-Zugriff und administrative Benutzerverwaltung: ohne verifizierte Rechte keine erfundenen Benutzer oder Rollen. Die vorhandene Galerie ist ausdrücklich lokal.
-- Update-Installation über bestehender APK mit identischem Debug-Zertifikat; ein frischer Runner garantiert dies nicht. Keine Deinstallation zum vermeintlichen Update empfehlen.
-- Reale Kamera/Licht/Fotoqualität, Standby/Boot/OEM-Verhalten, TalkBack und vollständige Hardware-Abnahme.
-
-INTERNET/ACCESS_NETWORK_STATE/WAKE_LOCK sind vorgesehen. Keine Standort-/Mikrofon-/NFC-/breiten Speicherrechte. Direkter Artefakt-Download in die Cloud ist durch den Netzwerk-Proxy eingeschränkt; die Bildschirmübersicht wurde aus dem regulären CI-Protokoll extrahiert. Der GitHub-Download-Link bleibt für berechtigte Benutzer verfügbar.
+Vollständiger Ablauf und Voraussetzungen: [UPDATE_1_4_0.md](UPDATE_1_4_0.md). Der alte Microsoft-Adapter bleibt als deaktivierter Kompatibilitätscode erhalten; dessen Konfiguration ist für diesen Ablauf nicht erforderlich. Direkter Artefakt-Download in die Cloud kann durch den Proxy eingeschränkt sein; der Bildschirmnachweis wurde aus dem regulären CI-Protokoll gewonnen.
