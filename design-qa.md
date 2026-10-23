@@ -1,10 +1,8 @@
-# Native Android – Referenzabgleich
+# Native Android — Referenzabgleich 1.4.1
 
-final result: Prüfung für 1.4.1 läuft; letzter vollständiger Nachweis siehe QA_STATUS.md
+final result: passed (manueller visueller Abgleich)
 
-## Ziel
-
-Die acht am 22.10.2026 vom Benutzer ausgewählten Bildvorlagen 1000036738–1000036745 werden in der bestehenden Kotlin/Compose-App umgesetzt. Kein Browser-/Web-Prototyp; die echte Android-Darstellung ist das Vergleichsobjekt. Quellbilder lokal unter /tmp/codex-remote-attachments; nicht als Produktbilder veröffentlicht.
+Die ausgewählten Bildvorlagen werden in der bestehenden Kotlin/Compose-App umgesetzt. Nach der letzten Nutzeranweisung entfallen Anmeldung, PINs und Benutzer-/Rollenverwaltung vollständig. Es gibt keine Team-Galerie; die Galerie zeigt lokale Daten.
 
 ## Zuordnung
 
@@ -23,22 +21,12 @@ Die acht am 22.10.2026 vom Benutzer ausgewählten Bildvorlagen 1000036738–1000
 
 Referenzen 592×1280; Android-Capture 1080×2340 mit nahezu identischem Seitenverhältnis. App-eigene Flächen werden verglichen; Systemleisten bleiben Androids Verantwortung. Grundfläche#151A1D, Lime#BEFF42, Weiß#F8FAF9, Linien#3B4348, Inter mit OFL-Lizenz. Markenleiste60dp, Navigation72dp, Außenabstand16dp, primäre Trefferfläche50dp, Radien5–10dp. Haupttitel44sp, Kennungen56sp, Eingaben52sp. Keine Standard-Material-Pills als Hauptnavigation, kein Glow.
 
-## Zulässige fachliche Unterschiede
+## Fachliche Anpassungen
 
-Sechs Delivery-Pflichtfotos bleiben verbindlich; Beispielzahlen4/5 werden nicht übernommen. Namen, drei Benutzer, Administratorrolle und gesendete Dateien werden nicht erfunden. Die letzte Benutzeranweisung vom 23.10.2026 entfernt sämtliche Anmeldung, PINs und Rollen. Die Galerie enthält ausschließlich die auf diesem Gerät gespeicherten Aufträge/Fotos, unabhängig von früheren Benutzerzuordnungen. Pflichtangaben stehen im Formular weiterhin zur Verfügung.
+Sechs Delivery-Pflichtfotos bleiben verbindlich. Die Beispiele mit vier oder fünf Fotos ersetzen diese Vorgabe nicht. Pflichtangaben bleiben im Formular erreichbar. Alle lokalen Aufträge und Fotos sind unabhängig von früheren Benutzerzuordnungen zugänglich. Geräteeinstellungen ersetzen das Profil; Benutzerverwaltung und Anmeldung erhalten keine Ersatzattrappen. Teams öffnet seine eigene Zielauswahl; Teilen bestätigt keinen Upload und startet keinen Timer erneut.
 
 ## Verifikation
 
-GitHub-Lauf [39905918718](https://github.com/samkruw/ContainerTrack/actions/runs/39905918718), geprüfter Commit `ed7340c267bcef8a6bc670df3dc27c6e01a75aeb`: Build und Gerätetests erfolgreich. 42 Unit-Tests je Variante, 67 Android-Tests ohne Fehler/übersprungene Tests, neun Python-QA-Tests, Lint und APK-Prüfung bestanden. 25 Screenshot-PNGs erzeugt, darunter alle acht vollständigen Referenzansichten.
+[GitHub-Lauf 39909135079](https://github.com/samkruw/ContainerTrack/actions/runs/39909135079), geprüfter App-/Test-Commit `8d82240fdbabe7c583e48eb6cce67017ef915a85`: 39 Unit-Tests je Variante, 60 Android-Tests, neun Python-QA-Tests, Lint und APK-Berechtigungsprüfung erfolgreich. 24 Screenshot-PNGs, darunter sieben aktuelle Referenzansichten.
 
-Die finale Übersicht wurde tatsächlich geöffnet und mit den gelieferten Referenzen verglichen. [Bildschirmnachweis mit synthetischen Testdaten](design/verification/reference-ui-v1.4.0.jpg). Kontrolliert: Graphit/Lime, Inter-Gewichte, große Kennungen, einzeiliger Auftragstitel bei Standardschrift, Segmente, echte Foto-Raster und Auswahlmarken, eigenständige Anmeldung, Markenleiste und Navigation mit Unterstrich. Kein automatischer Pixelvergleich: dafür sind keine freigegebenen Goldens vorhanden.
-
-Die fachlichen Unterschiede oben bleiben bestehen. Galerie, Dateiliste und Rechteansicht zeigen reale lokale Daten. Lokale Rollen vergeben keine Microsoft-/Teams-Rechte; die Übergabe an Teams bestätigt keinen Versand. Teams-/SAF-/Hardware-Abnahme siehe [QA_STATUS.md](docs/QA_STATUS.md).
-
-## Zusatz 1.3.2: manueller Teams-Button
-
-Die zusätzlichen Aktionen in Galerie und Übertragungsansicht wurden im finalen Emulatorbild tatsächlich angesehen. Galerie aktiviert Teams nur für ausgewählte Originalfotos; der Upload-Screen bietet die Aktion unabhängig von der Firmenanmeldung. Der damalige Stand umfasste 58 erfolgreiche Gerätetests; der aktuelle Nachweis steht oben. Neue Funktion und Grenzen: [UPDATE_1_3_2.md](docs/UPDATE_1_3_2.md).
-
-## Zusatz 1.4.0: ausdrücklich lokal
-
-Die neue Benutzeranweisung vom 23.10.2026 ersetzt die Microsoft-Anmeldung durch lokale PIN-Profile und Admin-/Mitarbeiterrollen ohne Online-Dienst. Die Team-Galerie entfällt. Im finalen Bildnachweis sind die echte lokale Anmeldung und die lokale Benutzerverwaltung sichtbar. Die Fotoprüfung bietet „Abschließen & in Teams teilen“; die Übergabeansicht zeigt lokale Dateien statt einer unbestätigten automatischen Kanalübertragung. Kein erfundener Benutzer, kein behaupteter Versand. Details: [UPDATE_1_4_0.md](docs/UPDATE_1_4_0.md).
+Die [finale Übersicht mit synthetischen Testdaten](design/verification/reference-ui-v1.4.1.jpg) wurde tatsächlich geöffnet und visuell geprüft: Graphit/Lime, Inter, große Kennungen, Segmente, Foto-Raster, Auswahlmarken, Markenleiste, Navigation mit Unterstrich sowie Einstellungen ohne Login/Rollen. Kein automatischer Pixelvergleich; keine freigegebenen Goldens vorhanden. Reale Teams-/SAF-/Hardware-Prüfung siehe [QA_STATUS.md](docs/QA_STATUS.md).
