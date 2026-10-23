@@ -28,6 +28,10 @@ class SelectedPhotoSharingTest {
             assertEquals("com.microsoft.teams",intent.`package`)
             assertEquals(Intent.ACTION_SEND_MULTIPLE,intent.action)
             assertEquals(2,intent.getParcelableArrayListExtra<Uri>(Intent.EXTRA_STREAM)!!.size)
+            val message=intent.getStringExtra(Intent.EXTRA_TEXT)!!
+            assertTrue(message.contains("Auftrag: FINISH"))
+            assertTrue(message.contains("Container: 0701, 0702"))
+            assertTrue(message.contains("Fotos: 2"))
             assertEquals(marker,db.dao().job(id)!!.job.completionTriggeredAt)
             assertTrue(db.dao().uploadPhotos(id).all{it.uploadedAt==null})
         } finally {repo.deleteJob(id);db.close()}
@@ -51,10 +55,16 @@ class SelectedPhotoSharingTest {
             val intent=repo.prepareSelectedPhotoShare(setOf(photo.id))
             assertFalse(expired.parentFile!!.exists())
             assertEquals("image/jpeg",intent.type);assertEquals(Intent.ACTION_SEND,intent.action)
+            val message=intent.getStringExtra(Intent.EXTRA_TEXT)!!
+            assertTrue(message.contains("Auftrag: SELECTED"))
+            assertTrue(message.contains("Container: 0702"))
+            assertTrue(message.contains("Fotos: 1"))
+            assertFalse(message.contains("0701"))
             val uri=intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)!!
             assertArrayEquals(byteArrayOf(2),app.contentResolver.openInputStream(uri)!!.use{it.readBytes()})
             val teamsIntent=repo.prepareSelectedPhotoShare(setOf(photo.id),teamsPackage="com.microsoft.teams")
             assertEquals("com.microsoft.teams",teamsIntent.`package`)
+            assertEquals(message,teamsIntent.getStringExtra(Intent.EXTRA_TEXT))
             assertArrayEquals(byteArrayOf(2),app.contentResolver.openInputStream(teamsIntent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)!!)!!.use{it.readBytes()})
             assertEquals(before,db.dao().job(id)!!.job.completionTriggeredAt)
             assertTrue(db.dao().uploadPhotos(id).all{it.uploadedAt==null})

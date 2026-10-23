@@ -204,7 +204,7 @@ fun TrackApp(vm: TrackViewModel = viewModel()) {
             if (teamsAvailable) PrimaryButton("In Teams-App teilen",enabled=!busy && batch.containers.any { it.photos.isNotEmpty() }) { vm.sharePhotos(batch.job.id,teams=true);shareJob=null }
             else Text("Teams-App nicht verfügbar. Fotos können über Android geteilt werden.")
             OutlinedButton(onClick={vm.sharePhotos(batch.job.id);shareJob=null},enabled=!busy && batch.containers.any { it.photos.isNotEmpty() },modifier=Modifier.fillMaxWidth().heightIn(min=48.dp)) { Text("Fotos über Android teilen") }
-            Text("Wähle in Teams den Empfänger oder Kanal und bestätige dort das Senden. Der Teilen-Dialog bestätigt keinen Upload.",style=MaterialTheme.typography.bodySmall)
+            Text("Teams bestimmt die angebotenen Empfänger; eventuell sind nur Chats verfügbar. Auftragsinfos lassen sich unter Übertragungsdetails kopieren, falls Teams den Begleittext weglässt. Der Teilen-Dialog bestätigt keinen Upload.",style=MaterialTheme.typography.bodySmall)
             Spacer(Modifier.height(24.dp))
         }
     } }

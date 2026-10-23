@@ -209,6 +209,8 @@ class TrackRepository(private val context: Context, val database: TrackDatabase,
                 } }
                 val intent = photoShareIntent(context,photos,teamsPackage)
                 intent.putExtra(Intent.EXTRA_SUBJECT,batch.job.draft.referenceNumber)
+                val numbers=batch.ordered.filter{item->item.photos.any{photoId==null || it.id==photoId}}.map{it.container.containerNumber}
+                intent.putExtra(Intent.EXTRA_TEXT,photoShareText(batch.job.draft,numbers,photos.size))
                 intent
             } catch (e: Exception) { directory.deleteRecursively();throw e }
         }
@@ -225,7 +227,13 @@ class TrackRepository(private val context: Context, val database: TrackDatabase,
                     val folder=File(directory,jobId).apply { check(mkdirs() || isDirectory) }
                     File(folder,photoName(number,photo.step)).also { File(photo.localPath).copyTo(it) }
                 }
-                photoShareIntent(context,files,teamsPackage)
+                val text=selected.groupBy{it.first}.map{(jobId,rows)->
+                    photoShareText(checkedJob(jobId).job.draft,rows.map{it.second},rows.size)
+                }.joinToString("\n\n")
+                photoShareIntent(context,files,teamsPackage).apply {
+                    putExtra(Intent.EXTRA_TEXT,text)
+                    putExtra(Intent.EXTRA_SUBJECT,"Container Track · Fotodokumentation")
+                }
             } catch(e:Exception) { directory.deleteRecursively();throw e }
         }
     }

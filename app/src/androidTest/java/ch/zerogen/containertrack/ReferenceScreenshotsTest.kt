@@ -114,6 +114,14 @@ class ReferenceScreenshotsTest {
         compose.onNodeWithText("Alle 6 Fotos erfolgreich gesendet").assertDoesNotExist()
         compose.onNodeWithText("In Teams teilen").assertIsEnabled()
         capture("26-reference-upload")
+        compose.onNodeWithText("Auftragsinfos kopieren").performClick()
+        compose.runOnIdle {
+            val clipboard=compose.activity.getSystemService(android.content.ClipboardManager::class.java)
+            val text=clipboard.primaryClip!!.getItemAt(0).text.toString()
+            org.junit.Assert.assertTrue(text.contains("KT: 2480"))
+            org.junit.Assert.assertTrue(text.contains("Container: 0042"))
+            org.junit.Assert.assertTrue(text.contains("Fotos: 6"))
+        }
     }
 
 }

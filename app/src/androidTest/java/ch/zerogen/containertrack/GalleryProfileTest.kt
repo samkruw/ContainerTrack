@@ -29,9 +29,18 @@ class GalleryProfileTest {
             compose.onNodeWithText("RET-GALLERY · 0708").performClick()
             compose.onNodeWithText("0708_02.jpg").assertDoesNotExist()
             compose.onNodeWithText("In Teams teilen").assertIsNotEnabled()
+            compose.onNodeWithText("Auftragsinfos kopieren").assertIsNotEnabled()
             compose.onNodeWithContentDescription("Foto 1 auswählen").performClick()
             compose.onNodeWithText("In Teams teilen").assertIsEnabled().performClick()
             compose.runOnIdle { assertEquals(setOf("gallery-photo"),teamsShared) }
+            compose.onNodeWithText("Auftragsinfos kopieren").assertIsEnabled().performClick()
+            compose.runOnIdle {
+                val clipboard=app.getSystemService(android.content.ClipboardManager::class.java)
+                val text=clipboard.primaryClip!!.getItemAt(0).text.toString()
+                org.junit.Assert.assertTrue(text.contains("Auftrag: RET-GALLERY"))
+                org.junit.Assert.assertTrue(text.contains("Container: 0708"))
+                org.junit.Assert.assertTrue(text.contains("Fotos: 1"))
+            }
             compose.onNodeWithContentDescription("0708 Foto 1").performClick()
             compose.waitUntil(10_000) { compose.onAllNodesWithContentDescription("Foto in Vollansicht").fetchSemanticsNodes().isNotEmpty() }
             compose.onNodeWithContentDescription("Foto in Vollansicht").assertIsDisplayed()

@@ -104,7 +104,7 @@ fun PermissionsContent() {
         }) { Text("Genaue Alarme erlauben") }
         HorizontalDivider()
         Text("Offline und Datenschutz", style = MaterialTheme.typography.titleLarge)
-        Text("Aufträge, OCR und Fotos werden auf diesem Gerät verarbeitet. Zum Senden werden ausgewählte nummerierte Fotos an Android-Teilen oder die Teams-App übergeben. Dort wählst du Empfänger oder Kanal und bestätigst das Senden. Container Track benötigt keine Anmeldung. Fotos liegen im internen App-Speicher. Android-Backups sind deaktiviert.")
+        Text("Aufträge, OCR und Fotos werden auf diesem Gerät verarbeitet. Zum Senden werden ausgewählte nummerierte Fotos an Android-Teilen oder die Teams-App übergeben. Teams bestimmt die angebotenen Empfänger. Kanalbeiträge können das direkte Öffnen von Teams erfordern. Begleittext kann dort über „Auftragsinfos kopieren“ eingefügt werden. Container Track benötigt keine Anmeldung. Fotos liegen im internen App-Speicher. Android-Backups sind deaktiviert.")
         Text("ZIP-Dateien werden am selbst gewählten Speicherort abgelegt oder über Android an eine von Ihnen ausgewählte App übergeben. Beim Teilen kann diese App den Anhang versenden. Bei Deinstallation werden die internen Aufträge und Fotos gelöscht; separat gespeicherte Dateien bleiben erhalten.")
         Text("App-Berechtigungen", style = MaterialTheme.typography.titleMedium)
         OutlinedButton(modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp), onClick = {

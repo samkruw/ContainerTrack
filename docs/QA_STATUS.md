@@ -1,3 +1,7 @@
+# Update 1.4.2 — Prüfung läuft
+
+Neue Korrektur: Auftragsinformationen als Begleittext und ausdrücklich kopierbar; Teams-Ziele werden nicht von ContainerTrack erzwungen. Der folgende Nachweis gehört noch zu Version 1.4.1.
+
 # Prüfstatus — Update 1.4.1 — 23.10.2026
 
 Geprüfter App-/Test-Commit: `8d82240fdbabe7c583e48eb6cce67017ef915a85`. [GitHub-Lauf 39909135079](https://github.com/samkruw/ContainerTrack/actions/runs/39909135079): Build und Gerätetests erfolgreich. Spätere Dokumentations-Commits ändern weder App noch Tests.

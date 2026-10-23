@@ -27,10 +27,15 @@ fun UploadScreen(batch:JobWithContainers,busy:Boolean,onShare:()->Unit,onOrders:
             Text(if(batch.containers.size==1)"Container ${batch.ordered.first().container.containerNumber}" else "${batch.containers.size} Container",fontSize=36.sp,lineHeight=42.sp,fontWeight=FontWeight.ExtraBold)
         }
         item {
-            PrimaryIconButton("In Teams teilen",Icons.Outlined.Groups,!busy && photos.isNotEmpty(),onTeamsShare)
-            Text("Chat oder Kanal in Teams auswählen und dort senden. Ohne Teams-App öffnet sich Android-Teilen.",color=Muted,style=MaterialTheme.typography.bodyMedium)
+            val info=photoShareText(batch.job.draft,photos.map{it.first},photos.size)
+            Text(info,color=Muted,style=MaterialTheme.typography.bodySmall)
+            PhotoShareInfoAction(info,!busy && photos.isNotEmpty())
         }
-        item {Information("Die Fotos bleiben lokal gespeichert. Das Öffnen von Teams bestätigt keinen Versand; bei Abbruch kannst du erneut teilen.")}
+        item {
+            PrimaryIconButton("In Teams teilen",Icons.Outlined.Groups,!busy && photos.isNotEmpty(),onTeamsShare)
+            Text("Teams bestimmt die verfügbaren Empfänger; über Teilen sind je nach Version nur Chats verfügbar. Ohne Teams-App öffnet sich Android-Teilen.",color=Muted,style=MaterialTheme.typography.bodyMedium)
+        }
+        item {Information("Teams kann den Begleittext bei Fotos weglassen. Kopiere dann die Auftragsinfos und füge sie in Teams ein. Für einen Kanal öffne Teams direkt und füge dort Fotos und Text hinzu. Das Öffnen von Teams bestätigt keinen Versand.")}
         item {Text("${photos.size} nummerierte Original-JPGs",color=Muted);HorizontalDivider(Modifier.padding(top=10.dp),color=Hairline)}
         items(photos,key={it.second.id}){(number,photo)->
             Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)) {

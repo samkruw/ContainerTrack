@@ -106,6 +106,10 @@ fun GalleryScreen(jobs:List<JobWithContainers>,uploads:List<UploadPhotoEntity>,o
         if(local.isNotEmpty()) {
             Text("${chosen.size} von ${if(opened==null)local.size else group.size} Fotos ausgewählt",color=Muted,style=MaterialTheme.typography.bodySmall)
             PrimaryIconButton("Fotos herunterladen",Icons.Outlined.FileDownload,chosen.isNotEmpty()){onSaveSelected(chosen.map{it.photoId}.toSet())}
+            val info=chosen.groupBy{it.jobId}.mapNotNull{(jobId,photos)->
+                jobs.find{it.job.id==jobId}?.let{photoShareText(it.job.draft,photos.map{p->p.containerNumber},photos.size)}
+            }.joinToString("\n\n")
+            PhotoShareInfoAction(info,chosen.isNotEmpty())
             OutlineAction("In Teams teilen",Icons.Outlined.Groups,chosen.isNotEmpty() && onTeamsShareSelected!=null) {
                 onTeamsShareSelected?.invoke(chosen.map{it.photoId}.toSet())
             }
