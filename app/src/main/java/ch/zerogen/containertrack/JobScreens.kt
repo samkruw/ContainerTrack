@@ -87,7 +87,6 @@ fun ScanJobsScreen(jobs: List<JobWithContainers>, active: String?, onJob: (JobWi
 fun SetupScreen(vm:TrackViewModel,busy:Boolean,onCreated:(String)->Unit) {
     val kindName by vm.formKind.collectAsStateWithLifecycle()
     val reference by vm.formReference.collectAsStateWithLifecycle()
-    val kt by vm.formKt.collectAsStateWithLifecycle()
     val order by vm.formOrder.collectAsStateWithLifecycle()
     val quantity by vm.formQuantity.collectAsStateWithLifecycle()
     val quick by vm.formQuick.collectAsStateWithLifecycle()
@@ -99,7 +98,7 @@ fun SetupScreen(vm:TrackViewModel,busy:Boolean,onCreated:(String)->Unit) {
     var attempted by rememberSaveable{mutableStateOf(false)}
     var details by rememberSaveable(kindName){mutableStateOf(kind==JobKind.RETURN)}
     var scanning by remember{mutableStateOf(false)}
-    val draft=JobDraft(kind,reference,kt,order,quantity.toIntOrNull() ?: 0,quick,work)
+    val draft=JobDraft(kind=kind,referenceNumber=reference,orderValue=order,quantity=quantity.toIntOrNull() ?: 0,quick=quick,additionalWork=work)
     val errors=if(attempted)draft.errors(stopped) else emptyMap()
     val numberError=if(number.isNotBlank())containerError(number,emptySet()) else null
     Column(Modifier.fillMaxSize().padding(horizontal=16.dp)) {
@@ -112,12 +111,11 @@ fun SetupScreen(vm:TrackViewModel,busy:Boolean,onCreated:(String)->Unit) {
             if(locked){Information("Zuerst den Logger stoppen. Erst dann sind die Formularfelder freigegeben.",true);PrimaryButton("Logger gestoppt – bestätigen",!busy){vm.confirmStopped()}}
             else Information("Logger gestoppt · ${localTime(stopped!!)}")
         }
-        FormField(if(kind==JobKind.DELIVERY)"KT-Nummer" else "Return Number",if(kind==JobKind.DELIVERY)kt else reference,!locked && !busy,errors[if(kind==JobKind.DELIVERY)"kt" else "referenceNumber"]){vm.field(if(kind==JobKind.DELIVERY)"formKt" else "formReference",it)}
+        FormField(if(kind==JobKind.DELIVERY)"Order Number" else "Return Number",reference,!locked && !busy,errors["referenceNumber"]){vm.field("formReference",it)}
         FormField("Container-Nr.",number,!locked && !busy,if(attempted)numberError else null){if(it.length<=4 && it.all{c->c in '0'..'9'})vm.field("formContainer",it)}
         OutlineAction("Nummer scannen",Icons.Outlined.PhotoCamera,!locked && !busy){scanning=true}
         TextButton(onClick={details=!details},modifier=Modifier.fillMaxWidth().heightIn(min=48.dp)) {Text("Auftragsdaten · Pflichtangaben");Spacer(Modifier.weight(1f));Icon(if(details)Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,null)}
         if(details) {
-            if(kind==JobKind.DELIVERY)FormField("Order Number",reference,!busy,errors["referenceNumber"]){vm.field("formReference",it)}
             FormField("Order / Container-Typ",order,!locked && !busy,errors["orderValue"]){vm.field("formOrder",it)}
             OutlinedTextField(quantity,{if(it.length<=2 && it.all{c->c in '0'..'9'})vm.field("formQuantity",it)},Modifier.fillMaxWidth(),enabled=!locked && !busy,label={Text("Quantity · 1 bis 50")},singleLine=true,keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Number),isError=errors["quantity"]!=null,supportingText={errors["quantity"]?.let{Text(it)}})
             if(kind==JobKind.RETURN) {
@@ -157,7 +155,7 @@ fun SetupScreen(vm:TrackViewModel,busy:Boolean,onCreated:(String)->Unit) {
 fun FormField(label: String, value: String, enabled: Boolean, error: String?, multiline: Boolean = false, onChange: (String) -> Unit) {
     val focus=androidx.compose.ui.platform.LocalFocusManager.current
     OutlinedTextField(value = value, onValueChange = onChange, label = { Text(label) }, enabled = enabled,
-        modifier = Modifier.fillMaxWidth(), keyboardOptions=KeyboardOptions(imeAction=androidx.compose.ui.text.input.ImeAction.Done),keyboardActions=androidx.compose.foundation.text.KeyboardActions(onDone={focus.clearFocus()}), textStyle = MaterialTheme.typography.bodyLarge.copy(fontSize=if(label=="KT-Nummer" || label=="Return Number" || label=="Container-Nr.")52.sp else 18.sp,fontWeight=if(label=="KT-Nummer" || label=="Return Number" || label=="Container-Nr.")FontWeight.ExtraBold else FontWeight.Normal,lineHeight=if(label=="KT-Nummer" || label=="Return Number" || label=="Container-Nr.")60.sp else 24.sp), singleLine = !multiline, minLines = 1, maxLines = if (multiline) 4 else 1,
+        modifier = Modifier.fillMaxWidth(), keyboardOptions=KeyboardOptions(imeAction=androidx.compose.ui.text.input.ImeAction.Done),keyboardActions=androidx.compose.foundation.text.KeyboardActions(onDone={focus.clearFocus()}), textStyle = MaterialTheme.typography.bodyLarge.copy(fontSize=if(label=="Order Number" || label=="Return Number" || label=="Container-Nr.")52.sp else 18.sp,fontWeight=if(label=="Order Number" || label=="Return Number" || label=="Container-Nr.")FontWeight.ExtraBold else FontWeight.Normal,lineHeight=if(label=="Order Number" || label=="Return Number" || label=="Container-Nr.")60.sp else 24.sp), singleLine = !multiline, minLines = 1, maxLines = if (multiline) 4 else 1,
         isError = error != null, supportingText = if (error != null) ({ Text(error) }) else null)
 }
 
@@ -171,9 +169,9 @@ fun JobScreen(batch: JobWithContainers, vm: TrackViewModel, busy: Boolean, onSca
     LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item {
             Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){StatusBadge(job.draft.kind.label.uppercase());StatusBadge(batch.status,confirmed=batch.complete)}
-            ScreenTitle(orderIdentifier(batch),if(job.draft.kt!=job.draft.referenceNumber)job.draft.referenceNumber else null)
+            ScreenTitle(orderIdentifier(batch))
         }
-        item { Information("${job.draft.orderValue}\n${batch.completedCount} / ${job.draft.quantity} Container vollständig\n${if (job.draft.kind == JobKind.DELIVERY) "ZRH · ${job.draft.kt}" else "Logger gestoppt · ${job.loggerStoppedAt?.let(::localTime) ?: "–"}"}") }
+        item { Information("${job.draft.orderValue}\n${batch.completedCount} / ${job.draft.quantity} Container vollständig\n${if (job.draft.kind == JobKind.DELIVERY) "Lieferung" else "Logger gestoppt · ${job.loggerStoppedAt?.let(::localTime) ?: "–"}"}") }
         items(batch.ordered, key = { it.container.id }) { item ->
             ContainerDetails(item,job.draft.kind,job.exportedAt != null,expanded == item.container.id,
                 onExpand = { expanded = if (expanded == item.container.id) null else item.container.id },

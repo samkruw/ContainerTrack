@@ -12,8 +12,10 @@ class OrderFiltersTest {
         }
         return JobWithContainers(job,items)
     }
-    @Test fun searchesKtAndReferenceAndPreservesLeadingZeros() {
-        assertTrue(matchesOrder(batch(),"zrh-007",OrderFilter.ALL,null))
+    @Test fun searchesReferenceAndContainersWithoutLegacyKt() {
+        assertFalse(matchesOrder(batch(),"zrh-007",OrderFilter.ALL,null))
+        assertTrue(matchesOrder(batch(),"0701",OrderFilter.ALL,null))
+        assertEquals("ORDER-LONG",orderIdentifier(batch()))
         assertTrue(matchesOrder(batch(),"order-long",OrderFilter.ALL,null))
         assertFalse(matchesOrder(batch(),"not-present",OrderFilter.ALL,null))
     }

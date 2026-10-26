@@ -4,10 +4,14 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class GalleryFiltersTest {
-    @Test fun gallerySearchIncludesOrderWhenKtDiffers() {
-        val photo=GalleryPhoto("p","j","KT-123","0708",1,"/local/p.jpg",null,"ORDER-456")
+    @Test fun galleryIgnoresLegacyKtAndUsesOrderReference() {
+        val job=JobEntity(id="j",draft=JobDraft(JobKind.DELIVERY,"ORDER-456","KT-123","20 ft"),createdAt=1L)
+        val container=ContainerEntity(id="c",jobId="j",sequenceIndex=1,containerNumber="0708")
+        val row=PhotoEntity(id="p",containerId="c",step=1,localPath="/local/p.jpg",capturedAt=1L)
+        val photo=galleryPhotos(listOf(JobWithContainers(job,listOf(ContainerWithPhotos(container,listOf(row))))),emptyList()).single()
         assertTrue(photo.matches("order-456","0708",null))
-        assertTrue(photo.matches("kt-123","",null))
+        assertFalse(photo.matches("kt-123","",null))
+        assertEquals("ORDER-456",photo.reference)
         assertFalse(photo.matches("other","",null))
     }
     @Test fun galleryOnlyMapsRealPhotoRowsAndConfirmedUploaders() {

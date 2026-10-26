@@ -4,7 +4,7 @@ enum class OrderFilter { ACTIVE, NEEDS_FILL, UPLOAD_ERROR, ALL }
 
 fun matchesOrder(batch: JobWithContainers, query: String, filter: OrderFilter, sync: UploadJobEntity?, hasOpenReminder: Boolean = false): Boolean {
     val needle = query.trim()
-    if (needle.isNotEmpty() && listOf(batch.job.draft.kt,batch.job.draft.referenceNumber).none { it.contains(needle,true) }) return false
+    if (needle.isNotEmpty() && !batch.job.draft.referenceNumber.contains(needle,true) && batch.containers.none { it.container.containerNumber.contains(needle,true) }) return false
     return when (filter) {
         OrderFilter.ALL -> true
         OrderFilter.ACTIVE -> batch.job.exportedAt == null || hasOpenReminder || (sync != null && sync.state != "SYNCED")

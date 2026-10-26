@@ -25,7 +25,7 @@ class PhotoSharingTest {
     @Test fun missingTeamsFallsBackToChooserPreservingSelectedPhotoGrants() {
         val uri=Uri.parse("content://${context.packageName}.exports/shared-photos/0708_01.jpg")
         val intent=Intent(Intent.ACTION_SEND).setType("image/jpeg").setPackage("com.microsoft.teams")
-            .putExtra(Intent.EXTRA_TEXT,"KT: 2481\nContainer: 0708").putExtra(Intent.EXTRA_STREAM,uri).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            .putExtra(Intent.EXTRA_TEXT,"Auftrag: ORDER-2481\nContainer: 0708").putExtra(Intent.EXTRA_STREAM,uri).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         intent.clipData=android.content.ClipData.newRawUri("0708_01.jpg",uri)
         val launches=mutableListOf<Intent>()
         launchShareIntent(intent) {
@@ -36,7 +36,7 @@ class PhotoSharingTest {
         assertEquals(Intent.ACTION_CHOOSER,launches.last().action)
         val fallback=launches.last().getParcelableExtra<Intent>(Intent.EXTRA_INTENT)!!
         assertNull(fallback.`package`)
-        assertEquals("KT: 2481\nContainer: 0708",fallback.getStringExtra(Intent.EXTRA_TEXT))
+        assertEquals("Auftrag: ORDER-2481\nContainer: 0708",fallback.getStringExtra(Intent.EXTRA_TEXT))
         assertEquals(uri,fallback.getParcelableExtra<Uri>(Intent.EXTRA_STREAM))
         assertEquals(uri,fallback.clipData!!.getItemAt(0).uri)
         assertTrue(fallback.flags and Intent.FLAG_GRANT_READ_URI_PERMISSION!=0)

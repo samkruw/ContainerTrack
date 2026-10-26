@@ -43,7 +43,7 @@ fun OrderListScreen(jobs:List<JobWithContainers>,uploads:List<UploadJobEntity>,p
         } }
         if(!online && photos.any{it.uploadedAt==null}) item { Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) { Icon(Icons.Outlined.CloudOff,null,tint=Warning,modifier=Modifier.size(18.dp));Text("Offline · ${photos.count{it.uploadedAt==null}} Fotos warten",color=Warning,style=MaterialTheme.typography.bodySmall) } }
         if(filtersExpanded || query.isNotBlank() || filter!=OrderFilter.ACTIVE) {
-        item { OutlinedTextField(query,onQuery,Modifier.fillMaxWidth(),placeholder={Text("KT oder Container suchen")},label={Text("Aufträge suchen")},leadingIcon={Icon(Icons.Outlined.Search,null)},singleLine=true,shape=MaterialTheme.shapes.small) }
+        item { OutlinedTextField(query,onQuery,Modifier.fillMaxWidth(),placeholder={Text("Auftrag oder Container suchen")},label={Text("Aufträge suchen")},leadingIcon={Icon(Icons.Outlined.Search,null)},singleLine=true,shape=MaterialTheme.shapes.small) }
         item { Row(Modifier.horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(6.dp)) {
             listOf(OrderFilter.ACTIVE to "Aktiv",OrderFilter.NEEDS_FILL to "Befüllt-Foto fehlt",OrderFilter.UPLOAD_ERROR to "Upload-Fehler",OrderFilter.ALL to "Alle").forEach{(value,label)->
                 FilterChip(filter==value,{onFilter(value)},label={Text(label)},modifier=Modifier.heightIn(min=48.dp),shape=MaterialTheme.shapes.small)
@@ -58,7 +58,7 @@ fun OrderListScreen(jobs:List<JobWithContainers>,uploads:List<UploadJobEntity>,p
                     Icon(if(active.job.draft.kind==JobKind.DELIVERY)Icons.Outlined.LocalShipping else Icons.Outlined.Undo,null,tint=Lime)
                     Text(active.job.draft.kind.label.uppercase(Locale.GERMAN),color=Lime,fontWeight=FontWeight.SemiBold)
                 }
-                Text(orderIdentifier(active),fontSize=56.sp,lineHeight=64.sp,fontWeight=FontWeight.ExtraBold)
+                Text(orderIdentifier(active),fontSize=if(orderIdentifier(active).length>8)32.sp else 56.sp,lineHeight=if(orderIdentifier(active).length>8)40.sp else 64.sp,fontWeight=FontWeight.ExtraBold,maxLines=2,overflow=androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                 Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(20.dp)) {
                     Column(Modifier.weight(1f)) { Text("Container-Nr.",color=Muted,style=MaterialTheme.typography.bodySmall);Text(active.ordered.firstOrNull{it.photos.size<active.job.draft.kind.photoCount}?.container?.containerNumber ?: "Noch offen",fontSize=40.sp,lineHeight=46.sp,fontWeight=FontWeight.Bold) }
                     Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(8.dp)) {
@@ -82,7 +82,6 @@ fun OrderListScreen(jobs:List<JobWithContainers>,uploads:List<UploadJobEntity>,p
                     Column(Modifier.weight(1f)) {
                         Text(batch.job.draft.kind.label.uppercase(Locale.GERMAN),style=MaterialTheme.typography.labelSmall,color=Muted)
                         Text(orderIdentifier(batch),style=MaterialTheme.typography.titleMedium,fontWeight=FontWeight.Bold)
-                        if(batch.job.draft.kt.isNotBlank() && batch.job.draft.kt!=batch.job.draft.referenceNumber) Text(batch.job.draft.referenceNumber,style=MaterialTheme.typography.labelSmall,color=Muted)
                         Text("${batch.job.draft.quantity} Container · ${batch.containers.sumOf{it.photos.size}}/${batch.job.draft.quantity*batch.job.draft.kind.photoCount} Fotos",style=MaterialTheme.typography.bodySmall,color=Muted)
                     }
                     Column(horizontalAlignment=Alignment.End) {
@@ -102,7 +101,7 @@ fun OrderListScreen(jobs:List<JobWithContainers>,uploads:List<UploadJobEntity>,p
         }
     }
 }
-fun orderIdentifier(batch:JobWithContainers)=batch.job.draft.kt.ifBlank{batch.job.draft.referenceNumber}.let{if(it.all(Char::isDigit))"KT $it" else it}
+fun orderIdentifier(batch:JobWithContainers)=batch.job.draft.referenceNumber
 @Composable
 fun PhotoSegments(done:Int,total:Int) {
     Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(4.dp)) {

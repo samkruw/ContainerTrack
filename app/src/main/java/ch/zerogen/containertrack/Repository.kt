@@ -36,7 +36,7 @@ class TrackRepository(private val context: Context, val database: TrackDatabase,
         require(initialNumber.isNullOrBlank() || containerError(initialNumber,emptySet())==null)
         require(draft.errors(stoppedAt).isEmpty()) { "Bitte alle Pflichtfelder prüfen." }
         val normalized = draft.copy(referenceNumber = draft.referenceNumber.trim(),
-            kt = if (draft.kind == JobKind.RETURN) draft.referenceNumber.trim() else draft.kt.trim(),
+            kt = "",
             quick = if (draft.kind == JobKind.RETURN) draft.quick else "",
             additionalWork = if (draft.kind == JobKind.RETURN) draft.additionalWork else "")
         val entity = JobEntity(draft = normalized, createdAt = System.currentTimeMillis(), loggerStoppedAt = stoppedAt, createdByAccountId = accountId())
@@ -397,8 +397,8 @@ class TrackRepository(private val context: Context, val database: TrackDatabase,
                 .put("photos", photos))
         }
         return JSONObject().apply {
-        put("schemaVersion", 1); put("id", job.id); put("type", job.draft.kind.name)
-        put("referenceNumber", job.draft.referenceNumber); put("kt", job.draft.kt)
+        put("schemaVersion", 2); put("id", job.id); put("type", job.draft.kind.name)
+        put("referenceNumber", job.draft.referenceNumber)
         put("orderValue", job.draft.orderValue); put("quantity", job.draft.quantity)
         put("quick", if (job.draft.kind == JobKind.RETURN) job.draft.quick else "")
         put("additionalWork", if (job.draft.kind == JobKind.RETURN) job.draft.additionalWork else "")

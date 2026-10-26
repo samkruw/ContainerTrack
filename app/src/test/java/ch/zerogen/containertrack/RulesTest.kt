@@ -17,7 +17,7 @@ class RulesTest {
         for (n in listOf(0, 51)) assertTrue(draft().copy(quantity = n).errors().containsKey("quantity"))
         for (n in listOf(1, 50)) assertTrue(draft().copy(quantity = n).errors().isEmpty())
         assertTrue(draft().copy(referenceNumber = " ").errors().containsKey("referenceNumber"))
-        assertTrue(draft().copy(kt = " ").errors().containsKey("kt"))
+        assertTrue(draft().copy(kt = " ").errors().isEmpty())
         assertTrue(draft().copy(orderValue = " ").errors().containsKey("orderValue"))
         assertTrue(draft(JobKind.RETURN).copy(quick = "\n").errors(123L).containsKey("quick"))
         assertTrue(draft(JobKind.RETURN).copy(additionalWork = "").errors(123L).containsKey("additionalWork"))
@@ -73,10 +73,10 @@ class RulesTest {
         assertEquals("0708_06.jpg", photoName("0708", 6))
     }
 
-    @Test fun txtDeliveryUsesZrhAndContainerType() {
+    @Test fun txtDeliveryUsesOrderReferenceAndContainerType() {
         val txt = excelText(draft().copy(quantity = 2), listOf("0708", "0710"), LocalDate.of(2026, 10, 20))
-        assertEquals("Datum\tIn/Out\tKT\tOrder\tQuantity\tadditional Work\tContainer Number\tQuick\r\n" +
-            "20.10.2026\tOUT\tZRH-8\t20 ft\t2\t\t0708,0710\t\r\n", txt)
+        assertEquals("Datum\tIn/Out\tAuftragsnummer\tOrder\tQuantity\tadditional Work\tContainer Number\tQuick\r\n" +
+            "20.10.2026\tOUT\tORD-12\t20 ft\t2\t\t0708,0710\t\r\n", txt)
     }
 
     @Test fun txtReturnUsesReferenceAndNormalizesNewlines() {

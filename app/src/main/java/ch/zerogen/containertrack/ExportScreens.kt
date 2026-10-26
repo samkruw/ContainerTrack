@@ -40,7 +40,7 @@ fun ExportReviewScreen(batch: JobWithContainers, busy: Boolean, onShare: () -> U
         Information("${draft.kind.label} · ${batch.completedCount} / ${draft.quantity} Container\n${batch.containers.sumOf { it.photos.size }} Fotos\nUTF-8 TXT und Metadaten enthalten")
         Text("Excel-Zuordnung", style = MaterialTheme.typography.titleMedium)
         val rows = listOf("In/Out" to if (draft.kind == JobKind.DELIVERY) "OUT" else "IN",
-            "KT" to if (draft.kind == JobKind.DELIVERY) draft.kt else draft.referenceNumber,
+            "Auftragsnummer" to draft.referenceNumber,
             "Order" to draft.orderValue, "Quantity" to draft.quantity.toString()) +
             (if (draft.kind == JobKind.RETURN) listOf("additional Work" to draft.additionalWork) else emptyList()) +
             listOf("Container Number" to batch.ordered.joinToString(",") { it.container.containerNumber }) +

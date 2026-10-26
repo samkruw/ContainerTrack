@@ -1,3 +1,7 @@
+# Update 1.4.4 — Prüfung läuft
+
+KT entfällt vollständig aus Erfassung, Pflichtprüfung, Suche, Anzeige und Export. Room bleibt Schema 2; alte Daten bleiben erhalten. Der folgende Nachweis beschreibt noch Version 1.4.3.
+
 # Prüfstatus — Update 1.4.3 — 23.10.2026
 
 Geprüfter App-/Test-Commit: `b19ff733d8d763dc008e894795938a1aea9256ce`. [GitHub-Lauf 39915194786](https://github.com/samkruw/ContainerTrack/actions/runs/39915194786): Build und Gerätetests erfolgreich. Spätere Dokumentations-Commits ändern weder App noch Tests.

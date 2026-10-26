@@ -15,7 +15,7 @@ enum class JobKind(val label: String, val photoCount: Int) {
 data class JobDraft(
     val kind: JobKind,
     val referenceNumber: String = "",
-    val kt: String = "",
+    val kt: String = "", // Legacy Room column; retained only to preserve existing databases.
     val orderValue: String = "",
     val quantity: Int = 1,
     val quick: String = "",
@@ -24,7 +24,6 @@ data class JobDraft(
     fun errors(loggerStoppedAt: Long? = null): Map<String, String> = buildMap {
         if (referenceNumber.isBlank()) put("referenceNumber", "Pflichtfeld")
         else if (!safeReference(referenceNumber)) put("referenceNumber", "Keine Schrägstriche oder Steuerzeichen verwenden.")
-        if (kind == JobKind.DELIVERY && kt.isBlank()) put("kt", "Pflichtfeld")
         if (kind == JobKind.RETURN && loggerStoppedAt == null) put("loggerStoppedAt", "Logger zuerst stoppen und bestätigen.")
         if (orderValue.isBlank()) put("orderValue", "Pflichtfeld")
         if (quantity !in 1..50) put("quantity", "1 bis 50 Container")
@@ -67,10 +66,10 @@ fun reminderDueAt(exportedAt: Long) = exportedAt + 30 * 60 * 1000L
 fun cleanCell(value: String) = value.replace("\r\n", "\n").replace('\r', '\n').replace("\n", " / ").replace('\t', ' ')
 
 fun excelText(draft: JobDraft, numbers: List<String>, date: LocalDate): String {
-    val header = "Datum\tIn/Out\tKT\tOrder\tQuantity\tadditional Work\tContainer Number\tQuick"
+    val header = "Datum\tIn/Out\tAuftragsnummer\tOrder\tQuantity\tadditional Work\tContainer Number\tQuick"
     val row = listOf(date.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")),
         if (draft.kind == JobKind.DELIVERY) "OUT" else "IN",
-        if (draft.kind == JobKind.DELIVERY) draft.kt else draft.referenceNumber,
+        draft.referenceNumber,
         draft.orderValue, draft.quantity.toString(),
         if (draft.kind == JobKind.RETURN) draft.additionalWork else "", numbers.joinToString(","),
         if (draft.kind == JobKind.RETURN) draft.quick else "")

@@ -36,7 +36,7 @@ class ReferenceScreenshotsTest {
         job("2479","3310",0)
         completeId=job("2480","0042",6)
         job("2481","0708",3)
-        compose.waitUntil(10_000){compose.onAllNodesWithText("KT 2481").fetchSemanticsNodes().isNotEmpty()}
+        compose.waitUntil(10_000){compose.onAllNodesWithText("ORDER-2481").fetchSemanticsNodes().isNotEmpty()}
     }
     @After fun cleanup():Unit=runBlocking{ids.forEach{app.repository.deleteJob(it)}}
     private fun keyboardAway(){compose.runOnIdle{compose.activity.getSystemService(InputMethodManager::class.java).hideSoftInputFromWindow(compose.activity.currentFocus?.windowToken,0)};compose.waitForIdle()}
@@ -49,14 +49,15 @@ class ReferenceScreenshotsTest {
         compose.onNodeWithContentDescription("Aufträge filtern").performClick()
         compose.onNodeWithText("Alle").performClick()
         compose.onNodeWithText("Aufträge suchen").performTextInput("2480");keyboardAway()
-        compose.waitUntil(10_000){compose.onAllNodesWithText("KT 2480").fetchSemanticsNodes().isNotEmpty()}
-        compose.onNodeWithText("KT 2480").performClick()
+        compose.waitUntil(10_000){compose.onAllNodesWithText("ORDER-2480").fetchSemanticsNodes().isNotEmpty()}
+        compose.onNodeWithText("ORDER-2480").performClick()
         compose.onNodeWithText("Auftragsdetails").performClick()
     }
     @Test fun ordersMatchReference(){capture("20-reference-orders")}
     @Test fun newOrderMatchesReference(){
         compose.onNodeWithContentDescription("Neuer Auftrag").performClick()
-        compose.onNodeWithText("KT-Nummer").performTextInput("2482")
+        compose.onNodeWithText("KT-Nummer").assertDoesNotExist()
+        compose.onNodeWithText("Order Number").performTextInput("ORDER-2482")
         compose.onNodeWithText("Container-Nr.").performTextInput("0708")
         compose.onNodeWithText("Container-Nr.").performImeAction();keyboardAway()
         compose.onNodeWithText("Neuer Auftrag").performScrollTo()
@@ -88,13 +89,13 @@ class ReferenceScreenshotsTest {
         compose.onNodeWithText("Galerie").performClick()
         compose.onNode(hasSetTextAction()).performTextInput("248")
         compose.onNode(hasSetTextAction()).performImeAction();keyboardAway()
-        compose.waitUntil(10_000){compose.onAllNodesWithText("KT 2480 · 0042").fetchSemanticsNodes().isNotEmpty()}
+        compose.waitUntil(10_000){compose.onAllNodesWithText("ORDER-2480 · 0042").fetchSemanticsNodes().isNotEmpty()}
         capture("23-reference-gallery")
     }
     @Test fun galleryPhotoSelectionMatchesReference(){
         compose.onNodeWithText("Galerie").performClick()
-        compose.waitUntil(10_000){compose.onAllNodesWithText("KT 2480 · 0042").fetchSemanticsNodes().isNotEmpty()}
-        compose.onNodeWithText("KT 2480 · 0042").performClick()
+        compose.waitUntil(10_000){compose.onAllNodesWithText("ORDER-2480 · 0042").fetchSemanticsNodes().isNotEmpty()}
+        compose.onNodeWithText("ORDER-2480 · 0042").performClick()
         compose.onNodeWithContentDescription("Foto 1 auswählen").performClick()
         compose.onNodeWithContentDescription("Foto 2 auswählen").performClick()
         compose.onNodeWithText("2 von 6 Fotos ausgewählt").assertExists()

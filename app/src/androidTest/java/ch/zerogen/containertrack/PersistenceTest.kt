@@ -49,10 +49,15 @@ class PersistenceTest {
         try {
             repo.savePhoto(job, container, 1, photo)
             db.dao().insertReminder(LoggerReminder(jobId = job, referenceNumber = "TEST", dueAt = 2_000_000))
+            val legacy=db.dao().job(job)!!.job
+            assertEquals("",legacy.draft.kt)
+            db.dao().updateJob(legacy.copy(draft=legacy.draft.copy(kt="LEGACY-KT")))
             db.close()
             db = Room.databaseBuilder(context, TrackDatabase::class.java, name).build()
             repo = TrackRepository(context, db)
             val loaded = db.dao().job(job)!!
+            assertEquals("LEGACY-KT",loaded.job.draft.kt)
+            assertEquals(loaded.job.draft.referenceNumber,orderIdentifier(loaded))
             assertEquals("0708", loaded.containers.single().container.containerNumber)
             assertEquals(1, loaded.containers.single().photos.single().step)
             assertTrue(File(loaded.containers.single().photos.single().localPath).isFile)
@@ -142,7 +147,7 @@ class PersistenceTest {
             val result = db.dao().job(id)!!
             assertTrue(result.complete)
             assertEquals(stopped, result.job.loggerStoppedAt)
-            assertEquals(form.referenceNumber, result.job.draft.kt)
+            assertEquals("", result.job.draft.kt)
             assertTrue(db.dao().pendingReminders().isEmpty())
         } finally { job?.let { repo.deleteJob(it) }; db.close() }
     }

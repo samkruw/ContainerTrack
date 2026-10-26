@@ -50,7 +50,7 @@ class ExportSharingTest {
             complete(repo, job, form.kind)
             // Also cover delivery records created with the older app version.
             val old = db.dao().job(job)!!.job
-            db.dao().updateJob(old.copy(draft = old.draft.copy(quick = "LEGACY-QUICK", additionalWork = "LEGACY-WORK")))
+            db.dao().updateJob(old.copy(draft = old.draft.copy(kt = "LEGACY-KT", quick = "LEGACY-QUICK", additionalWork = "LEGACY-WORK")))
             val intent = repo.prepareShare(job)
             val attachment = uri(intent)
             assertEquals(Intent.ACTION_SEND, intent.action)
@@ -72,9 +72,13 @@ class ExportSharingTest {
             assertEquals(8, archive.size)
             assertArrayEquals(byteArrayOf(6), archive.getValue("${form.referenceNumber}/0708/0708_06.jpg"))
             val meta = JSONObject(archive.getValue("${form.referenceNumber}/${form.referenceNumber}_META.json").toString(Charsets.UTF_8))
+            assertFalse(meta.has("kt"))
+            assertEquals(2,meta.getInt("schemaVersion"))
             assertEquals("", meta.getString("quick")); assertEquals("", meta.getString("additionalWork"))
             val row = archive.getValue("${form.referenceNumber}/${form.referenceNumber}_EXCEL.txt").toString(Charsets.UTF_8).split("\r\n")[1]
             assertTrue(row.endsWith("\t1\t\t0708\t"))
+            assertFalse(row.contains("LEGACY-KT"))
+            assertTrue(row.contains(form.referenceNumber))
             val second = repo.prepareShare(job)
             assertNotEquals(attachment, uri(second))
             assertEquals(firstAt, db.dao().job(job)!!.job.exportedAt)
@@ -97,6 +101,8 @@ class ExportSharingTest {
             val archive = entries(uri(repo.prepareShare(job)))
             assertEquals(3, archive.size)
             val meta = JSONObject(archive.getValue("${form.referenceNumber}/${form.referenceNumber}_META.json").toString(Charsets.UTF_8))
+            assertFalse(meta.has("kt"))
+            assertEquals(2,meta.getInt("schemaVersion"))
             assertEquals("Nothing", meta.getString("quick")); assertEquals("Empty", meta.getString("additionalWork"))
             assertTrue(archive.getValue("${form.referenceNumber}/${form.referenceNumber}_EXCEL.txt").toString(Charsets.UTF_8).endsWith("\tEmpty\t0708\tNothing\r\n"))
             assertNotNull(db.dao().job(job)!!.job.exportedAt)

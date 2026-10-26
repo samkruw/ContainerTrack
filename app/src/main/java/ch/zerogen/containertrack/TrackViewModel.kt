@@ -45,7 +45,6 @@ class TrackViewModel(application: Application, private val saved: SavedStateHand
     var createdContainerId: String? = null
         private set
     val formReference = saved.getStateFlow("formReference", "")
-    val formKt = saved.getStateFlow("formKt", "")
     val formOrder = saved.getStateFlow("formOrder", "")
     val formQuantity = saved.getStateFlow("formQuantity", "1")
     val formQuick = saved.getStateFlow("formQuick", "")
@@ -76,13 +75,13 @@ class TrackViewModel(application: Application, private val saved: SavedStateHand
     }
     fun begin(kind: JobKind) {
         saved["formKind"] = kind.name
-        for (key in listOf("formReference", "formKt", "formOrder", "formQuick", "formWork", "formContainer")) saved[key] = ""
+        for (key in listOf("formReference", "formOrder", "formQuick", "formWork", "formContainer")) saved[key] = ""
         saved["formQuantity"] = "1"; saved["formStoppedAt"] = null
     }
     fun field(key: String, value: String) { saved[key] = value }
     fun confirmStopped() { if (formStoppedAt.value == null) saved["formStoppedAt"] = System.currentTimeMillis() }
-    fun draft() = JobDraft(JobKind.valueOf(formKind.value), formReference.value, formKt.value,
-        formOrder.value, formQuantity.value.toIntOrNull() ?: 0, formQuick.value, formWork.value)
+    fun draft() = JobDraft(kind=JobKind.valueOf(formKind.value), referenceNumber=formReference.value,
+        orderValue=formOrder.value, quantity=formQuantity.value.toIntOrNull() ?: 0, quick=formQuick.value, additionalWork=formWork.value)
 
     private fun runAction(action: suspend () -> Unit) {
         if (busy.value) return
