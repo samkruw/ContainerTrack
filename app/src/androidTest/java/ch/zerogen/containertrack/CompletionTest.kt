@@ -43,21 +43,35 @@ class CompletionTest {
             assertEquals(18,db.dao().uploadPhotos(job).size)
         } finally { repo.deleteJob(job);db.close() }
     }
-    @Test fun returnCompletionQueuesButNeverCreatesDeliveryReminder(): Unit = runBlocking {
+    @Test fun returnDocumentationKeepsItsCreationReminderAndCreatesNoUploadQueue(): Unit = runBlocking {
         val db = Room.inMemoryDatabaseBuilder(context,TrackDatabase::class.java).build()
         val repo = TrackRepository(context,db)
         val job = repo.createJob(JobDraft(JobKind.RETURN,"RET-${UUID.randomUUID()}",orderValue="20 ft",quick="Nothing",additionalWork="Empty"),123L)
         try {
-            val id=repo.addContainer(job,"0001");photo(repo,job,id,1)
-            assertNull(db.dao().jobReminder(job));assertEquals(1,db.dao().uploadPhotos(job).size)
-            assertNotNull(db.dao().job(job)!!.job.completionTriggeredAt)
+            val reminder = db.dao().jobReminder(job)!!
+            val id = repo.addContainer(job,"0001")
+            repo.saveReturnPhoto(job,id,ReturnPhotoPhase.INITIAL,ReturnPhotoCategory.CONTENT,
+                File.createTempFile("return-content", ".jpg",context.cacheDir).apply { writeBytes(byteArrayOf(1)) })
+            assertFalse(db.dao().job(job)!!.complete)
+            repo.saveReturnPhoto(job,id,ReturnPhotoPhase.CLEAN,ReturnPhotoCategory.CLEAN,
+                File.createTempFile("return-clean", ".jpg",context.cacheDir).apply { writeBytes(byteArrayOf(2)) })
+            assertTrue(db.dao().job(job)!!.complete)
+            assertEquals(ReminderKind.RETURN_CLOSE,reminder.kind)
+            assertEquals(db.dao().job(job)!!.job.createdAt+86_400_000L,reminder.dueAt)
+            assertEquals(reminder,db.dao().jobReminder(job))
+            assertNull(db.dao().uploadJob(job))
+            assertTrue(db.dao().uploadPhotos(job).isEmpty())
+            assertNull(db.dao().job(job)!!.job.emailSentAt)
         } finally {repo.deleteJob(job);db.close()}
     }
     @Test fun permanentUploadErrorsNeedExplicitRetry(): Unit = runBlocking {
         val db=Room.inMemoryDatabaseBuilder(context,TrackDatabase::class.java).build()
         val scheduled=mutableListOf<String>()
         val repo=TrackRepository(context,db,UploadScheduler { scheduled+=it })
-        val job=repo.createJob(JobDraft(JobKind.RETURN,"ERROR-RETRY",orderValue="20 ft",quick="Nothing",additionalWork="Empty"),123L)
+        // Graph retries remain supported for records created before the email workflow.
+        val legacy=JobEntity(draft=JobDraft(JobKind.RETURN,"ERROR-RETRY",orderValue="20 ft",quick="Nothing",additionalWork="Empty"),createdAt=123L,loggerStoppedAt=123L)
+        db.dao().insertJob(legacy)
+        val job=legacy.id
         try {
             val c=repo.addContainer(job,"0708");photo(repo,job,c,1)
             db.dao().uploadState(job,"UPLOAD_ERROR","Freigabe prüfen",1L)

@@ -69,21 +69,24 @@ class ReferenceScreenshotsTest {
         compose.onNodeWithText("Fotos prüfen").performClick()
         capture("22-reference-photo-review")
     }
-    @Test fun finishReviewStartsTeamsSharingWithoutCompanyLogin():Unit=runBlocking {
+    @Test fun finishReviewPreparesEmailWithoutClaimingItWasSent():Unit=runBlocking {
         openCompleteDetails()
         compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasText("Fotos prüfen"))
         compose.onNodeWithText("Fotos prüfen").performClick()
         val marker=app.database.dao().job(completeId)!!.job.completionTriggeredAt
         val instrumentation=InstrumentationRegistry.getInstrumentation()
         val filter=android.content.IntentFilter(android.content.Intent.ACTION_SEND_MULTIPLE).apply{addDataType("image/jpeg")}
-        val monitor=instrumentation.addMonitor(filter,android.app.Instrumentation.ActivityResult(android.app.Activity.RESULT_CANCELED,null),true)
+        val result=android.app.Instrumentation.ActivityResult(android.app.Activity.RESULT_CANCELED,null)
+        val monitor=instrumentation.addMonitor(filter,result,true)
+        val chooser=instrumentation.addMonitor(android.content.IntentFilter(android.content.Intent.ACTION_CHOOSER),result,true)
         try {
-            compose.onNodeWithText("Abschließen & in Teams teilen").assertIsEnabled().performClick()
-            compose.waitUntil(10_000){monitor.hits>0}
-            org.junit.Assert.assertEquals(1,monitor.hits)
+            compose.onNodeWithText("Auftrag per E-Mail").assertIsEnabled().performClick()
+            compose.waitUntil(10_000){monitor.hits+chooser.hits>0}
+            org.junit.Assert.assertEquals(1,monitor.hits+chooser.hits)
+            org.junit.Assert.assertNull(app.database.dao().job(completeId)!!.job.emailSentAt)
             org.junit.Assert.assertEquals(marker,app.database.dao().job(completeId)!!.job.completionTriggeredAt)
             org.junit.Assert.assertTrue(app.database.dao().uploadPhotos(completeId).all{it.uploadedAt==null})
-        } finally {instrumentation.removeMonitor(monitor)}
+        } finally {instrumentation.removeMonitor(monitor);instrumentation.removeMonitor(chooser)}
     }
     @Test fun galleryMatchesReference(){
         compose.onNodeWithText("Galerie").performClick()
@@ -110,20 +113,13 @@ class ReferenceScreenshotsTest {
     }
     @Test fun uploadMatchesReferenceWithoutPretendingSuccess(){
         openCompleteDetails()
-        compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasText("Teams-Übertragung"))
-        compose.onNodeWithText("Teams-Übertragung").performClick()
+        compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasText("Auftrag per E-Mail"))
+        compose.onNodeWithText("Auftrag per E-Mail").performClick()
         compose.onNodeWithText("Alle 6 Fotos erfolgreich gesendet").assertDoesNotExist()
-        compose.onNodeWithText("In Teams teilen").assertIsEnabled()
+        compose.onNodeWithText("E-Mail vorbereiten").assertIsEnabled()
+        compose.onNodeWithText("E-Mail gesendet").assertIsNotEnabled()
+        compose.onNodeWithText("Betreff: ORDER-2480").assertExists()
         capture("26-reference-upload")
-        compose.onNodeWithText("Auftragsinfos kopieren").performClick()
-        compose.runOnIdle {
-            val clipboard=compose.activity.getSystemService(android.content.ClipboardManager::class.java)
-            val text=clipboard.primaryClip!!.getItemAt(0).text.toString()
-            org.junit.Assert.assertFalse(text.contains("KT:"))
-            org.junit.Assert.assertTrue(text.contains("Auftrag: ORDER-2480"))
-            org.junit.Assert.assertTrue(text.contains("Container: 0042"))
-            org.junit.Assert.assertTrue(text.contains("Fotos: 6"))
-        }
     }
 
 }

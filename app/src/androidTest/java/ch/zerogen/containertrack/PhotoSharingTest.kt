@@ -1,7 +1,6 @@
 package ch.zerogen.containertrack
 
 import android.content.Context
-import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.net.Uri
 import androidx.test.core.app.ApplicationProvider
@@ -12,35 +11,24 @@ import java.util.UUID
 
 class PhotoSharingTest {
     private val context=ApplicationProvider.getApplicationContext<Context>()
-    @Test fun teamsSharingLaunchesTeamsDirectly() {
-        val intent=Intent(Intent.ACTION_SEND).setType("image/jpeg").setPackage("com.microsoft.teams")
-        val launches=mutableListOf<Intent>()
-        launchShareIntent(intent) { launches += it }
-        assertEquals(1,launches.size)
-        assertEquals(Intent.ACTION_SEND,launches.single().action)
-        assertEquals("com.microsoft.teams",launches.single().`package`)
-    }
-
     @Suppress("DEPRECATION")
-    @Test fun missingTeamsFallsBackToChooserPreservingSelectedPhotoGrants() {
+    @Test fun genericJpegUsesOneChooserAndPreservesOriginalGrants() {
         val uri=Uri.parse("content://${context.packageName}.exports/shared-photos/0708_01.jpg")
-        val intent=Intent(Intent.ACTION_SEND).setType("image/jpeg").setPackage("com.microsoft.teams")
+        val intent=Intent(Intent.ACTION_SEND).setType("image/jpeg")
             .putExtra(Intent.EXTRA_TEXT,"Auftrag: ORDER-2481\nContainer: 0708").putExtra(Intent.EXTRA_STREAM,uri).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         intent.clipData=android.content.ClipData.newRawUri("0708_01.jpg",uri)
         val launches=mutableListOf<Intent>()
-        launchShareIntent(intent) {
-            launches += it
-            if(launches.size==1) throw ActivityNotFoundException("Teams absent")
-        }
-        assertEquals(2,launches.size)
-        assertEquals(Intent.ACTION_CHOOSER,launches.last().action)
-        val fallback=launches.last().getParcelableExtra<Intent>(Intent.EXTRA_INTENT)!!
-        assertNull(fallback.`package`)
-        assertEquals("Auftrag: ORDER-2481\nContainer: 0708",fallback.getStringExtra(Intent.EXTRA_TEXT))
-        assertEquals(uri,fallback.getParcelableExtra<Uri>(Intent.EXTRA_STREAM))
-        assertEquals(uri,fallback.clipData!!.getItemAt(0).uri)
-        assertTrue(fallback.flags and Intent.FLAG_GRANT_READ_URI_PERMISSION!=0)
-        assertEquals(0,fallback.flags and Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+        launchShareIntent(intent) { launches += it }
+        assertEquals(1,launches.size)
+        assertEquals(Intent.ACTION_CHOOSER,launches.single().action)
+        val target=launches.single().getParcelableExtra<Intent>(Intent.EXTRA_INTENT)!!
+        assertNull(target.`package`)
+        assertNull(target.component)
+        assertEquals("Auftrag: ORDER-2481\nContainer: 0708",target.getStringExtra(Intent.EXTRA_TEXT))
+        assertEquals(uri,target.getParcelableExtra<Uri>(Intent.EXTRA_STREAM))
+        assertEquals(uri,target.clipData!!.getItemAt(0).uri)
+        assertTrue(target.flags and Intent.FLAG_GRANT_READ_URI_PERMISSION!=0)
+        assertEquals(0,target.flags and Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
     }
     @Suppress("DEPRECATION")
     @Test fun onlyNumberedJpegsHaveReadOnlyProviderGrants() {

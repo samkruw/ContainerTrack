@@ -37,7 +37,7 @@ fun HomeScreen(jobs: List<JobWithContainers>, onBegin: (JobKind) -> Unit, onJob:
                         Text(kind.label, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
                         Text(if (kind == JobKind.DELIVERY) "Container bei Anlieferung erfassen und dokumentieren." else "Container bei Rückgabe erfassen und dokumentieren.",
                             style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text(if (kind == JobKind.DELIVERY) "6 Pflichtfotos je Container" else "Logger stoppen · 1 Pflichtfoto je Container", style = MaterialTheme.typography.labelMedium, color = LightBlue)
+                        Text(if (kind == JobKind.DELIVERY) "6 Pflichtfotos je Container" else "Logger stoppen · Anfangs- und Leer-/Sauber-Fotos", style = MaterialTheme.typography.labelMedium, color = LightBlue)
                     }
                     Icon(Icons.Default.ArrowForward, contentDescription = null, tint = LightBlue)
                 }
@@ -74,7 +74,7 @@ fun JobsScreen(jobs: List<JobWithContainers>, onJob: (String) -> Unit) {
 
 @Composable
 fun ScanJobsScreen(jobs: List<JobWithContainers>, active: String?, onJob: (JobWithContainers) -> Unit) {
-    val candidates = jobs.filter { !it.complete && it.job.exportedAt == null }.sortedByDescending { it.job.id == active }
+    val candidates = jobs.filter { !it.complete && it.job.exportedAt == null && it.job.emailSentAt == null }.sortedByDescending { it.job.id == active }
     LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item { ScreenTitle("Kamera", "Auftrag für die nächste Erfassung wählen") }
         if (candidates.isEmpty()) item { Information("Kein offener Auftrag zum Scannen. Unter Aufträge mit + einen neuen Auftrag anlegen.") }
@@ -111,7 +111,7 @@ fun SetupScreen(vm:TrackViewModel,busy:Boolean,onCreated:(String)->Unit) {
             if(locked){Information("Zuerst den Logger stoppen. Erst dann sind die Formularfelder freigegeben.",true);PrimaryButton("Logger gestoppt – bestätigen",!busy){vm.confirmStopped()}}
             else Information("Logger gestoppt · ${localTime(stopped!!)}")
         }
-        FormField(if(kind==JobKind.DELIVERY)"Order Number" else "Return Number",reference,!locked && !busy,errors["referenceNumber"]){vm.field("formReference",it)}
+        FormField("Order Number",reference,!locked && !busy,errors["referenceNumber"]){vm.field("formReference",it)}
         FormField("Container-Nr.",number,!locked && !busy,if(attempted)numberError else null){if(it.length<=4 && it.all{c->c in '0'..'9'})vm.field("formContainer",it)}
         OutlineAction("Nummer scannen",Icons.Outlined.PhotoCamera,!locked && !busy){scanning=true}
         TextButton(onClick={details=!details},modifier=Modifier.fillMaxWidth().heightIn(min=48.dp)) {Text("Auftragsdaten · Pflichtangaben");Spacer(Modifier.weight(1f));Icon(if(details)Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,null)}
@@ -128,10 +128,13 @@ fun SetupScreen(vm:TrackViewModel,busy:Boolean,onCreated:(String)->Unit) {
         Text("Fotodokumentation",style=MaterialTheme.typography.titleLarge)
         GlassSurface {Row(Modifier.padding(14.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(14.dp)) {
             NumberDisc(if(kind==JobKind.DELIVERY)"5" else "1")
-            Column {Text(if(kind==JobKind.DELIVERY)"Leerdokumentation" else "Inhaltsfoto",fontWeight=FontWeight.SemiBold);Text(if(kind==JobKind.DELIVERY)"Leer · Front · Türen · Links · Rechts" else "Container-Inhalt",color=Muted,style=MaterialTheme.typography.bodySmall)}
+            Column {Text(if(kind==JobKind.DELIVERY)"Leerdokumentation" else "Inhaltsfoto",fontWeight=FontWeight.SemiBold);Text(if(kind==JobKind.DELIVERY)"Leer · Front · Türen · Links · Rechts" else "Pflicht: Inhalt · optional: Schaden und Sonstiges",color=Muted,style=MaterialTheme.typography.bodySmall)}
         }}
         if(kind==JobKind.DELIVERY) GlassSurface {Row(Modifier.padding(14.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(14.dp)) {
             NumberDisc("1");Column {Text("Befüllt-Foto",fontWeight=FontWeight.SemiBold);Text("Kann später ergänzt werden",color=Muted,style=MaterialTheme.typography.bodySmall)}
+        }}
+        if(kind==JobKind.RETURN) GlassSurface { Row(Modifier.padding(14.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(14.dp)) {
+            NumberDisc("=");Column {Text("Leer-/Sauber-Fotos nach der Reinigung",fontWeight=FontWeight.SemiBold);Text("Pro Container gleich viele Leer-/Sauber-Fotos wie Anfangsfotos. Nach 24 Stunden erinnert die App bis „E-Mail gesendet“ bestätigt ist.",color=Muted,style=MaterialTheme.typography.bodySmall)}
         }}
         Spacer(Modifier.height(8.dp))
     }
@@ -173,21 +176,22 @@ fun JobScreen(batch: JobWithContainers, vm: TrackViewModel, busy: Boolean, onSca
         }
         item { Information("${job.draft.orderValue}\n${batch.completedCount} / ${job.draft.quantity} Container vollständig\n${if (job.draft.kind == JobKind.DELIVERY) "Lieferung" else "Logger gestoppt · ${job.loggerStoppedAt?.let(::localTime) ?: "–"}"}") }
         items(batch.ordered, key = { it.container.id }) { item ->
-            ContainerDetails(item,job.draft.kind,job.exportedAt != null,expanded == item.container.id,
+            ContainerDetails(item,job.draft.kind,job.exportedAt != null || job.emailSentAt != null,expanded == item.container.id,
                 onExpand = { expanded = if (expanded == item.container.id) null else item.container.id },
-                onPhoto = { onPhoto(item.container.id,it) },busy = busy)
+                onPhoto = { onPhoto(item.container.id,it) },busy = busy, managedReturn = batch.isManagedReturn, names = namedPhotos(batch).filter { it.photo.containerId == item.container.id })
         }
-        val unfinished = batch.ordered.firstOrNull { it.container.completedAt == null }
+        val unfinished = batch.ordered.firstOrNull { !containerDocumentationComplete(batch,it) }
         val canAdd = batch.containers.size < job.draft.quantity &&
+            if(batch.isManagedReturn) batch.containers.all { returnProgress(it.photos).hasContent } else
             canAddContainer(job.draft.kind, batch.containers.map { it.photos.map { photo -> photo.step }.toSet() })
-        if (job.exportedAt == null && canAdd) item {
+        if (job.exportedAt == null && job.emailSentAt == null && canAdd) item {
             PrimaryButton("Container ${batch.containers.size + 1} / ${job.draft.quantity} erfassen", !busy, onScan)
         }
-        if (job.exportedAt == null && unfinished != null) item {
+        if (job.exportedAt == null && job.emailSentAt == null && unfinished != null) item {
             PrimaryButton("Container ${unfinished.container.containerNumber} fortsetzen", !busy) { onContainer(unfinished.container.id) }
         }
         if (onReview!=null && batch.containers.any{it.photos.isNotEmpty()}) item { PrimaryButton("Fotos prüfen",!busy,onReview) }
-        if (batch.complete && onUpload!=null) item { PrimaryButton("Teams-Übertragung", !busy, onUpload) }
+        if (batch.complete && onUpload!=null) item { PrimaryButton("Auftrag per E-Mail", !busy, onUpload) }
         if (batch.complete) item { PrimaryButton(if (job.exportedAt == null) "Export prüfen" else "Erneut exportieren", !busy, onExport) }
         if (job.draft.kind == JobKind.RETURN) item {
             Text("Quick · ${job.draft.quick}\nadditional Work · ${job.draft.additionalWork}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -195,7 +199,27 @@ fun JobScreen(batch: JobWithContainers, vm: TrackViewModel, busy: Boolean, onSca
         item { OutlinedButton(enabled = !busy, onClick = { deleting = true }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text("Auftrag löschen", color = MaterialTheme.colorScheme.error) } }
     }
     if (deleting) AlertDialog(onDismissRequest = { deleting = false }, title = { Text("Auftrag löschen?") },
-        text = { Text("${job.draft.referenceNumber}: Alle lokalen Daten, Fotos und Logger-Erinnerungen werden unwiderruflich gelöscht. Bereits exportierte Dateien bleiben am gewählten Speicherort.") },
+        text = { Text("${job.draft.referenceNumber}: Alle lokalen Daten, Fotos und Erinnerungen werden unwiderruflich gelöscht. Bereits exportierte Dateien bleiben am gewählten Speicherort.") },
         confirmButton = { TextButton(enabled = !busy, onClick = { deleting = false; vm.deleteJob(job.id, onDeleted) }) { Text("Endgültig löschen") } },
         dismissButton = { TextButton(onClick = { deleting = false }) { Text("Abbrechen") } })
+}
+
+fun containerDocumentationComplete(batch: JobWithContainers, item: ContainerWithPhotos): Boolean =
+    if (batch.isManagedReturn) returnProgress(item.photos).complete
+    else item.photos.map { it.step }.sorted() == (1..batch.job.draft.kind.photoCount).toList()
+
+fun documentationTarget(batch: JobWithContainers): Int = if (batch.isManagedReturn) {
+    batch.containers.sumOf { returnProgress(it.photos).initialCount.coerceAtLeast(1) * 2 } +
+        (batch.job.draft.quantity - batch.containers.size).coerceAtLeast(0) * 2
+} else batch.job.draft.quantity * batch.job.draft.kind.photoCount
+
+fun documentationCountText(batch: JobWithContainers): String =
+    "${batch.containers.sumOf { it.photos.size }}/${documentationTarget(batch)} Fotos"
+
+fun documentationStatus(batch: JobWithContainers): String = when {
+    batch.job.emailSentAt != null -> "E-Mail bestätigt"
+    batch.complete -> "E-Mail offen"
+    batch.isManagedReturn && batch.initialDocumentationComplete -> "Leer-/Sauber-Fotos fehlen"
+    batch.phase == WorkflowPhase.READY_FOR_FILL -> "Befüllt-Foto fehlt"
+    else -> "In Bearbeitung"
 }

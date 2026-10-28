@@ -31,17 +31,24 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.*
 
 class MainActivity : ComponentActivity() {
+    private var requestedReminderJob by mutableStateOf<String?>(null)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        requestedReminderJob = intent?.getStringExtra("reminderJobId")
         enableEdgeToEdge(statusBarStyle=androidx.activity.SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),navigationBarStyle=androidx.activity.SystemBarStyle.dark(android.graphics.Color.TRANSPARENT))
         if(Build.VERSION.SDK_INT>=29) window.isNavigationBarContrastEnforced=false
-        setContent { ContainerTheme { TrackApp() } }
+        setContent { ContainerTheme { TrackApp(requestedJob = requestedReminderJob, onRequestedJobHandled = { intent?.removeExtra("reminderJobId"); requestedReminderJob = null }) } }
+    }
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        requestedReminderJob = intent.getStringExtra("reminderJobId")
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TrackApp(vm: TrackViewModel = viewModel()) {
+fun TrackApp(vm: TrackViewModel = viewModel(), requestedJob: String? = null, onRequestedJobHandled: () -> Unit = {}) {
     val nav = rememberNavController()
     val entry by nav.currentBackStackEntryAsState()
     val route = entry?.destination?.route ?: "jobs"
@@ -55,13 +62,10 @@ fun TrackApp(vm: TrackViewModel = viewModel()) {
     val active by vm.activeJob.collectAsStateWithLifecycle()
     val uploads by vm.uploadJobs.collectAsStateWithLifecycle()
     val uploadedPhotos by vm.photoUploads.collectAsStateWithLifecycle()
-    val identity: MicrosoftIdentity? = null
-    val microsoftStatus by vm.microsoftStatus.collectAsStateWithLifecycle()
     val online by vm.online.collectAsStateWithLifecycle()
     val query by vm.search.collectAsStateWithLifecycle()
     val filterName by vm.filter.collectAsStateWithLifecycle()
     var actionJob by rememberSaveable { mutableStateOf<String?>(null) }
-    var shareJob by rememberSaveable { mutableStateOf<String?>(null) }
     val context = LocalContext.current
     val app = context.applicationContext as ContainerTrackApp
     val lifecycle = LocalLifecycleOwner.current
@@ -70,9 +74,12 @@ fun TrackApp(vm: TrackViewModel = viewModel()) {
             vm.shares.collect { intent ->
                 try { launchShareIntent(intent) { context.startActivity(it) } }
                 catch (_: android.content.ActivityNotFoundException) {
-                    vm.error.value = "Keine App zum Teilen gefunden. Bitte eine passende App installieren."
+                    vm.error.value = "Keine passende App verfügbar. Für Auftrags-E-Mails bitte eine E-Mail-App installieren und einrichten."
                 } catch (_: SecurityException) {
                     vm.error.value = "Dateien konnten nicht geteilt werden. Bitte erneut versuchen."
+                } catch (e: RuntimeException) {
+                    if (e is kotlinx.coroutines.CancellationException) throw e
+                    vm.error.value = "Die Anhänge konnten nicht an die ausgewählte App übergeben werden. Möglicherweise ist die Gesamtgrösse zu hoch. Der Versand wurde nicht bestätigt. Bitte erneut versuchen oder die E-Mail-App prüfen."
                 }
             }
         }
@@ -95,14 +102,32 @@ fun TrackApp(vm: TrackViewModel = viewModel()) {
         }
     }
     fun openJob(id: String) { vm.selectJob(id); nav.navigate("job/$id") { launchSingleTop = true } }
+    LaunchedEffect(requestedJob, jobs) {
+        val id = requestedJob ?: return@LaunchedEffect
+        if (jobs.any { it.job.id == id }) {
+            openJob(id)
+            onRequestedJobHandled()
+        }
+    }
     fun resumeJob(id:String) {
         val batch=jobs.find{it.job.id==id} ?: return
         vm.selectJob(id)
-        if(batch.complete || batch.job.exportedAt!=null){openJob(id);return}
+        if(batch.job.emailSentAt!=null){openJob(id);return}
+        if(batch.complete){nav.navigate("upload/$id");return}
+        if(batch.job.exportedAt!=null){openJob(id);return}
+        if(batch.isManagedReturn) {
+            val initial=batch.ordered.firstOrNull{!returnProgress(it.photos).hasContent}
+            when {
+                initial!=null -> nav.navigate("photo/$id/${initial.container.id}?step=0")
+                batch.containers.size<batch.job.draft.quantity -> nav.navigate("scan/$id")
+                else -> batch.ordered.firstOrNull{!returnProgress(it.photos).complete}?.let{nav.navigate("photo/$id/${it.container.id}?step=0")}
+            }
+            return
+        }
         val next=batch.ordered.firstOrNull{item->!(1..minOf(5,batch.job.draft.kind.photoCount)).all{step->item.photos.any{it.step==step}}}
         if(next!=null) nav.navigate("photo/$id/${next.container.id}?step=0")
         else if(batch.containers.size<batch.job.draft.quantity) nav.navigate("scan/$id")
-        else batch.ordered.firstOrNull{it.photos.size<batch.job.draft.kind.photoCount}?.let{nav.navigate("photo/$id/${it.container.id}?step=0")}
+        else batch.ordered.firstOrNull{!containerDocumentationComplete(batch,it)}?.let{nav.navigate("photo/$id/${it.container.id}?step=0")}
     }
     val tabs = listOf("jobs" to "Aufträge", "scan" to "Kamera", "gallery" to "Galerie")
     var savingPhotos by rememberSaveable { mutableStateOf(arrayListOf<String>()) }
@@ -110,23 +135,23 @@ fun TrackApp(vm: TrackViewModel = viewModel()) {
         if(uri!=null && savingPhotos.isNotEmpty()) vm.saveSelectedPhotos(savingPhotos.toSet(),uri)
         savingPhotos=arrayListOf()
     }
-    Scaffold(containerColor=Navy,topBar={BrandHeader(identity){if(!busy)nav.navigate("profile"){launchSingleTop=true}}},
+    Scaffold(containerColor=Navy,topBar={BrandHeader(null){if(!busy)nav.navigate("profile"){launchSingleTop=true}}},
         floatingActionButton={if(route=="jobs")FloatingActionButton(onClick={if(!busy){vm.begin(JobKind.DELIVERY);nav.navigate("setup")}},containerColor=Lime,contentColor=Navy,shape=MaterialTheme.shapes.small){Icon(Icons.Default.Add,"Neuer Auftrag")}},
         bottomBar={ReferenceBottomBar(route,!busy){path->nav.navigate(path){popUpTo(nav.graph.startDestinationId){saveState=true};launchSingleTop=true;restoreState=true}}}
     ) { insets ->
         Column(Modifier.padding(insets).imePadding().fillMaxSize()) {
             if(route !in tabs.map{it.first} && route!="setup" && route!="profile" && !route.startsWith("upload/")) Row(verticalAlignment=Alignment.CenterVertically) {
                 IconButton(onClick={if(!busy)nav.popBackStack()},enabled=!busy){Icon(Icons.Default.ArrowBack,"Zurück")}
-                Text(when {route=="profile"->"Einstellungen";route.startsWith("upload/")->"Teams-Übertragung";route.startsWith("review/")->"Fotos prüfen";route.startsWith("job/")->"Auftragsdetails";else->"Zurück zum Auftrag"},style=MaterialTheme.typography.titleLarge)
+                Text(when {route=="profile"->"Einstellungen";route.startsWith("upload/")->"Auftrag per E-Mail";route.startsWith("review/")->"Fotos prüfen";route.startsWith("job/")->"Auftragsdetails";else->"Zurück zum Auftrag"},style=MaterialTheme.typography.titleLarge)
             }
             if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
             reminders.firstOrNull()?.let { ReminderStrip(it, reminders.size - 1, now) }
             NavHost(nav, startDestination = "jobs", modifier = Modifier.weight(1f)) {
                 composable("home") { HomeScreen(jobs, onBegin = { kind -> vm.begin(kind); nav.navigate("setup") }, onJob = ::openJob) }
                 composable("jobs") { OrderListScreen(jobs,uploads,uploadedPhotos,reminders,now,online,query,
-                    runCatching { OrderFilter.valueOf(filterName) }.getOrDefault(OrderFilter.ACTIVE),vm::search,{vm.filter(it.name)},{actionJob=it},identity,onResume=::resumeJob,onRetry={vm.sharePhotos(it,teams=true)}) }
-                composable("gallery") { GalleryScreen(jobs,uploadedPhotos,onShare={vm.sharePhotos(it.jobId,photoId=it.photoId)},
-                    onSaveSelected={savingPhotos=ArrayList(it);savePhotos.launch(null)},onShareSelected=vm::shareSelectedPhotos,onTeamsShareSelected=vm::shareSelectedPhotosToTeams) }
+                    runCatching { OrderFilter.valueOf(filterName) }.getOrDefault(OrderFilter.ACTIVE),vm::search,{vm.filter(it.name)},{actionJob=it},onResume=::resumeJob) }
+                composable("gallery") { GalleryScreen(jobs,uploadedPhotos,onShare={vm.prepareEmail(it.jobId);nav.navigate("upload/${it.jobId}")},
+                    onSaveSelected={savingPhotos=ArrayList(it);savePhotos.launch(null)},busy=busy) }
                 composable("profile") { DeviceSettingsScreen { nav.navigate("jobs"){popUpTo("jobs");launchSingleTop=true} } }
                 composable("scan") { ScanJobsScreen(jobs,active,onJob={resumeJob(it.job.id)}) }
                 composable("exports") { ExportJobsScreen(jobs, onJob = { nav.navigate("export/${it.job.id}") }) }
@@ -159,12 +184,12 @@ fun TrackApp(vm: TrackViewModel = viewModel()) {
                 composable("review/{jobId}") { back ->
                     val id=back.arguments?.getString("jobId") ?: return@composable
                     jobs.find{it.job.id==id}?.let{batch->PhotoReviewScreen(batch,busy,
-                        onPhoto={container,step->nav.navigate("photo/$id/$container?step=$step")},onContinue={vm.finishAndSharePhotos(id);nav.navigate("upload/$id")},onBack={batch.ordered.firstOrNull()?.let{nav.navigate("photo/$id/${it.container.id}?step=0")} ?: resumeJob(id)})}
+                        onPhoto={container,step->nav.navigate("photo/$id/$container?step=$step")},onContinue={vm.prepareEmail(id);nav.navigate("upload/$id")},onBack={batch.ordered.firstOrNull()?.let{nav.navigate("photo/$id/${it.container.id}?step=0")} ?: resumeJob(id)})}
                 }
                 composable("upload/{jobId}") { back ->
                     val id=back.arguments?.getString("jobId") ?: return@composable
                     jobs.find{it.job.id==id}?.let{batch->UploadScreen(batch,busy,
-                        onShare={vm.sharePhotos(id)},onOrders={nav.navigate("jobs"){popUpTo("jobs");launchSingleTop=true}},onTeamsShare={vm.sharePhotos(id,teams=true)})}
+                        onPrepareEmail={vm.prepareEmail(id)},onOrders={nav.navigate("jobs"){popUpTo("jobs");launchSingleTop=true}},onConfirmSent={vm.confirmEmailSent(id)})}
                 }
                 composable("export/{jobId}") { back ->
                     val id = back.arguments?.getString("jobId") ?: return@composable
@@ -177,40 +202,19 @@ fun TrackApp(vm: TrackViewModel = viewModel()) {
     }
     jobs.find { it.job.id==actionJob }?.let { batch -> ModalBottomSheet(onDismissRequest={actionJob=null}) {
         Column(Modifier.padding(20.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
-            ScreenTitle(batch.job.draft.referenceNumber,"${batch.containers.sumOf { it.photos.size }}/${batch.job.draft.quantity*batch.job.draft.kind.photoCount} Fotos")
-            PrimaryButton("Fotodokumentation fortsetzen",enabled=!busy && !batch.complete) {
-                actionJob=null;vm.selectJob(batch.job.id)
-                val first=batch.ordered.firstOrNull { item -> !(1..minOf(5,batch.job.draft.kind.photoCount)).all { step -> item.photos.any { it.step==step } } }
-                if(first!=null) nav.navigate("photo/${batch.job.id}/${first.container.id}?step=0")
-                else if(batch.containers.size < batch.job.draft.quantity) nav.navigate("scan/${batch.job.id}")
-                else batch.ordered.firstOrNull { it.photos.size<batch.job.draft.kind.photoCount }?.let { nav.navigate("photo/${batch.job.id}/${it.container.id}?step=0") }
+            ScreenTitle(batch.job.draft.referenceNumber,documentationCountText(batch))
+            PrimaryButton("Fotodokumentation fortsetzen",enabled=!busy && !batch.complete && batch.job.emailSentAt==null && batch.job.exportedAt==null) {
+                actionJob=null;resumeJob(batch.job.id)
             }
             PrimaryButton("Auftragsdetails",enabled=!busy) { actionJob=null;openJob(batch.job.id) }
-            OutlinedButton(onClick={actionJob=null;shareJob=batch.job.id},enabled=!busy,modifier=Modifier.fillMaxWidth().heightIn(min=48.dp)) { Text("Fotos teilen / Teams") }
+            OutlinedButton(onClick={actionJob=null;nav.navigate("upload/${batch.job.id}")},enabled=!busy && batch.complete,modifier=Modifier.fillMaxWidth().heightIn(min=48.dp)) { Text("Auftrag per E-Mail") }
             OutlinedButton(onClick={actionJob=null;nav.navigate("export/${batch.job.id}")},enabled=!busy,modifier=Modifier.fillMaxWidth().heightIn(min=48.dp)) { Text("Lokaler ZIP-Export") }
-            Spacer(Modifier.height(24.dp))
-        }
-    } }
-    jobs.find { it.job.id==shareJob }?.let { batch -> ModalBottomSheet(onDismissRequest={shareJob=null}) {
-        Column(Modifier.padding(20.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
-            ScreenTitle("Fotos teilen","Ausschließlich nummerierte JPEG-Dateien")
-            uploads.find { it.jobId==batch.job.id }?.let { Text(syncLabel(it,online));it.lastError?.let { message -> Information(message,warning=true) } }
-            OutlineAction("Übertragungsdetails",androidx.compose.material.icons.Icons.Default.Info) {shareJob=null;nav.navigate("upload/${batch.job.id}")}
-
-            val teamsAvailable = remember(batch.containers.sumOf { it.photos.size }) {
-                Intent(if (batch.containers.sumOf { it.photos.size } > 1) Intent.ACTION_SEND_MULTIPLE else Intent.ACTION_SEND)
-                    .setType("image/jpeg").setPackage("com.microsoft.teams").resolveActivity(context.packageManager) != null
-            }
-            if (teamsAvailable) PrimaryButton("In Teams-App teilen",enabled=!busy && batch.containers.any { it.photos.isNotEmpty() }) { vm.sharePhotos(batch.job.id,teams=true);shareJob=null }
-            else Text("Teams-App nicht verfügbar. Fotos können über Android geteilt werden.")
-            OutlinedButton(onClick={vm.sharePhotos(batch.job.id);shareJob=null},enabled=!busy && batch.containers.any { it.photos.isNotEmpty() },modifier=Modifier.fillMaxWidth().heightIn(min=48.dp)) { Text("Fotos über Android teilen") }
-            Text("Teams bestimmt die angebotenen Empfänger; eventuell sind nur Chats verfügbar. Auftragsinfos lassen sich unter Übertragungsdetails kopieren, falls Teams den Begleittext weglässt. Der Teilen-Dialog bestätigt keinen Upload.",style=MaterialTheme.typography.bodySmall)
             Spacer(Modifier.height(24.dp))
         }
     } }
     error?.let { message -> AlertDialog(onDismissRequest = { vm.error.value = null }, title = { Text("Vorgang prüfen") }, text = { Text(message) }, confirmButton = { TextButton(onClick = { vm.error.value = null }) { Text("Verstanden") } }) }
     notice?.let { message -> AlertDialog(onDismissRequest = { vm.notice.value = null }, title = { Text("Hinweis") }, text = { Text(message) }, confirmButton = { TextButton(onClick = { vm.notice.value = null }) { Text("Schliessen") } }) }
-    reminders.firstOrNull { it.dueAt <= now }?.let { reminder ->
+    reminders.firstOrNull { it.kind == ReminderKind.LOGGER && it.dueAt <= now }?.let { reminder ->
         AlertDialog(onDismissRequest = {}, title = { Text("Logger jetzt starten") },
             text = { Text("Auftrag ${reminder.referenceNumber}\nBitte Logger starten und anschliessend bestätigen.") },
             confirmButton = { TextButton(enabled = !busy, onClick = { vm.confirmStarted(reminder.id) }) { Text("Logger gestartet – bestätigen") } })
@@ -220,11 +224,13 @@ fun TrackApp(vm: TrackViewModel = viewModel()) {
 @Composable
 fun ReminderStrip(reminder: LoggerReminder, others: Int, now: Long) {
     val remaining = ((reminder.dueAt - now + 999) / 1000).coerceAtLeast(0)
+    val isReturn = reminder.kind == ReminderKind.RETURN_CLOSE
+    val title = if (isReturn) "Return offen · E-Mail bestätigen" else "Logger starten"
     GlassSurface {
         Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text("Logger · ${reminder.referenceNumber} · ${if (remaining == 0L) "JETZT" else "%02d:%02d".format(remaining / 60, remaining % 60)}${if (others > 0) " · +$others weitere" else ""}",
+            Text("$title · ${reminder.referenceNumber} · ${reminderTimeLabel(reminder, now)}${if (others > 0) " · +$others weitere" else ""}",
                 color = if (remaining == 0L) Warning else LightBlue, style = MaterialTheme.typography.labelLarge)
-            LinearProgressIndicator(progress = { (1f - remaining / 1800f).coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth(), color = if (remaining == 0L) Warning else ElectricBlue)
+            LinearProgressIndicator(progress = { (1f - remaining / (if (isReturn) 86400f else 1800f)).coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth(), color = if (remaining == 0L) Warning else ElectricBlue)
         }
     }
 }

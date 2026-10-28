@@ -15,7 +15,7 @@ fun DeviceSettingsScreen(onContinue:()->Unit={}) {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),verticalArrangement=Arrangement.spacedBy(16.dp)) {
         Text("Einstellungen",style=MaterialTheme.typography.headlineLarge)
         Text("Lokal auf diesem Gerät",color=Lime)
-        Text("Aufträge und Fotos bleiben auf diesem Gerät gespeichert. Zum Senden öffnet die App den Teilen-Dialog von Android oder Teams.",color=Muted)
+        Text("Aufträge und Fotos bleiben auf diesem Gerät gespeichert. Für den Versand bereitet die App eine E-Mail mit allen Fotos eines vollständigen Auftrags vor. Den tatsächlichen Versand bestätigst du anschliessend selbst in der App.",color=Muted)
         HorizontalDivider(color=Hairline)
         Text("Geräteeinstellungen",style=MaterialTheme.typography.titleLarge)
         PermissionsContent()

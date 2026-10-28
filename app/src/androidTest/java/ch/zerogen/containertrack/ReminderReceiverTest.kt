@@ -82,6 +82,19 @@ class ReminderReceiverTest {
         } finally { app.repository.deleteJob(job) }
     }
 
+    @Test fun returnConfirmationBroadcastCannotDismissTheEmailReminder() = runBlocking {
+        val job=app.repository.createJob(JobDraft(JobKind.RETURN,"TEST-RETURN-${UUID.randomUUID()}",
+            orderValue="20 ft",quick="Nothing",additionalWork="Empty"),123L)
+        try {
+            val reminder=app.database.dao().jobReminder(job)!!
+            assertEquals(ReminderKind.RETURN_CLOSE,reminder.kind)
+            dispatch(ReminderAlarms.CONFIRM,reminder.id)
+            assertNull(app.database.dao().reminder(reminder.id)!!.confirmedAt)
+            assertNull(app.database.dao().job(job)!!.job.emailSentAt)
+            assertTrue(app.database.dao().pendingReminders().any { it.id==reminder.id })
+        } finally { app.repository.deleteJob(job) }
+    }
+
     @Test fun deniedNotificationLeavesReminderPending() = runBlocking {
         setNotificationAppOp(false)
         assertFalse(app.alarms.notificationsAllowed())

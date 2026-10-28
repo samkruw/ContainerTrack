@@ -18,6 +18,9 @@ class ReminderAlarms(private val context: Context) {
         notifications.createNotificationChannel(NotificationChannel(CHANNEL, "Logger starten", NotificationManager.IMPORTANCE_HIGH).apply {
             description = "Lokale Erinnerung 30 Minuten nach vollständiger Lieferung"
         })
+        notifications.createNotificationChannel(NotificationChannel(RETURN_CHANNEL,"Return abschließen",NotificationManager.IMPORTANCE_HIGH).apply {
+            description="Erinnerung spätestens 24 Stunden nach Return-Erstellung: Abschlussfotos und E-Mail-Versand bestätigen"
+        })
     }
     fun exactAllowed(): Boolean = Build.VERSION.SDK_INT < 31 || manager.canScheduleExactAlarms()
     fun notificationsAllowed(): Boolean = notifications.areNotificationsEnabled() &&
@@ -43,23 +46,24 @@ class ReminderAlarms(private val context: Context) {
     fun notifyDue(reminder: LoggerReminder) {
         if (!notificationsAllowed()) return
         val launch = PendingIntent.getActivity(context, reminder.id,
-            Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
+            Intent(context, MainActivity::class.java).putExtra("reminderJobId",reminder.jobId).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-        val notification = NotificationCompat.Builder(context, CHANNEL)
+        val notification = NotificationCompat.Builder(context, if(reminder.kind==ReminderKind.RETURN_CLOSE)RETURN_CHANNEL else CHANNEL)
             .setSmallIcon(R.drawable.ic_container)
-            .setContentTitle("Logger starten")
-            .setContentText("Fällige Logger-Erinnerung · in der App bestätigen")
+            .setContentTitle(if(reminder.kind==ReminderKind.RETURN_CLOSE)"Return abschließen" else "Logger starten")
+            .setContentText(if(reminder.kind==ReminderKind.RETURN_CLOSE)"Abschlussfotos aufnehmen und E-Mail-Versand in der App bestätigen" else "Fällige Logger-Erinnerung · in der App bestätigen")
             .setContentIntent(launch)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_REMINDER)
             .setOngoing(true)
-            .addAction(R.drawable.ic_container, "Logger gestartet", launch)
+            .addAction(R.drawable.ic_container, if(reminder.kind==ReminderKind.RETURN_CLOSE)"Return öffnen" else "Logger gestartet", launch)
             .build()
         try { notifications.notify(reminder.id, notification) } catch (_: SecurityException) { }
     }
 
     companion object {
         const val CHANNEL = "logger"
+        const val RETURN_CHANNEL = "return_completion"
         const val DUE = "ch.zerogen.containertrack.LOGGER_DUE"
         const val CONFIRM = "ch.zerogen.containertrack.LOGGER_CONFIRM"
     }

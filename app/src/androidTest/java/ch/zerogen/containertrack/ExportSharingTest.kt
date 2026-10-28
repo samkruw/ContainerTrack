@@ -23,6 +23,13 @@ class ExportSharingTest {
 
     private suspend fun complete(repo: TrackRepository, job: String, kind: JobKind) {
         val container = repo.addContainer(job, "0708")
+        if (kind == JobKind.RETURN) {
+            repo.saveReturnPhoto(job,container,ReturnPhotoPhase.INITIAL,ReturnPhotoCategory.CONTENT,
+                File.createTempFile("share-return", ".jpg",context.cacheDir).apply { writeBytes(byteArrayOf(1)) })
+            repo.saveReturnPhoto(job,container,ReturnPhotoPhase.CLEAN,ReturnPhotoCategory.CLEAN,
+                File.createTempFile("share-clean", ".jpg",context.cacheDir).apply { writeBytes(byteArrayOf(2)) })
+            return
+        }
         for (step in 1..kind.photoCount) {
             val photo = File.createTempFile("share-photo", ".jpg", context.cacheDir).apply { writeBytes(byteArrayOf(step.toByte())) }
             repo.savePhoto(job, container, step, photo)
@@ -73,7 +80,7 @@ class ExportSharingTest {
             assertArrayEquals(byteArrayOf(6), archive.getValue("${form.referenceNumber}/0708/0708_06.jpg"))
             val meta = JSONObject(archive.getValue("${form.referenceNumber}/${form.referenceNumber}_META.json").toString(Charsets.UTF_8))
             assertFalse(meta.has("kt"))
-            assertEquals(2,meta.getInt("schemaVersion"))
+            assertEquals(3,meta.getInt("schemaVersion"))
             assertEquals("", meta.getString("quick")); assertEquals("", meta.getString("additionalWork"))
             val row = archive.getValue("${form.referenceNumber}/${form.referenceNumber}_EXCEL.txt").toString(Charsets.UTF_8).split("\r\n")[1]
             assertTrue(row.endsWith("\t1\t\t0708\t"))
@@ -91,7 +98,7 @@ class ExportSharingTest {
         assertFalse(File(context.cacheDir, "shared-exports/$job").exists())
     }
 
-    @Test fun returnShareContainsExtraFieldsAndCreatesNoLoggerReminder() = runBlocking {
+    @Test fun returnZipContainsBothPhasesAndPreservesReturnReminder() = runBlocking {
         val db = Room.inMemoryDatabaseBuilder(context, TrackDatabase::class.java).build()
         val repo = TrackRepository(context, db)
         val form = draft(JobKind.RETURN)
@@ -99,14 +106,26 @@ class ExportSharingTest {
         try {
             complete(repo, job, form.kind)
             val archive = entries(uri(repo.prepareShare(job)))
-            assertEquals(3, archive.size)
+            assertEquals(4, archive.size)
+            assertArrayEquals(byteArrayOf(1),archive.getValue("${form.referenceNumber}/0708/0708_vorher_01_inhalt.jpg"))
+            assertArrayEquals(byteArrayOf(2),archive.getValue("${form.referenceNumber}/0708/0708_nachher_01_leer_sauber.jpg"))
             val meta = JSONObject(archive.getValue("${form.referenceNumber}/${form.referenceNumber}_META.json").toString(Charsets.UTF_8))
             assertFalse(meta.has("kt"))
-            assertEquals(2,meta.getInt("schemaVersion"))
+            assertEquals(3,meta.getInt("schemaVersion"))
             assertEquals("Nothing", meta.getString("quick")); assertEquals("Empty", meta.getString("additionalWork"))
+            val photos=meta.getJSONArray("containers").getJSONObject(0).getJSONArray("photos")
+            assertEquals(2,photos.length())
+            assertEquals("INITIAL",photos.getJSONObject(0).getString("phase"))
+            assertEquals("CONTENT",photos.getJSONObject(0).getString("category"))
+            assertEquals("CLEAN",photos.getJSONObject(1).getString("phase"))
+            assertEquals("CLEAN",photos.getJSONObject(1).getString("category"))
             assertTrue(archive.getValue("${form.referenceNumber}/${form.referenceNumber}_EXCEL.txt").toString(Charsets.UTF_8).endsWith("\tEmpty\t0708\tNothing\r\n"))
-            assertNotNull(db.dao().job(job)!!.job.exportedAt)
-            assertTrue(db.dao().pendingReminders().isEmpty())
+            val stored=db.dao().job(job)!!.job
+            assertNotNull(stored.exportedAt)
+            assertNull(stored.emailSentAt)
+            val reminder=db.dao().pendingReminders().single()
+            assertEquals(ReminderKind.RETURN_CLOSE,reminder.kind)
+            assertEquals(stored.createdAt+86_400_000L,reminder.dueAt)
         } finally { repo.deleteJob(job); db.close() }
     }
 

@@ -1,13 +1,13 @@
 # Container Track — Android
 
-Native Kotlin-App zur lokalen Erfassung von Lieferungen und Returns. Ein `:app`-Modul mit Compose, Room, CameraX und gebündeltem ML Kit. Kein WebView. Direkter Start ohne Anmeldung, Benutzerverwaltung oder Rollen; Fotos werden bewusst an die Teams-App übergeben.
+Native Kotlin-App zur lokalen Erfassung von Lieferungen und Returns. Ein `:app`-Modul mit Compose, Room, CameraX und gebündeltem ML Kit. Kein WebView. Direkter Start ohne Anmeldung, Benutzerverwaltung oder Rollen; Fotos werden als vollständige Auftrags-E-Mail im Smartphone-Mailprogramm vorbereitet.
 
-**Stand:** Update 1.4.4 / versionCode 11. KT vollständig aus Formular, Suche, Anzeige und Export entfernt: [UPDATE_1_4_4.md](docs/UPDATE_1_4_4.md). Fotos mit Begleittext und „Auftragsinfos kopieren“: [UPDATE_1_4_2.md](docs/UPDATE_1_4_2.md). Ohne Benutzerverwaltung, PIN und Rollen; Teams-Teilen beim Abschluss: [UPDATE_1_4_1.md](docs/UPDATE_1_4_1.md). Kein zusätzlicher Online-Dienst erforderlich. Bestehende native Architektur und App-ID bleiben erhalten; Room migriert ohne Datenlöschung von Schema 1 auf 2. Direktes manuelles Teams-Teilen: [UPDATE_1_3_2.md](docs/UPDATE_1_3_2.md). Designkorrektur nach den acht Bildvorlagen: [UPDATE_1_3_1.md](docs/UPDATE_1_3_1.md). Fachliche Änderungen: [UPDATE_1_3.md](docs/UPDATE_1_3.md). Historische Microsoft-Einrichtung (für den aktuellen Ablauf nicht nötig): [MICROSOFT_SETUP.md](docs/MICROSOFT_SETUP.md). Aktuelle Prüfnachweise: [QA_STATUS.md](docs/QA_STATUS.md).
+**Stand:** Update 1.5.0 / versionCode 12. Return-Anfangs-/Zusatzfotos und gleich viele Leer-/Sauber-Fotos je Container, feste 24h-Erinnerung bis zur manuellen E-Mail-Versandbestätigung, vollständige Auftrags-E-Mail statt Teams: [UPDATE_1_5_0.md](docs/UPDATE_1_5_0.md). Native Architektur/App-ID bleiben erhalten; Room migriert ohne Datenlöschung auf Schema 3. KT, Benutzerverwaltung, PINs und Rollen entfallen. Historische Anleitungen beschreiben frühere Versionen; aktuell gilt [QA_STATUS.md](docs/QA_STATUS.md).
 
 ## Projekt öffnen und APK bauen
 
 1. Ordner in Android Studio öffnen.
-2. JDK 17 oder neuer, Android SDK Platform 36 und Build Tools 36.0.0 bereitstellen. Gradle 8.13 wird über den mitgelieferten Wrapper geladen. Der Entwicklungs-Build benötigt Internet für Werkzeuge und Abhängigkeiten; die eigentliche Übertragung durch Teams benötigt die Teams-App und deren Verbindung.
+2. JDK 17 oder neuer, Android SDK Platform 36 und Build Tools 36.0.0 bereitstellen. Gradle 8.13 wird über den mitgelieferten Wrapper geladen. Der Entwicklungs-Build benötigt Internet für Werkzeuge und Abhängigkeiten; das Versenden der vorbereiteten E-Mail übernimmt das installierte Mailprogramm.
 3. Gradle synchronisieren und ausführen:
 
 ```sh
@@ -26,10 +26,11 @@ Bei Push/PR führt [android.yml](.github/workflows/android.yml) Build, Unit-Test
 - **Plus-Button:** Lieferung oder Return anlegen. Optional die erste Container-Nummer direkt eingeben oder scannen. Weitere Pflichtangaben sind ausklappbar. Alle Pflichtfelder ausfüllen. `Quick` und `additional Work` werden ausschliesslich bei Return angegeben; `Nothing` und `Empty` sind dort gültig. Quantity: 1–50.
 - **Return:** zuerst den gestoppten Logger bestätigen. Der Zeitstempel wird genau bei der Bestätigung gesetzt. Erst danach sind die Formularfelder aktiv.
 - **Kamera:** Auftrag auswählen; vierstellige Nummer in den Rahmen halten. Der erste gültige OCR-Treffer wird übernommen. Manuelle Eingabe und spätere Nummernkorrektur sind möglich. Führende Nullen bleiben erhalten; doppelte Nummern im Auftrag werden blockiert.
-- **Fotos:** Lieferung benötigt sechs Fotos: zuerst je Container 01–05, anschließend darf 06 (befüllt) später folgen. Return benötigt genau ein Inhaltsfoto. Foto prüfen und ausdrücklich verwenden. Neuaufnahme ersetzt erst nach Bestätigung das bisherige Foto. Löschen ab einem Schritt entfernt auch die folgenden Fotos und setzt den Abschlussstatus zurück.
+- **Fotos:** Lieferung benötigt sechs Fotos: zuerst je Container 01–05, anschließend darf 06 (befüllt) später folgen. Neue Returns benötigen ein Inhaltsfoto plus optionale Schaden-/Zusatzfotos und anschließend exakt gleich viele Leer-/Sauber-Fotos pro Container. Foto prüfen und ausdrücklich verwenden. Neuaufnahme ersetzt erst nach Bestätigung das bisherige Foto. Bei Lieferung entfernt Löschen ab einem Schritt auch nachfolgende Fotos; neue Return-Fotos werden einzeln gelöscht. Änderungen machen eine alte E-Mail-Vorbereitung ungültig.
+- **E-Mail:** vollständigen Auftrag vorbereiten, in der Mail-App senden und anschließend ausdrücklich „E-Mail gesendet“ bestätigen. Alle Containerfotos werden angehängt; mögliche Größenlimits bestimmt die Mail-App. Return-Erinnerungen laufen ab Erstellung nach 24h auf und bleiben bis zur Bestätigung offen.
 - **Aufträge:** lokal gespeicherte Vorgänge fortsetzen, ansehen oder nach gesonderter Bestätigung löschen. Exportierte Aufträge sind zur Ansicht und zum erneuten Export verfügbar.
 - **Export:** nur vollständige Aufträge exportieren. Mit **ZIP teilen** die Android-Auswahl öffnen und beispielsweise ein E-Mail-Programm wählen. Mit **ZIP speichern** legt Androids Dateiauswahl den Speicherort fest. Für vollständigen Offline-Betrieb einen lokalen Ordner auswählen; externe Dokumentanbieter werden vom Benutzer gewählt und liegen ausserhalb der App.
-- **Galerie:** vorhandene lokale Fotos ansehen, filtern und einzeln teilen. **Zahnrad / Einstellungen:** Geräteeinstellungen und Berechtigungen öffnen.
+- **Galerie:** vorhandene lokale Fotos ansehen, filtern, herunterladen und einen vollständigen Auftrag per E-Mail vorbereiten. **Zahnrad / Einstellungen:** Geräteeinstellungen und Berechtigungen öffnen.
 
 ## Exportformat
 
@@ -67,7 +68,7 @@ Room und Fotos liegen intern, Fotos nicht als BLOB. Fotos werden als JPEG mit au
 
 Zum Teilen liegen separate ZIP- oder nummerierte JPEG-Kopien im privaten Cache. FileProvider gibt nur diese Dateien mit temporärem Lesezugriff an die gewählte App weiter. Jede Freigabe bekommt einen eigenen Pfad. Auftragslöschung entfernt die internen Kopien; weitere Freigaben bereinigen Kopien älter als sieben Tage. Android darf den Cache früher löschen. Das E-Mail-Programm verarbeitet und versendet den Anhang selbst.
 
-INTERNET, ACCESS_NETWORK_STATE und WAKE_LOCK bleiben aus dem bisherigen Microsoft-Adapter vorhanden. Der automatische Transport ist in Version 1.4.4 deaktiviert; die lokale App benötigt keinen eigenen Online-Dienst. Standort-, Mikrofon-, NFC- und breite Speicherrechte werden nicht angefordert. Android-Backup ist deaktiviert. Die Berechtigungsprüfung lässt nur die ausdrücklich benötigten Rechte zu.
+INTERNET, ACCESS_NETWORK_STATE und WAKE_LOCK bleiben aus dem bisherigen Microsoft-Adapter vorhanden. Der automatische Transport ist im aktiven Ablauf deaktiviert; die lokale App benötigt keinen eigenen Online-Dienst. Standort-, Mikrofon-, NFC- und breite Speicherrechte werden nicht angefordert. Android-Backup ist deaktiviert. Die Berechtigungsprüfung lässt nur die ausdrücklich benötigten Rechte zu.
 
 Der geprüfte Abhängigkeitsbericht enthält keine Firebase-Analytics-, Crashlytics- oder Cloud-Datenhaltungs-SDKs. Das vorgeschriebene gebündelte ML Kit bringt jedoch technische Hilfsbibliotheken `firebase-components`, `firebase-encoders`, `firebase-encoders-json`, `firebase-annotations` und Google DataTransport transitiv mit. Diese sind im Bericht ausgewiesen; eine völlige Abwesenheit aller Artefakte mit Firebase-Gruppennamen wird daher nicht behauptet. Der Quellcode-Audit begrenzt Netzwerkadapter auf die Microsoft-Anbindung; dies ist keine technische Netzwerksperre für Bibliothekscode. Es ist kein Firebase-Projekt konfiguriert.
 

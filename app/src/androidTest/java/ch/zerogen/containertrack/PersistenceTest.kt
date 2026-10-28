@@ -30,7 +30,9 @@ class PersistenceTest {
         val container = repo.addContainer(job, "0708")
         val captured = File.createTempFile("capture", ".jpg", context.cacheDir).apply { writeBytes(ByteArray(100_000) { 7 }) }
         try {
-            val saving = launch(Dispatchers.IO) { repo.savePhoto(job, container, 1, captured) }
+            val saving = launch(Dispatchers.IO) {
+                repo.saveReturnPhoto(job, container, ReturnPhotoPhase.INITIAL, ReturnPhotoCategory.CONTENT, captured)
+            }
             withTimeout(10_000) { db.dao().observeJobs().first { rows -> rows.any { it.containers.any { c -> c.photos.isNotEmpty() } } } }
             saving.cancel(); saving.join()
             val saved = db.dao().job(job)!!.containers.single().photos.single()
@@ -132,7 +134,7 @@ class PersistenceTest {
         } finally { repo.deleteJob(job); db.close(); export1.delete(); export2.delete() }
     }
 
-    @Test fun returnRequiresLoggerStopAndHasExactlyOnePhoto() = runBlocking {
+    @Test fun returnRequiresLoggerStopAndBothDocumentationPhases() = runBlocking {
         val db = Room.inMemoryDatabaseBuilder(context, TrackDatabase::class.java).build()
         val repo = TrackRepository(context, db)
         var job: String? = null
@@ -143,12 +145,19 @@ class PersistenceTest {
             val id = repo.createJob(form, stopped); job = id
             val container = repo.addContainer(id, "0001")
             val photo = File.createTempFile("capture", ".jpg", context.cacheDir).apply { writeBytes(byteArrayOf(1)) }
-            repo.savePhoto(id, container, 1, photo)
+            repo.saveReturnPhoto(id, container, ReturnPhotoPhase.INITIAL, ReturnPhotoCategory.CONTENT, photo)
+            assertFalse(db.dao().job(id)!!.complete)
+            val clean = File.createTempFile("clean", ".jpg", context.cacheDir).apply { writeBytes(byteArrayOf(2)) }
+            repo.saveReturnPhoto(id, container, ReturnPhotoPhase.CLEAN, ReturnPhotoCategory.CLEAN, clean)
             val result = db.dao().job(id)!!
             assertTrue(result.complete)
+            assertEquals(2,result.containers.single().photos.size)
+            assertNull(result.job.emailSentAt)
             assertEquals(stopped, result.job.loggerStoppedAt)
             assertEquals("", result.job.draft.kt)
-            assertTrue(db.dao().pendingReminders().isEmpty())
+            val reminder=db.dao().pendingReminders().single()
+            assertEquals(ReminderKind.RETURN_CLOSE,reminder.kind)
+            assertEquals(result.job.createdAt+86_400_000L,reminder.dueAt)
         } finally { job?.let { repo.deleteJob(it) }; db.close() }
     }
 }

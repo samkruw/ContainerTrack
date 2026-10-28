@@ -40,7 +40,11 @@ fun PhotoImage(path: String, description: String, modifier: Modifier = Modifier,
 
 @Composable
 fun ContainerDetails(item: ContainerWithPhotos, kind: JobKind, readonly: Boolean, expanded: Boolean,
-                     onExpand: () -> Unit, onPhoto: (Int) -> Unit, busy: Boolean) {
+                     onExpand: () -> Unit, onPhoto: (Int) -> Unit, busy: Boolean, managedReturn: Boolean = false, names: List<NamedPhoto> = emptyList()) {
+    if (managedReturn) {
+        ManagedReturnDetails(item, readonly, expanded, onExpand, onPhoto, busy, names)
+        return
+    }
     val steps=item.photos.map { it.step }.toSet()
     GlassSurface {
         Column(Modifier.fillMaxWidth().padding(12.dp),verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -80,6 +84,54 @@ fun ContainerDetails(item: ContainerWithPhotos, kind: JobKind, readonly: Boolean
                         if (row.size == 1 && kind.photoCount > 1) Spacer(Modifier.weight(1f))
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ManagedReturnDetails(item: ContainerWithPhotos, readonly: Boolean, expanded: Boolean,
+                                 onExpand: () -> Unit, onPhoto: (Int) -> Unit, busy: Boolean,
+                                 names: List<NamedPhoto>) {
+    val progress = returnProgress(item.photos)
+    GlassSurface {
+        Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(Modifier.fillMaxWidth().clickable(onClick = onExpand).heightIn(min = 64.dp), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                    Text(item.container.containerNumber, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text("${progress.initialCount} Anfangsfotos · ${progress.cleanCount}/${progress.initialCount.coerceAtLeast(1)} Leer-/Sauber-Fotos", color = Muted)
+                    Text(when {
+                        progress.complete -> "Dokumentation vollständig"
+                        !progress.hasContent -> "Inhaltsfoto fehlt"
+                        else -> "Leer-/Sauber-Fotos fehlen"
+                    }, color = if (progress.complete) Lime else Warning, style = MaterialTheme.typography.labelMedium)
+                }
+                Icon(if (expanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,
+                    if (expanded) "Container zuklappen" else "Container aufklappen", tint = Muted)
+            }
+            if (expanded) {
+                listOf(ReturnPhotoPhase.INITIAL to "Anfangsfotos", ReturnPhotoPhase.CLEAN to "Leer-/Sauber-Fotos nach der Reinigung").forEach { (phase, title) ->
+                    Text(title, style = MaterialTheme.typography.titleSmall)
+                    val photos = names.filter { it.photo.returnPhase == phase }
+                    if (photos.isEmpty()) Text(if (phase == ReturnPhotoPhase.INITIAL) "Ein Inhaltsfoto ist Pflicht. Schaden und Sonstiges sind optional." else "Gleich viele Leer-/Sauber-Fotos wie Anfangsfotos aufnehmen.", color = Muted, style = MaterialTheme.typography.bodySmall)
+                    photos.chunked(2).forEach { row ->
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            row.forEach { named ->
+                                Surface(onClick = { onPhoto(named.photo.step) }, enabled = !busy, modifier = Modifier.weight(1f), shape = MaterialTheme.shapes.small, color = Navy, border = BorderStroke(1.dp, Hairline)) {
+                                    Column {
+                                        PhotoImage(named.photo.localPath, named.label, Modifier.fillMaxWidth().height(152.dp))
+                                        Column(Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                            Text(named.label, style = MaterialTheme.typography.labelMedium)
+                                            Text(named.fileName, style = MaterialTheme.typography.labelSmall, color = Muted)
+                                        }
+                                    }
+                                }
+                            }
+                            if (row.size == 1) Spacer(Modifier.weight(1f))
+                        }
+                    }
+                }
+                if (!readonly) OutlineAction("Fotodokumentation öffnen", Icons.Outlined.AddAPhoto, !busy) { onPhoto(0) }
             }
         }
     }

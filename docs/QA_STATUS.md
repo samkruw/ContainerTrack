@@ -1,3 +1,11 @@
+# Update 1.5.0 — laufende Verifikation
+
+Neue Return-Phasen, feste 24h-Erinnerung und vollständige Auftrags-E-Mail sind implementiert. Lokale Prüfung: 50 Unit-Tests je Variante, neun Python-QA-Tests, Lint, Debug-/Test-APK-Kompilierung und APK-Berechtigungsprüfung bestanden. Die neuen Android-Tests sind kompiliert, aber ihr Lauf und die Sichtprüfung noch nicht abgeschlossen. Ein lokaler Software-Emulator startet; der GitHub-API-Zugriff bleibt durch die aktive Entwicklungs-Netzwerkregel gesperrt.
+
+Unabhängiger statischer Review des neuen Repository-/Reminder-/Migrationsablaufs: keine wesentlichen Restbefunde. Keine behauptete echte Mail-App-Zustellprüfung. Weitere Ergebnisse werden hier nach tatsächlicher Ausführung ergänzt.
+
+Der folgende Bericht beschreibt ausdrücklich den älteren Stand 1.4.4, nicht die neue Return-/E-Mail-Funktion.
+
 # Prüfstatus — Update 1.4.4
 
 Geprüfter App-/Test-Commit: `f45788e8c1afaef03189302705f8d582a7696e1e`. [GitHub-Lauf 40330673261](https://github.com/samkruw/ContainerTrack/actions/runs/40330673261) wurde am 26.10.2026 mit erfolgreichem Build und erfolgreichen Gerätetests bestätigt. Dokumentation abgeschlossen am 28.10.2026; seit der Prüfung keine App-/Test-Änderung.

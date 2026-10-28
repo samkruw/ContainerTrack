@@ -12,9 +12,14 @@ import org.junit.runner.RunWith
 class ExportScreenTest {
     @get:Rule val compose = createComposeRule()
     private fun batch(kind: JobKind): JobWithContainers {
-        val job = JobEntity(draft = JobDraft(kind, "ORD-SHARE", "ZRH-1", "20 ft", 1, "Nothing", "Empty"), createdAt = 1L)
+        val job = JobEntity(draft = JobDraft(kind, "ORD-SHARE", "ZRH-1", "20 ft", 1, "Nothing", "Empty"), createdAt = 1L,
+            returnWorkflowVersion = if (kind == JobKind.RETURN) 1 else 0)
         val container = ContainerEntity(jobId = job.id, sequenceIndex = 1, containerNumber = "0708")
-        val photos = (1..kind.photoCount).map { PhotoEntity(containerId = container.id, step = it, localPath = "fixture", capturedAt = 1L) }
+        val photos = if (kind == JobKind.RETURN) listOf(
+            PhotoEntity(containerId=container.id,step=1,localPath="fixture",capturedAt=1L),
+            PhotoEntity(containerId=container.id,step=2,localPath="fixture",capturedAt=1L,
+                returnPhase=ReturnPhotoPhase.CLEAN,returnCategory=ReturnPhotoCategory.CLEAN))
+            else (1..kind.photoCount).map { PhotoEntity(containerId = container.id, step = it, localPath = "fixture", capturedAt = 1L) }
         return JobWithContainers(job, listOf(ContainerWithPhotos(container, photos)))
     }
 

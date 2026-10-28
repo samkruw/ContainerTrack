@@ -69,11 +69,15 @@ fun LocalPhoto(path: String, description: String, modifier: Modifier = Modifier)
 @Composable
 fun PhotoScreen(batch: JobWithContainers, containerId: String, selectedStep: Int, vm: TrackViewModel,
                 busy: Boolean, onDone: () -> Unit) {
+    if (batch.isManagedReturn) {
+        ReturnPhotoScreen(batch, containerId, vm, busy, onDone, selectedStep)
+        return
+    }
     val item = batch.containers.find { it.container.id == containerId } ?: return
     val kind = batch.job.draft.kind
     val completed = item.photos.map { it.step }.toSet()
     val nextStep = nextPhotoStep(kind, completed)
-    val readonly = batch.job.exportedAt != null
+    val readonly = batch.job.exportedAt != null || batch.job.emailSentAt != null
     var reviewStep by rememberSaveable(containerId) { mutableIntStateOf(selectedStep) }
     var retaking by rememberSaveable(containerId) { mutableStateOf(false) }
     val pendingPath by vm.pendingPhoto(batch.job.id, containerId).collectAsStateWithLifecycle()

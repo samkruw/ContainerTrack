@@ -6,46 +6,68 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import java.io.File
 
 @Composable
-fun UploadScreen(batch:JobWithContainers,busy:Boolean,onShare:()->Unit,onOrders:()->Unit,onTeamsShare:()->Unit) {
-    val photos=batch.ordered.flatMap{c->c.photos.sortedBy{it.step}.map{c.container.containerNumber to it}}
-    LazyColumn(contentPadding=PaddingValues(16.dp),verticalArrangement=Arrangement.spacedBy(14.dp)) {
+fun UploadScreen(batch: JobWithContainers, busy: Boolean, onPrepareEmail: () -> Unit,
+                 onOrders: () -> Unit, onConfirmSent: () -> Unit) {
+    val photos = namedPhotos(batch)
+    val job = batch.job
+    val attachmentBytes = photos.sumOf { File(it.photo.localPath).length() }
+    val attachmentSize = "%.1f MB".format(attachmentBytes / 1_000_000f)
+    val prepared = job.emailPreparedRevision == job.documentationRevision && job.emailPreparedAt != null
+    var confirming by remember { mutableStateOf(false) }
+    LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         item {
-            Row(horizontalArrangement=Arrangement.spacedBy(10.dp),verticalAlignment=Alignment.CenterVertically){Icon(Icons.Outlined.Groups,null,tint=Lime);Text("Teams-Übertragung",color=Lime,style=MaterialTheme.typography.labelLarge)}
-            HorizontalDivider(Modifier.padding(top=12.dp),color=Hairline)
-        }
-        item {
-            Text("Auftrag ${batch.job.draft.referenceNumber}",color=Muted,style=MaterialTheme.typography.bodyMedium)
-            Text(if(batch.containers.size==1)"Container ${batch.ordered.first().container.containerNumber}" else "${batch.containers.size} Container",fontSize=36.sp,lineHeight=42.sp,fontWeight=FontWeight.ExtraBold)
-        }
-        item {
-            val info=photoShareText(batch.job.draft,photos.map{it.first},photos.size)
-            Text(info,color=Muted,style=MaterialTheme.typography.bodySmall)
-            PhotoShareInfoAction(info,!busy && photos.isNotEmpty())
-        }
-        item {
-            PrimaryIconButton("In Teams teilen",Icons.Outlined.Groups,!busy && photos.isNotEmpty(),onTeamsShare)
-            Text("Teams bestimmt die verfügbaren Empfänger; über Teilen sind je nach Version nur Chats verfügbar. Ohne Teams-App öffnet sich Android-Teilen.",color=Muted,style=MaterialTheme.typography.bodyMedium)
-        }
-        item {Information("Teams kann den Begleittext bei Fotos weglassen. Kopiere dann die Auftragsinfos und füge sie in Teams ein. Für einen Kanal lade die Fotos zuerst in der Galerie herunter und hänge sie direkt in Teams an; füge die kopierten Infos hinzu. Das Öffnen von Teams bestätigt keinen Versand.")}
-        item {Text("${photos.size} nummerierte Original-JPGs",color=Muted);HorizontalDivider(Modifier.padding(top=10.dp),color=Hairline)}
-        items(photos,key={it.second.id}){(number,photo)->
-            Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)) {
-                PhotoImage(photo.localPath,photoName(number,photo.step),Modifier.size(54.dp))
-                Column(Modifier.weight(1f)){Text(photoName(number,photo.step),fontWeight=FontWeight.SemiBold);Text("%.1f MB".format(File(photo.localPath).length()/1_000_000f),style=MaterialTheme.typography.bodySmall,color=Muted)}
-                Icon(Icons.Outlined.CheckCircle,"Foto lokal gespeichert",tint=Lime,modifier=Modifier.size(24.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Outlined.Email, null, tint = Lime)
+                Text("Auftrag per E-Mail", color = Lime, style = MaterialTheme.typography.titleLarge)
             }
-            HorizontalDivider(Modifier.padding(top=10.dp),color=Hairline)
+            HorizontalDivider(Modifier.padding(top = 12.dp), color = Hairline)
         }
-        item {OutlineAction("Über Android teilen",Icons.Outlined.Share,!busy && photos.isNotEmpty(),onShare)}
-        item {PrimaryIconButton("Zur Auftragsübersicht",Icons.Outlined.FormatListBulleted,!busy,onOrders)}
+        item {
+            ScreenTitle(job.draft.referenceNumber, "${batch.containers.size} Container · ${photos.size} Originalfotos")
+            Text("Betreff: ${job.draft.referenceNumber}", color = Muted)
+            Text("Die E-Mail enthält alle Fotos aller Container dieses Auftrags.", color = Muted)
+        }
+        if (!batch.complete) item { Information("Die Fotodokumentation ist noch unvollständig. Zuerst alle Pflichtfotos und bei Return die passende Anzahl Leer-/Sauber-Fotos aufnehmen.", warning = true) }
+        if (job.emailSentAt != null) item { Information("E-Mail gesendet · in der App bestätigt am ${localTime(job.emailSentAt)}") }
+        item {
+            PrimaryIconButton(if (prepared) "E-Mail erneut vorbereiten" else "E-Mail vorbereiten", Icons.Outlined.Email,
+                !busy && batch.complete, onPrepareEmail)
+        }
+        item {
+            Information("Die App kann den tatsächlichen Versand nicht prüfen. Sende die vorbereitete E-Mail in deiner E-Mail-App und bestätige anschliessend hier mit „E-Mail gesendet“. Abbrechen oder das Öffnen der E-Mail-App bestätigt keinen Versand.")
+            if (batch.isManagedReturn && job.emailSentAt == null) Text("Die 24-Stunden-Erinnerung bleibt bis zu deiner Bestätigung aktiv.", color = Warning)
+        }
+        if (job.emailSentAt == null) item {
+            PrimaryIconButton("E-Mail gesendet", Icons.Outlined.CheckCircle, !busy && batch.complete && prepared) { confirming = true }
+            if (!prepared) Text("Zuerst die E-Mail für den aktuellen Stand vorbereiten. Nach Fotoänderungen ist eine neue Vorbereitung nötig.", color = Muted, style = MaterialTheme.typography.bodySmall)
+        }
+        item { Text("${photos.size} Anhänge · $attachmentSize", style = MaterialTheme.typography.titleMedium); HorizontalDivider(Modifier.padding(top = 10.dp), color = Hairline) }
+        if (attachmentBytes > 20L * 1024 * 1024) item {
+            Information("Die Anhänge umfassen $attachmentSize. Deine E-Mail-App oder dein Anbieter kann eine Grössenbegrenzung haben. Alle Fotos sind enthalten; die App lässt keine Anhänge weg.", warning = true)
+        }
+        items(photos, key = { it.photo.id }) { named ->
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                PhotoImage(named.photo.localPath, named.label, Modifier.size(54.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(named.fileName, fontWeight = FontWeight.SemiBold)
+                    Text("${named.label} · %.1f MB".format(File(named.photo.localPath).length() / 1_000_000f), style = MaterialTheme.typography.bodySmall, color = Muted)
+                }
+                Icon(Icons.Outlined.CheckCircle, "Foto lokal gespeichert", tint = Lime, modifier = Modifier.size(24.dp))
+            }
+            HorizontalDivider(Modifier.padding(top = 10.dp), color = Hairline)
+        }
+        item { OutlineAction("Zur Auftragsübersicht", Icons.Outlined.FormatListBulleted, !busy, onOrders) }
     }
+    if (confirming) AlertDialog(onDismissRequest = { confirming = false }, title = { Text("E-Mail gesendet?") },
+        text = { Text("Bestätige nur, wenn du die E-Mail mit allen ${photos.size} Fotos tatsächlich gesendet hast. Die App kann den Versand nicht überprüfen.") },
+        confirmButton = { TextButton(enabled = !busy && batch.complete && prepared, onClick = { confirming = false; onConfirmSent() }) { Text("E-Mail gesendet") } },
+        dismissButton = { TextButton(onClick = { confirming = false }) { Text("Zurück") } })
 }

@@ -15,9 +15,12 @@ class PhotoSyncTest {
     @Test fun roomConfirmsOnlyTheCurrentAccountAndSurvivesReopening(): Unit = runBlocking {
         val context=ApplicationProvider.getApplicationContext<Context>()
         val name="sync-${UUID.randomUUID()}.db"
-        var db=Room.databaseBuilder(context,TrackDatabase::class.java,name).addMigrations(MIGRATION_1_2).build()
+        var db=Room.databaseBuilder(context,TrackDatabase::class.java,name).addMigrations(MIGRATION_1_2,MIGRATION_2_3).build()
         var repo=TrackRepository(context,db,accountId={"account-a"})
-        val job=repo.createJob(JobDraft(JobKind.RETURN,"SYNC-${UUID.randomUUID()}",orderValue="20 ft",quick="Nothing",additionalWork="Empty"),123L)
+        // This exercises the durable legacy Graph queue, not the new email workflow.
+        val legacy=JobEntity(draft=JobDraft(JobKind.RETURN,"SYNC-${UUID.randomUUID()}",orderValue="20 ft",quick="Nothing",additionalWork="Empty"),createdAt=123L,loggerStoppedAt=123L,createdByAccountId="account-a")
+        db.dao().insertJob(legacy)
+        val job=legacy.id
         val config=MicrosoftConfig("11111111-1111-1111-1111-111111111111","22222222-2222-2222-2222-222222222222","msauth://ch.zerogen.containertrack/hash","33333333-3333-3333-3333-333333333333","19:channel@thread.tacv2")
         val accounts=object:MicrosoftAccountProvider {
             override val identity=MutableStateFlow<MicrosoftIdentity?>(MicrosoftIdentity("account-a","Test only","test@example.invalid"))
@@ -40,7 +43,7 @@ class PhotoSyncTest {
             assertEquals(SyncOutcome.Done,PhotoSyncRepository(db,config,accounts,graph).sync(job,"account-a"))
             assertEquals(1,sent);assertEquals("account-a",db.dao().uploadPhotos(job).single().uploadedByAccountId)
             db.close()
-            db=Room.databaseBuilder(context,TrackDatabase::class.java,name).addMigrations(MIGRATION_1_2).build()
+            db=Room.databaseBuilder(context,TrackDatabase::class.java,name).addMigrations(MIGRATION_1_2,MIGRATION_2_3).build()
             repo=TrackRepository(context,db)
             assertEquals(SyncOutcome.Done,PhotoSyncRepository(db,config,accounts,graph).sync(job,"account-a"))
             assertEquals(1,sent);assertEquals("SYNCED",db.dao().uploadJob(job)!!.state)

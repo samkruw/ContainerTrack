@@ -57,9 +57,10 @@ fun ExportReviewScreen(batch: JobWithContainers, busy: Boolean, onShare: () -> U
             }
         }
         if (draft.kind == JobKind.DELIVERY) {
-            Information(if (job.exportedAt == null) "Sobald die ZIP gespeichert oder zum Teilen erstellt ist, beginnt die 30-Minuten-Erinnerung zum Starten des Loggers. Sie läuft auch weiter, wenn Sie die App-Auswahl abbrechen. Benachrichtigungen unter Mehr erlauben."
+            Information(if (job.exportedAt == null) "Sobald die ZIP gespeichert oder zum Teilen erstellt ist, beginnt die 30-Minuten-Erinnerung zum Starten des Loggers. Sie läuft auch weiter, wenn Sie die App-Auswahl abbrechen. Benachrichtigungen in den Einstellungen erlauben."
                 else "Erster Export · ${localTime(job.exportedAt)}\nErneuter Export verändert die Logger-Erinnerung nicht.")
         }
+        if (batch.isManagedReturn) Information("Der lokale ZIP-Export beendet die 24-Stunden-Erinnerung nicht. Sie bleibt bis zur Bestätigung „E-Mail gesendet“ aktiv.")
         Text("ZIP direkt mit einer App teilen, zum Beispiel Ihrem E-Mail-Programm, oder auf dem Gerät speichern.", style = MaterialTheme.typography.bodyMedium)
         PrimaryButton(if (busy) "ZIP wird erstellt …" else "ZIP teilen", batch.complete && !busy, onShare)
         OutlinedButton(onClick = onExport, enabled = batch.complete && !busy,
@@ -89,8 +90,8 @@ fun PermissionsContent() {
     val notifications = remember(refresh) { app.alarms.notificationsAllowed() }
     val exact = remember(refresh) { app.alarms.exactAllowed() }
     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        Text("Logger-Erinnerungen", style = MaterialTheme.typography.titleLarge)
-        Information(if (notifications) "Benachrichtigungen sind erlaubt." else "Benachrichtigungen sind gesperrt. Fällige Logger werden beim Öffnen der App weiterhin angezeigt.", warning = !notifications)
+        Text("Logger- und Return-Erinnerungen", style = MaterialTheme.typography.titleLarge)
+        Information(if (notifications) "Benachrichtigungen sind erlaubt. Lieferungen erinnern an den Logger-Start, Return-Aufträge 24 Stunden nach Anlage an den offenen Abschluss." else "Benachrichtigungen sind gesperrt. Fällige Logger- und Return-Erinnerungen werden beim Öffnen der App weiterhin angezeigt. Eine Systembenachrichtigung ist dann nicht möglich.", warning = !notifications)
         PrimaryButton(if (notifications) "Benachrichtigungseinstellungen" else "Benachrichtigungen erlauben") {
             if (Build.VERSION.SDK_INT >= 33 && !notifications) permission.launch(Manifest.permission.POST_NOTIFICATIONS)
             else context.startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName))
@@ -98,13 +99,13 @@ fun PermissionsContent() {
         TextButton(modifier = Modifier.heightIn(min = 48.dp), onClick = {
             context.startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName))
         }) { Text("Systemeinstellungen für Benachrichtigungen öffnen") }
-        Information(if (exact) "Genaue Alarme sind verfügbar." else "Ohne Zugriff auf genaue Alarme kann Android die Erinnerung im Standby verzögern. Der gespeicherte Fälligkeitszeitpunkt bleibt unverändert.", warning = !exact)
+        Information(if (exact) "Genaue Alarme sind verfügbar. Android kann Benachrichtigungen trotzdem durch Energiespar- oder Geräteeinstellungen verzögern." else "Ohne Zugriff auf genaue Alarme kann Android die Erinnerung im Standby verzögern. Der gespeicherte Fälligkeitszeitpunkt bleibt unverändert.", warning = !exact)
         if (Build.VERSION.SDK_INT >= 31 && !exact) OutlinedButton(modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp), onClick = {
             context.startActivity(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM, Uri.parse("package:${context.packageName}")))
         }) { Text("Genaue Alarme erlauben") }
         HorizontalDivider()
         Text("Offline und Datenschutz", style = MaterialTheme.typography.titleLarge)
-        Text("Aufträge, OCR und Fotos werden auf diesem Gerät verarbeitet. Zum Senden werden ausgewählte nummerierte Fotos an Android-Teilen oder die Teams-App übergeben. Teams bestimmt die angebotenen Empfänger. Kanalbeiträge können das direkte Öffnen von Teams erfordern. Begleittext kann dort über „Auftragsinfos kopieren“ eingefügt werden. Container Track benötigt keine Anmeldung. Fotos liegen im internen App-Speicher. Android-Backups sind deaktiviert.")
+        Text("Aufträge, OCR und Fotos werden auf diesem Gerät verarbeitet. Die E-Mail-Vorbereitung übergibt alle Originalfotos eines vollständigen Auftrags mit der Auftragsnummer als Betreff an deine E-Mail-App. Container Track benötigt keine Anmeldung. Die App kann den tatsächlichen Versand nicht prüfen. Die Return-Erinnerung bleibt aktiv, bis du in der App „E-Mail gesendet“ bestätigst. Fotos liegen im internen App-Speicher. Android-Backups sind deaktiviert.")
         Text("ZIP-Dateien werden am selbst gewählten Speicherort abgelegt oder über Android an eine von Ihnen ausgewählte App übergeben. Beim Teilen kann diese App den Anhang versenden. Bei Deinstallation werden die internen Aufträge und Fotos gelöscht; separat gespeicherte Dateien bleiben erhalten.")
         Text("App-Berechtigungen", style = MaterialTheme.typography.titleMedium)
         OutlinedButton(modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp), onClick = {

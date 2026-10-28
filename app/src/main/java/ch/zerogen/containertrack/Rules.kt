@@ -76,21 +76,31 @@ fun excelText(draft: JobDraft, numbers: List<String>, date: LocalDate): String {
     return "$header\r\n${row.joinToString("\t") { cleanCell(it) }}\r\n"
 }
 
-data class ExportPhoto(val step: Int, val file: File)
+data class ExportPhoto(val step: Int, val file: File,
+    val returnPhase: ReturnPhotoPhase = ReturnPhotoPhase.INITIAL,
+    val returnCategory: ReturnPhotoCategory = ReturnPhotoCategory.CONTENT)
 data class ExportContainer(val number: String, val photos: List<ExportPhoto>)
 
-fun writeExportZip(output: OutputStream, draft: JobDraft, containers: List<ExportContainer>, metadata: String, date: LocalDate) {
+fun writeExportZip(output: OutputStream, draft: JobDraft, containers: List<ExportContainer>, metadata: String, date: LocalDate,
+    managedReturn: Boolean = false) {
     require(safeReference(draft.referenceNumber))
+    require(!managedReturn || (draft.kind == JobKind.RETURN && draft.quantity in 1..50))
     require(containers.size == draft.quantity && containers.map { it.number }.distinct().size == containers.size)
     require(containers.all { c -> validContainerNumber(c.number) &&
-        c.photos.map { it.step }.sorted() == (1..draft.kind.photoCount).toList() &&
+        (if (managedReturn) returnProgressFor(c.photos.map { ReturnPhotoInfo(it.step, it.returnPhase, it.returnCategory) }).complete
+        else c.photos.map { it.step }.sorted() == (1..draft.kind.photoCount).toList()) &&
         c.photos.all { it.file.isFile && it.file.length() > 0 } }) { "Auftrag unvollständig." }
     val root = draft.referenceNumber.trim()
     ZipOutputStream(output).use { zip ->
-        for (container in containers) for (photo in container.photos.sortedBy { it.step }) {
-            zip.putNextEntry(ZipEntry("$root/${container.number}/${photoName(container.number, photo.step)}"))
-            photo.file.inputStream().use { it.copyTo(zip) }
-            zip.closeEntry()
+        for (container in containers) {
+            val named = if (managedReturn) namedReturnPhotos(container.number, container.photos) {
+                ReturnPhotoInfo(it.step, it.returnPhase, it.returnCategory)
+            } else container.photos.sortedBy { it.step }.map { it to photoName(container.number, it.step) }
+            for ((photo, name) in named) {
+                zip.putNextEntry(ZipEntry("$root/${container.number}/$name"))
+                photo.file.inputStream().use { it.copyTo(zip) }
+                zip.closeEntry()
+            }
         }
         for ((name, text) in listOf("${root}_EXCEL.txt" to excelText(draft, containers.map { it.number }, date), "${root}_META.json" to metadata)) {
             zip.putNextEntry(ZipEntry("$root/$name"))
@@ -100,7 +110,7 @@ fun writeExportZip(output: OutputStream, draft: JobDraft, containers: List<Expor
     }
 }
 
-enum class WorkflowPhase { LOCAL_INCOMPLETE, READY_FOR_FILL, COMPLETE }
+enum class WorkflowPhase { LOCAL_INCOMPLETE, READY_FOR_FILL, RETURN_READY_FOR_CLEAN, RETURN_AWAITING_EMAIL, COMPLETE }
 
 fun workflowPhase(kind: JobKind, quantity: Int, stepsByContainer: List<Set<Int>>): WorkflowPhase {
     val required = (1..kind.photoCount).toSet()

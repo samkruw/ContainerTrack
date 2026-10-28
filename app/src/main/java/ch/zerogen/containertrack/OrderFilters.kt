@@ -7,7 +7,7 @@ fun matchesOrder(batch: JobWithContainers, query: String, filter: OrderFilter, s
     if (needle.isNotEmpty() && !batch.job.draft.referenceNumber.contains(needle,true) && batch.containers.none { it.container.containerNumber.contains(needle,true) }) return false
     return when (filter) {
         OrderFilter.ALL -> true
-        OrderFilter.ACTIVE -> batch.job.exportedAt == null || hasOpenReminder || (sync != null && sync.state != "SYNCED")
+        OrderFilter.ACTIVE -> hasOpenReminder || (batch.job.emailSentAt==null && (batch.isManagedReturn || batch.job.exportedAt==null)) || (sync != null && sync.state != "SYNCED")
         OrderFilter.UPLOAD_ERROR -> sync?.state == "UPLOAD_ERROR"
         OrderFilter.NEEDS_FILL -> batch.job.draft.kind == JobKind.DELIVERY && batch.containers.any { item ->
             val steps = item.photos.map { it.step }.toSet()

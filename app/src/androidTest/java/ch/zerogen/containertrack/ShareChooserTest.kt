@@ -23,15 +23,17 @@ class ShareChooserTest {
     @Test fun exportShareButtonLaunchesAndroidChooser(): Unit = runBlocking {
         val app = compose.activity.application as ContainerTrackApp
         val reference = "CHOOSER-${UUID.randomUUID()}"
-        val job = app.repository.createJob(JobDraft(JobKind.RETURN, referenceNumber = reference,
-            orderValue = "20 ft", quick = "Nothing", additionalWork = "Empty"), 123L)
+        val job = app.repository.createJob(JobDraft(JobKind.DELIVERY, referenceNumber = reference,
+            orderValue = "20 ft"), null)
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val monitor = instrumentation.addMonitor(IntentFilter(Intent.ACTION_CHOOSER),
             Instrumentation.ActivityResult(Activity.RESULT_CANCELED, null), true)
         try {
             val container = app.repository.addContainer(job, "0708")
-            val photo = File.createTempFile("chooser-photo", ".jpg", app.cacheDir).apply { writeBytes(byteArrayOf(1)) }
-            app.repository.savePhoto(job, container, 1, photo)
+            for (step in 1..6) {
+                val photo = File.createTempFile("chooser-photo", ".jpg", app.cacheDir).apply { writeBytes(byteArrayOf(step.toByte())) }
+                app.repository.savePhoto(job, container, step, photo)
+            }
             compose.onNodeWithContentDescription("Aufträge filtern").performClick()
             compose.onNodeWithText("Alle").performClick()
             compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasText(reference))

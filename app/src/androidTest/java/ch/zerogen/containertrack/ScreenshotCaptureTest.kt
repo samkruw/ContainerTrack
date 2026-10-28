@@ -26,9 +26,17 @@ class ScreenshotCaptureTest {
     private val app = ApplicationProvider.getApplicationContext<ContainerTrackApp>()
     private val form = JobDraft(JobKind.DELIVERY, "ORD-0708", "ZRH-0123", "20 ft", 1, "Nothing", "Empty")
     private fun snapshot(kind: JobKind = JobKind.DELIVERY, complete: Boolean = false): JobWithContainers {
-        val job = JobEntity(id = "screenshot", draft = form.copy(kind = kind), createdAt = 1_792_483_200_000L)
+        val job = JobEntity(id = "screenshot", draft = form.copy(kind = kind), createdAt = 1_792_483_200_000L,
+            returnWorkflowVersion = if (kind == JobKind.RETURN) 1 else 0)
         val container = ContainerEntity(id = "container", jobId = job.id, sequenceIndex = 1, containerNumber = "0708")
-        val photos = if (complete) (1..kind.photoCount).map { PhotoEntity(id = "$it", containerId = container.id, step = it, localPath = "test-only", capturedAt = job.createdAt) } else emptyList()
+        val photos = when {
+            !complete -> emptyList()
+            kind == JobKind.RETURN -> listOf(
+                PhotoEntity(id="return-content",containerId=container.id,step=1,localPath="test-only",capturedAt=job.createdAt),
+                PhotoEntity(id="return-clean",containerId=container.id,step=2,localPath="test-only",capturedAt=job.createdAt,
+                    returnPhase=ReturnPhotoPhase.CLEAN,returnCategory=ReturnPhotoCategory.CLEAN))
+            else -> (1..kind.photoCount).map { PhotoEntity(id = "$it", containerId = container.id, step = it, localPath = "test-only", capturedAt = job.createdAt) }
+        }
         return JobWithContainers(job, listOf(ContainerWithPhotos(container, photos)))
     }
     private fun capture(name: String) {
@@ -95,7 +103,7 @@ class ScreenshotCaptureTest {
     }
     @Test fun returnPhoto() {
         val vm = TrackViewModel(app, SavedStateHandle())
-        compose.setContent { ContainerTheme { Surface(color = Color.Transparent) { PhotoScreen(snapshot(JobKind.RETURN), "container", 0, vm, false) {} } } }
+        compose.setContent { ContainerTheme { Surface(color = Color.Transparent) { ReturnPhotoScreen(snapshot(JobKind.RETURN), "container", vm, false, {}) } } }
         capture("11-return-photo")
     }
     @Test fun permissions() {

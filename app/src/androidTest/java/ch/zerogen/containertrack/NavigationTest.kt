@@ -14,10 +14,10 @@ class NavigationTest {
     @Test fun returnFieldsAreLockedUntilLoggerStopped() {
         compose.onNodeWithContentDescription("Neuer Auftrag").performClick()
         compose.onNodeWithText("Return", useUnmergedTree = true).performClick()
-        compose.onNodeWithText("Return Number").assertIsNotEnabled()
+        compose.onNodeWithText("Order Number").assertIsNotEnabled()
         compose.onNodeWithText("Order / Container-Typ").assertIsNotEnabled()
         compose.onNodeWithText("Logger gestoppt – bestätigen").performClick()
-        compose.onNodeWithText("Return Number").assertIsEnabled()
+        compose.onNodeWithText("Order Number").assertIsEnabled()
         compose.onNodeWithText("Order / Container-Typ").assertIsEnabled()
     }
 
@@ -43,7 +43,7 @@ class NavigationTest {
         compose.onNodeWithText("Quick").assertIsNotEnabled()
         compose.onNodeWithText("additional Work").assertIsNotEnabled()
         compose.onNodeWithText("Logger gestoppt – bestätigen").performClick()
-        compose.onNodeWithText("Return Number").performTextInput("RETURN-UI")
+        compose.onNodeWithText("Order Number").performTextInput("RETURN-UI")
         compose.onNodeWithText("Order / Container-Typ").performTextInput("20 ft")
         compose.onNodeWithText("Fotos starten").performClick()
         compose.onAllNodesWithText("Pflichtfeld – Nothing und Empty sind erlaubt.").assertCountEquals(2)
@@ -72,9 +72,9 @@ class NavigationTest {
         compose.onNodeWithContentDescription("Neuer Auftrag").performClick()
         compose.onNodeWithText("Return", useUnmergedTree = true).performClick()
         compose.onNodeWithText("Logger gestoppt – bestätigen").performClick()
-        compose.onNodeWithText("Return Number").performTextInput("RETURN-0708")
+        compose.onNodeWithText("Order Number").performTextInput("RETURN-0708")
         compose.activityRule.scenario.recreate()
-        compose.onNodeWithText("Return Number").assertIsEnabled().assertTextContains("RETURN-0708")
+        compose.onNodeWithText("Order Number").assertIsEnabled().assertTextContains("RETURN-0708")
         compose.onNodeWithText("Logger gestoppt – bestätigen").assertDoesNotExist()
     }
 }

@@ -1,7 +1,6 @@
 package ch.zerogen.containertrack
 
 import android.app.Application
-import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
@@ -20,9 +19,6 @@ class TrackViewModel(application: Application, private val saved: SavedStateHand
     private val app = application as ContainerTrackApp
     val uploadJobs = app.database.dao().observeUploadJobs().map{rows->rows.filter{it.state=="SYNCED"}}.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
     val photoUploads = app.database.dao().observePhotoUploads().map{rows->rows.filter{it.uploadedAt!=null}}.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
-    val microsoftIdentity = app.accounts.identity
-    val microsoftStatus = app.accounts.status
-    val microsoftConfigured get() = app.microsoftConfig.configured
     val online = app.network.online
     val search = saved.getStateFlow("orderSearch", "")
     val filter = saved.getStateFlow("orderFilter", "ACTIVE")
@@ -56,22 +52,61 @@ class TrackViewModel(application: Application, private val saved: SavedStateHand
     private fun pendingKey(jobId: String, containerId: String) = "capture:$jobId:$containerId"
     fun pendingPhoto(jobId: String, containerId: String) = saved.getStateFlow<String?>(pendingKey(jobId, containerId), null)
     fun pendingStep(jobId: String, containerId: String) = saved.getStateFlow(pendingKey(jobId, containerId) + ":step", 0)
-    fun stagePhoto(jobId: String, containerId: String, step: Int, captured: File) = runAction {
-        val staged = withContext(Dispatchers.IO) {
+    fun pendingReturnPhase(jobId: String, containerId: String) = saved.getStateFlow<String?>(pendingKey(jobId, containerId) + ":returnPhase", null)
+    fun pendingReturnCategory(jobId: String, containerId: String) = saved.getStateFlow<String?>(pendingKey(jobId, containerId) + ":returnCategory", null)
+    fun pendingReturnReplaceId(jobId: String, containerId: String) = saved.getStateFlow<String?>(pendingKey(jobId, containerId) + ":replaceId", null)
+    private suspend fun stageCapturedPhoto(jobId: String, containerId: String, captured: File): String {
+        val previousPath = saved.get<String>(pendingKey(jobId, containerId))
+        return withContext(Dispatchers.IO) {
             val directory = File(app.filesDir, "pending/$jobId/$containerId").apply { mkdirs() }
             val destination = File(directory, "${UUID.randomUUID()}.jpg")
-            check(captured.renameTo(destination)) { "Foto konnte nicht gespeichert werden." }
-            destination
+            if (!captured.renameTo(destination)) {
+                captured.copyTo(destination, overwrite = false)
+                check(captured.delete()) { "Aufnahme konnte nicht abgeschlossen werden." }
+            }
+            previousPath?.let { File(it).delete() }
+            destination.absolutePath
         }
+    }
+    fun stagePhoto(jobId: String, containerId: String, step: Int, captured: File) = runAction {
+        val staged = stageCapturedPhoto(jobId, containerId, captured)
         val key = pendingKey(jobId, containerId)
-        saved.get<String>(key)?.let { File(it).delete() }
         saved[key + ":step"] = step
-        saved[key] = staged.absolutePath
+        saved[key + ":returnPhase"] = null
+        saved[key + ":returnCategory"] = null
+        saved[key + ":replaceId"] = null
+        saved[key] = staged
+    }
+    fun stageReturnPhoto(jobId: String, containerId: String, phase: ReturnPhotoPhase,
+                         category: ReturnPhotoCategory, replaceId: String?, captured: File) = runAction {
+        val staged = stageCapturedPhoto(jobId, containerId, captured)
+        val key = pendingKey(jobId, containerId)
+        saved[key + ":step"] = 0
+        saved[key + ":returnPhase"] = phase.name
+        saved[key + ":returnCategory"] = category.name
+        saved[key + ":replaceId"] = replaceId
+        saved[key] = staged
+    }
+    fun savePendingReturnPhoto(jobId: String, containerId: String, done: () -> Unit) = runAction {
+        val key = pendingKey(jobId, containerId)
+        val file = saved.get<String>(key)?.let(::File) ?: error("Keine Aufnahme vorhanden.")
+        val phase = ReturnPhotoPhase.valueOf(saved.get<String>(key + ":returnPhase") ?: error("Aufnahmephase fehlt."))
+        val category = ReturnPhotoCategory.valueOf(saved.get<String>(key + ":returnCategory") ?: error("Fotokategorie fehlt."))
+        app.repository.saveReturnPhoto(jobId, containerId, phase, category, file, saved[key + ":replaceId"])
+        discardPhoto(jobId, containerId)
+        done()
+    }
+    fun deleteReturnPhoto(jobId: String, containerId: String, photoId: String) = runAction {
+        app.repository.deleteReturnPhoto(jobId, containerId, photoId)
     }
     fun discardPhoto(jobId: String, containerId: String) {
         val key = pendingKey(jobId, containerId)
         saved.get<String>(key)?.let { File(it).delete() }
-        saved[key] = null; saved[key + ":step"] = 0
+        saved[key] = null
+        saved[key + ":step"] = 0
+        saved[key + ":returnPhase"] = null
+        saved[key + ":returnCategory"] = null
+        saved[key + ":replaceId"] = null
     }
     fun begin(kind: JobKind) {
         saved["formKind"] = kind.name
@@ -91,7 +126,7 @@ class TrackViewModel(application: Application, private val saved: SavedStateHand
             catch (e: Exception) {
                 if (e is kotlinx.coroutines.CancellationException) throw e
                 error.value = when (e) {
-                    is MicrosoftAuthenticationRequired -> "Microsoft-Anmeldung oder Firmenfreigabe prüfen."
+                    is EmailClientUnavailable -> "Keine E-Mail-App verfügbar. Bitte eine E-Mail-App installieren und ein Konto einrichten."
                     is IllegalArgumentException -> "Eingaben, Container-Nummer und Fotoreihenfolge bitte prüfen."
                     is IllegalStateException -> "Vorgang im aktuellen Auftragsstatus nicht möglich. Auftrag und verfügbaren Speicher prüfen."
                     is SecurityException -> "Zugriff nicht erlaubt. Berechtigungen oder Exportziel prüfen."
@@ -129,29 +164,17 @@ class TrackViewModel(application: Application, private val saved: SavedStateHand
     fun share(jobId: String) = runAction {
         shareRequests.send(app.repository.prepareShare(jobId))
     }
-    fun sharePhotos(jobId: String, teams: Boolean = false, photoId: String? = null) = runAction {
-        shareRequests.send(app.repository.preparePhotoShare(jobId,if (teams) "com.microsoft.teams" else null,photoId))
+    fun prepareEmail(jobId: String) = runAction {
+        shareRequests.send(app.repository.prepareOrderEmail(jobId))
     }
-    fun shareSelectedPhotos(ids:Set<String>) = runAction { shareRequests.send(app.repository.prepareSelectedPhotoShare(ids)) }
-    fun finishAndSharePhotos(jobId:String) = runAction {
-        shareRequests.send(app.repository.preparePhotoShare(jobId,"com.microsoft.teams",requireComplete=true))
-    }
-    fun shareSelectedPhotosToTeams(ids:Set<String>) = runAction {
-        shareRequests.send(app.repository.prepareSelectedPhotoShare(ids,"com.microsoft.teams"))
+    fun finishAndSharePhotos(jobId: String) = prepareEmail(jobId)
+    fun confirmEmailSent(jobId: String) = runAction {
+        app.repository.confirmEmailSent(jobId)
+        notice.value = "E-Mail als gesendet bestätigt."
     }
     fun saveSelectedPhotos(ids:Set<String>,tree:Uri) = runAction {
         val count=app.repository.saveSelectedPhotos(ids,tree)
         notice.value="$count Originalfotos gespeichert."
-    }
-    fun uploadPhotos(jobId: String) = runAction {
-        val owner = microsoftIdentity.value?.accountId ?: throw MicrosoftAuthenticationRequired()
-        app.repository.enqueuePhotoUpload(jobId,owner)
-        notice.value = "Fotos zur Übertragung vorgemerkt. Der Status zeigt die tatsächliche Bestätigung."
-    }
-    fun signIn(activity: Activity) = runAction { app.accounts.signIn(activity);app.repository.reconcilePendingEffects() }
-    fun signOut() = runAction { app.accounts.signOut();app.uploadScheduler.stopForLogout() }
-    fun switchAccount(activity: Activity) = runAction {
-        app.accounts.signOut();app.uploadScheduler.stopForLogout();app.accounts.signIn(activity);app.repository.reconcilePendingEffects()
     }
     fun deleteJob(id: String, done: () -> Unit) = runAction {
         app.repository.deleteJob(id)

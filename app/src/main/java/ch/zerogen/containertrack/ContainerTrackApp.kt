@@ -9,7 +9,7 @@ import kotlinx.coroutines.launch
 
 class ContainerTrackApp : Application() {
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    val database by lazy { Room.databaseBuilder(this, TrackDatabase::class.java, "container-track.db").addMigrations(MIGRATION_1_2).build() }
+    val database by lazy { Room.databaseBuilder(this, TrackDatabase::class.java, "container-track.db").addMigrations(MIGRATION_1_2,MIGRATION_2_3).build() }
     val microsoftConfig by lazy { configuredMicrosoft(this) }
     val accounts by lazy { MsalAccountProvider(this,microsoftConfig) }
     val network by lazy { NetworkMonitor(this) }

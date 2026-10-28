@@ -14,7 +14,12 @@ data class JobEntity(
     val exportedAt: Long? = null,
     val loggerStoppedAt: Long? = null,
     val completionTriggeredAt: Long? = null,
-    val createdByAccountId: String? = null
+    val createdByAccountId: String? = null,
+    @ColumnInfo(defaultValue = "0") val returnWorkflowVersion: Int = 0,
+    @ColumnInfo(defaultValue = "0") val documentationRevision: Long = 0,
+    val emailPreparedRevision: Long? = null,
+    val emailPreparedAt: Long? = null,
+    val emailSentAt: Long? = null
 )
 
 @Entity(tableName = "containers", foreignKeys = [ForeignKey(entity = JobEntity::class,
@@ -36,7 +41,9 @@ data class PhotoEntity(
     val containerId: String,
     val step: Int,
     val localPath: String,
-    val capturedAt: Long
+    val capturedAt: Long,
+    @ColumnInfo(defaultValue = "'INITIAL'") val returnPhase: ReturnPhotoPhase = ReturnPhotoPhase.INITIAL,
+    @ColumnInfo(defaultValue = "'CONTENT'") val returnCategory: ReturnPhotoCategory = ReturnPhotoCategory.CONTENT
 )
 
 @Entity(tableName = "reminders", foreignKeys = [ForeignKey(entity = JobEntity::class,
@@ -47,7 +54,8 @@ data class LoggerReminder(
     val jobId: String,
     val referenceNumber: String,
     val dueAt: Long,
-    val confirmedAt: Long? = null
+    val confirmedAt: Long? = null,
+    @ColumnInfo(defaultValue = "'LOGGER'") val kind: ReminderKind = ReminderKind.LOGGER
 ) {
     @get:Ignore val notificationId: Int get() = id
 }
@@ -62,12 +70,26 @@ data class JobWithContainers(
     val containers: List<ContainerWithPhotos>
 ) {
     val ordered get() = containers.sortedBy { it.container.sequenceIndex }
-    val complete get() = containers.size == job.draft.quantity && containers.all {
+    val complete get() = if (isManagedReturn) {
+        job.draft.quantity in 1..50 && containers.size == job.draft.quantity &&
+            containers.all { returnProgress(it.photos).complete }
+    } else containers.size == job.draft.quantity && containers.all {
         it.photos.map { p -> p.step }.sorted() == (1..job.draft.kind.photoCount).toList()
     }
-    val phase get() = workflowPhase(job.draft.kind, job.draft.quantity, containers.map { it.photos.map { photo -> photo.step }.toSet() })
-    val completedCount get() = containers.count { it.container.completedAt != null }
+    val phase get() = if (isManagedReturn) when {
+        complete && job.emailSentAt != null -> WorkflowPhase.COMPLETE
+        complete -> WorkflowPhase.RETURN_AWAITING_EMAIL
+        initialDocumentationComplete -> WorkflowPhase.RETURN_READY_FOR_CLEAN
+        else -> WorkflowPhase.LOCAL_INCOMPLETE
+    } else workflowPhase(job.draft.kind, job.draft.quantity, containers.map { it.photos.map { photo -> photo.step }.toSet() })
+    val completedCount get() = if (isManagedReturn) containers.count { returnProgress(it.photos).complete }
+        else containers.count { it.container.completedAt != null }
     val status get() = when {
+        isManagedReturn && phase == WorkflowPhase.COMPLETE -> "Abgeschlossen"
+        isManagedReturn && phase == WorkflowPhase.RETURN_AWAITING_EMAIL -> "E-Mail ausstehend"
+        isManagedReturn && phase == WorkflowPhase.RETURN_READY_FOR_CLEAN -> "Bereit zur Reinigung"
+        isManagedReturn && containers.isEmpty() -> "Geplant"
+        isManagedReturn -> "In Bearbeitung"
         job.exportedAt != null -> "Exportiert"
         complete -> "Vollständig"
         phase == WorkflowPhase.READY_FOR_FILL -> "Bereit zum Befüllen"
@@ -137,10 +159,11 @@ interface TrackDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE) suspend fun insertReminder(reminder: LoggerReminder): Long
     @Query("UPDATE reminders SET confirmedAt = :at WHERE id = :id AND confirmedAt IS NULL")
     suspend fun confirmReminder(id: Int, at: Long)
+    @Query("DELETE FROM photos WHERE id=:id") suspend fun deletePhoto(id:String)
     @Query("DELETE FROM photos WHERE containerId = :id AND step >= :fromStep")
     suspend fun deletePhotosFrom(id: String, fromStep: Int)
     @Query("DELETE FROM jobs WHERE id = :id") suspend fun deleteJob(id: String)
 }
 
-@Database(entities = [JobEntity::class, ContainerEntity::class, PhotoEntity::class, LoggerReminder::class, UploadJobEntity::class, UploadPhotoEntity::class], version = 2, exportSchema = true)
+@Database(entities = [JobEntity::class, ContainerEntity::class, PhotoEntity::class, LoggerReminder::class, UploadJobEntity::class, UploadPhotoEntity::class], version = 3, exportSchema = true)
 abstract class TrackDatabase : RoomDatabase() { abstract fun dao(): TrackDao }
