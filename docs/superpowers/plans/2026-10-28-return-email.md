@@ -42,7 +42,8 @@
 - [x] Bestehende Android-Regressionen an neue Return-/Mail-Regeln anpassen.
 
 ### Task 4: Verifikation und Debug-Ausgabe
-- [ ] test lint assembleDebug assembleDebugAndroidTest mit vorhandenem Gradle-Helper.
-- [ ] QA-/Berechtigungsprüfung und unabhängiger Review.
-- [ ] GitHub-Build über bestehenden Branch; API-Nachweise nur bei erlaubtem Zugriff.
-- [ ] Dokumentation mit tatsächlichen Ergebnissen und offenen externen Grenzen aktualisieren.
+- [x] test lint assembleDebug assembleDebugAndroidTest mit vorhandenem Gradle-Helper.
+- [x] QA-/Berechtigungsprüfung und unabhängiger Review.
+- [x] Bestehenden Branch-Push für GitHub-Build nutzen; API-Nachweis bleibt gesperrt.
+- [x] Dokumentation mit tatsächlichen Ergebnissen und offenen externen Grenzen aktualisieren.
+- [ ] Vier abschließende UI-Prüfungen/Fotoauswahl-Capture nach Cloud-Neustart bzw. im KVM-CI bestätigen; nicht als bestanden ausgeben.

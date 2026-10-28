@@ -1,3 +1,28 @@
+# V1.5.0 — Return-Dokumentation und E-Mail
+
+Aktueller Umfang, Stand 28.10.2026: native lokale Android-App ohne KT-Nutzung, Anmeldung, Benutzerverwaltung, Rollen oder aktive Teams-Übergabe. E-Mail umfasst jeweils einen vollständigen Auftrag mit allen Fotos aller Container. Die Regeln dieser Sektion ersetzen abweichende Anforderungen der historischen Tabellen weiter unten.
+
+Prüfstand: 50 Unit-Tests je Variante, neun Python-QA-Tests und zwölf Android-Kernprüfungen bestanden. Erster Gesamtlauf: 68/76; gezielter Nachlauf: 26/30. Der abschließende Nachlauf wurde beim Cloud-Neustart nach zwei bestandenen von sechs Prüfungen unterbrochen. Vier UI-Prüfungen und der Fotoauswahl-Capture bleiben offen. Maßgeblich ist [QA_STATUS.md](QA_STATUS.md); keine vollständige Gerätefreigabe behauptet.
+
+| Aktuelle Anforderung | Nachweis / Abdeckung | Prüfstatus |
+| --- | --- | --- |
+| Direkter Start; kein KT-Eingabe-, Such-, Anzeige- oder Exportfeld; keine Benutzer, PINs oder Rollen | RulesTest, OrderFiltersTest, GalleryFiltersTest, LocalJobAccessTest, NavigationTest | Regeln und Navigation bestanden; Gesamtfreigabe separat offen |
+| Lieferung: unverändert sechs Pflichtfotos je Container; 30-Minuten-Logger-Erinnerung bleibt separat | WorkflowRulesTest, CompletionTest, TwoPhaseDeliveryTest, ReminderReceiverTest | bestehende Regressionen bestanden |
+| Return: je Container ein Inhalts-Pflichtfoto und optionale Schaden-/Sonstiges-Anfangsfotos | ReturnWorkflowTest, ReturnWorkflowRepositoryTest, ReturnCaptureScreenTest | Unit-/Kernprüfungen und Return-Oberfläche bestanden |
+| Return: exakt dieselbe Anzahl Leer-/Sauber-Fotos wie sämtliche Anfangsfotos je Container; alle vorgesehenen Container erforderlich | ReturnWorkflowTest, ReturnWorkflowRepositoryTest | Unit-/Kernprüfungen bestanden |
+| Feste Return-Erinnerung für Erstellung + 24 Stunden; Bearbeiten, Export und Mailvorbereitung setzen die Frist nicht zurück | ReturnWorkflowRepositoryTest, ReturnEmailConfirmationTest | Kernprüfungen bestanden |
+| Vollständige Fotos allein schließen den Return nicht; erst „E-Mail gesendet“ für die aktuell vorbereitete Dokumentationsrevision bestätigt die Erinnerung | ReturnWorkflowRepositoryTest, ReturnEmailConfirmationTest | Kernprüfungen bestanden; keine automatische Zustellbestätigung |
+| Änderungen verwerfen die bisherige Mailvorbereitung; nach Versandbestätigung ist die Dokumentation gesperrt | ReturnWorkflowRepositoryTest | Kernprüfungen bestanden |
+| E-Mail enthält alle Original-JPGs aller Container eines vollständigen Auftrags, auch aus der Galerie; mehrere Aufträge benötigen getrennte Mails | ReturnWorkflowRepositoryTest, EmailPhotoSharingTest, GalleryProfileTest | Kernverträge und GalleryProfileTest bestanden; Referenz-Fotoauswahl offen |
+| Betreff exakt Auftragsnummer; Begleittext vorhanden; Empfänger wird im Mailprogramm gewählt; temporäre Leserechte für alle Anhänge | EmailPhotoSharingTest, ReturnWorkflowRepositoryTest | Kernprüfungen bestanden; echte Mail-App-/Versandprüfung auf Nutzergerät offen |
+| Return-Namen enthalten Containernummer, vorher/nachher, Ordinal je Phase und Kategorie; Lieferung/alte abgeschlossene Returns behalten bisherige Namen | ReturnWorkflowTest, EmailPhotoSharingTest, ReturnWorkflowRepositoryTest | Unit-/Kernprüfungen bestanden |
+| Room 2→3 erhält Aufträge, Fotos, Upload-Altbestände und Lieferungs-Erinnerungen; offene Returns wechseln zum neuen Ablauf, abgeschlossene alte Returns bleiben kompatibel | ReturnMigrationTest, MigrationTest, PersistenceTest | Return-Migration und bestehende Migrations-/Persistenzprüfungen bestanden |
+| Graphit-/Lime-Referenzen, aktuelle Return-Zähler, optionale Fotoaktionen und E-Mail-Abschluss verständlich sichtbar | ReturnCaptureScreenTest, ReferenceScreenshotsTest, manueller Referenzvergleich | neun Captures gesichtet; Fotoauswahl-Capture und vollständige UI-Freigabe offen |
+
+# Historische Prüfstände bis 1.4.4
+
+Die folgenden Abschnitte bleiben als frühere Nachweise erhalten. Ihre Aussagen zu KT, Benutzern, Teams, einem einzelnen Return-Foto und damaligen Testergebnissen gelten ausschließlich für die jeweils genannte Version. Sie sind keine Abnahme von 1.5.0.
+
 # V1.4.4 — KT vollständig aus der App-Nutzung entfernt
 
 Bestanden: [CI40330673261](https://github.com/samkruw/ContainerTrack/actions/runs/40330673261) am 26.10.2026, 41 Unit-Tests je Variante, 60 Android-Tests ohne übersprungene Tests, neun Python-QA-Tests, Lint und APK-Berechtigungsprüfung. Unabhängiger statischer Review ohne wichtige Restbefunde.

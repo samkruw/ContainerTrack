@@ -44,23 +44,25 @@ Bei Push/PR führt [android.yml](.github/workflows/android.yml) Build, Unit-Test
     └── <Referenz>_META.json
 ```
 
-Lieferung: sechs JPEGs `01`–`06`. Return: nur `01`. Referenz ist Order Number bzw. Return Number. Nummern sind keine Ganzzahlen. Interne Dateien verwenden UUIDs; nur der Export bekommt die vorgegebenen Dateinamen.
+Lieferung: sechs JPEGs `01`–`06`. Neue Returns: Anfangs- und Abschlussfotos mit Phasen-/Kategorie-Namen wie `0708_vorher_02_schaden.jpg` und `0708_nachher_01_leer_sauber.jpg`. Alte abgeschlossene Returns bleiben kompatibel. Referenz ist immer die Order Number. Nummern sind keine Ganzzahlen. Interne Dateien verwenden UUIDs; nur der Export bekommt die vorgegebenen Dateinamen.
 
 TXT: UTF-8, tabgetrennt, eine Kopfzeile und eine Datenzeile mit allen Container-Nummern in Reihenfolge, kommagetrennt. Kopfzeile:
 
 ```text
-Datum\tIn/Out\tKT\tOrder\tQuantity\tadditional Work\tContainer Number\tQuick
+Datum\tIn/Out\tAuftragsnummer\tOrder\tQuantity\tadditional Work\tContainer Number\tQuick
 ```
 
-Lieferung: `OUT`, KT = ZRH Number; die TXT-Spalten `additional Work` und `Quick` bleiben leer, auch bei älteren Aufträgen mit gespeicherten Werten. Return: `IN`, KT = Return Number. Order = manuell eingegebener Container-Typ. Datum = lokales Gerätedatum `dd.MM.yyyy`. Tabs werden zu Leerzeichen, Zeilenumbrüche zu ` / `. Die TXT-Datei kann beim Import als Tab-getrennt angegeben werden. In Tabellenprogrammen Container-Nummern als Text importieren, um führende Nullen zu bewahren.
+Lieferung: `OUT`; die TXT-Spalten `additional Work` und `Quick` bleiben leer, auch bei älteren Aufträgen mit gespeicherten Werten. Return: `IN`. Auftragsnummer = Order Number; KT wird nicht verwendet. Order = manuell eingegebener Container-Typ. Datum = lokales Gerätedatum `dd.MM.yyyy`. Tabs werden zu Leerzeichen, Zeilenumbrüche zu ` / `. Die TXT-Datei kann beim Import als Tab-getrennt angegeben werden. In Tabellenprogrammen Container-Nummern als Text importieren, um führende Nullen zu bewahren.
 
-META enthält Auftragswerte, Fotozeitpunkte und relative Exportnamen, keine internen Dateipfade. `archiveCreatedAt` bezeichnet die Archiverstellung; `exportedAt` im Archiv ist der zuvor bekannte erste Exportzeitpunkt, beim ersten Archiv noch `null`. Der erfolgreiche Exportzeitpunkt wird nach dem Schliessen des Zielstreams bzw. nach vollständiger Archiverstellung zum Teilen in Room gespeichert.
+META (schemaVersion 3) enthält Auftragswerte, Foto-Phase/Kategorie, Fotozeitpunkte und relative Exportnamen, keine internen Dateipfade. `archiveCreatedAt` bezeichnet die Archiverstellung; `exportedAt` im Archiv ist der zuvor bekannte erste Exportzeitpunkt, beim ersten Archiv noch `null`. Der erfolgreiche Exportzeitpunkt wird nach dem Schliessen des Zielstreams bzw. nach vollständiger Archiverstellung zum Teilen in Room gespeichert.
 
-## Logger und Berechtigungen
+## Return-Erinnerung, Logger und Berechtigungen
+
+Neue Returns erhalten beim Anlegen genau eine persistente Erinnerung für Erstellung + 24h. Sie bleibt bis zur ausdrücklichen E-Mail-Versandbestätigung offen; Fotos, Export, Neustarts und erneute Vorbereitung starten sie nicht neu.
 
 Beim ersten vollständigen Delivery-Abschluss (alle sechs Fotos jedes Containers) wird genau eine Room-Erinnerung angelegt: Abschlusszeitpunkt + 30 Minuten. Export, Teilen und Wiederholungen setzen sie nicht zurück. Die App bestätigt keinen Versand durch eine andere App. Countdown und Fortschritt bleiben in der App sichtbar; bei Fälligkeit erscheint ein nicht wegwischbarer Bestätigungsdialog. Eine Benachrichtigung bietet die Aktion „Logger gestartet“.
 
-`CAMERA` für Scan/Fotos, `POST_NOTIFICATIONS` ab Android 13, optionaler Zugriff `SCHEDULE_EXACT_ALARM` für zeitgenaue Standby-Alarme. Ohne genauen Alarmzugriff nutzt die App `setAndAllowWhileIdle`; Android darf die Zustellung verzögern. Ohne Benachrichtigungsfreigabe bleibt der Dialog beim Öffnen der App wirksam. `RECEIVE_BOOT_COMPLETED` stellt offene Alarme nach Neustart wieder her. Nach explizitem Android-„Beenden erzwingen“ muss die App erneut geöffnet werden; Android verhindert vorher Alarm-/Broadcast-Zustellung.
+`CAMERA` für Scan/Fotos, `POST_NOTIFICATIONS` ab Android 13, optionaler Zugriff `SCHEDULE_EXACT_ALARM` für zeitgenaue Standby-Alarme. Ohne genauen Alarmzugriff nutzt die App `setAndAllowWhileIdle`; Android darf die Zustellung verzögern. Ohne Benachrichtigungsfreigabe bleiben die offenen Erinnerungen in der App sichtbar: Lieferungen mit Logger-Dialog, Returns mit einem bearbeitbaren Hinweis bis zur Versandbestätigung. `RECEIVE_BOOT_COMPLETED` stellt offene Alarme nach Neustart wieder her. Nach explizitem Android-„Beenden erzwingen“ muss die App erneut geöffnet werden; Android verhindert vorher Alarm-/Broadcast-Zustellung.
 
 ## Offline und Speicherung
 
@@ -84,6 +86,6 @@ python3 tools/check_privacy.py
 
 Unit: Validierung, OCR-Normalisierung, Duplikate, Fotofolge, TXT, ZIP-Pfade, Dateinamen und Timer. Android: Room-Wiederöffnung, Dateien/Löschen, Return-Gate, Fotozustände, Export/Re-Export, Navigation, Activity-Neustart, Alarm-Receiver und Benachrichtigungsaktion mit gesperrten/erlaubten Benachrichtigungen. OfflineOcrTest schaltet den API-35-Emulator in den Flugmodus und prüft die Erkennung von `0708` durch das echte gebündelte ML-Kit-Modell. ScreenshotCaptureTest erzeugt 17 PNGs unter `Android/data/ch.zerogen.containertrack/files/screenshots`. CI lässt die Testinstallation zum Screenshot-Transfer bis zum Ende des Emulator-Jobs bestehen.
 
-Nach Sichtprüfung auf festem Emulator die Bilder nach `design/goldens/` übernehmen. Danach prüft CI diese Baselines; lokale Prüfung mit `python3 tools/compare_screenshots.py design/goldens app/build/screenshots` (Pillow erforderlich). Ohne freigegebene Baselines ist Screenshot-Regression noch nicht abgenommen. Die im Update-Auftrag mitgelieferte Navy-/Glas-Referenz und Container-/Kamera-Marke dienen als visuelle Richtung. Der App-Marker ist eine kompakte native Vektorumsetzung; die hochaufgelösten Vorlagen werden nicht als Screens eingebettet. Das Referenzbild liegt bislang nicht als `design/UI_REFERENCE.png` im Repository vor.
+Nach Sichtprüfung auf festem Emulator die Bilder nach `design/goldens/` übernehmen. Danach prüft CI diese Baselines; lokale Prüfung mit `python3 tools/compare_screenshots.py design/goldens app/build/screenshots` (Pillow erforderlich). Ohne freigegebene Baselines ist Screenshot-Regression noch nicht abgenommen. Die später ausgewählten Graphit-/Lime-Bildvorlagen bestimmen die visuelle Richtung: Inter, flache Abschnitte, große Kennungen, Container-Marke und drei Navigationstabs. Die aktuellen fachlichen Anpassungen und die tatsächliche Sichtprüfung stehen in [design-qa.md](design-qa.md). Die hochaufgelösten Vorlagen werden nicht als Screens eingebettet.
 
 Vor produktiver Nutzung: beide Workflows mit realer Kamera im Flugmodus, Permission-Denial, Rotation/Prozesstod, Standby/Neustart, Benachrichtigungsaktion und tatsächliche ZIP/TXT-Dateien prüfen. Die [Acceptance Matrix](docs/ACCEPTANCE_MATRIX.md) bleibt bis zur Verifikation offen.
