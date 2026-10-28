@@ -1,15 +1,15 @@
-# Native Android — Referenzabgleich 1.4.3
+# Native Android — Referenzabgleich 1.4.4
 
-final result: passed (manueller visueller Abgleich)
+final result: funktionale Prüfungen bestanden; manueller visueller Abgleich für 1.4.4 offen
 
-Die ausgewählten Bildvorlagen werden in der bestehenden Kotlin/Compose-App umgesetzt. Nach der letzten Nutzeranweisung entfallen Anmeldung, PINs und Benutzer-/Rollenverwaltung vollständig. Es gibt keine Team-Galerie; die Galerie zeigt lokale Daten.
+Die ausgewählten Bildvorlagen werden in der bestehenden Kotlin/Compose-App umgesetzt. Auf Nutzerwunsch entfallen Anmeldung, PINs, Rollen und jetzt auch KT vollständig aus der App-Nutzung. Die Galerie zeigt lokale Daten.
 
 ## Zuordnung
 
 | Vorlage | Native Ansicht | Capture |
 | --- | --- | --- |
 | 1000036738 Meine Aufträge | OrderListScreen mit aktivem Auftrag, großen Kennungen, kompakten letzten Aufträgen | 20-reference-orders |
-| 1000036739 Neuer Auftrag | SetupScreen mit Segmenten, KT, optionalem Erstcontainer/OCR, Pflichtdetails, Fotodokumentation | 21-reference-new-order |
+| 1000036739 Neuer Auftrag | SetupScreen mit Segmenten, Auftragsnummer, optionalem Erstcontainer/OCR, Pflichtdetails, Fotodokumentation | 21-reference-new-order |
 | 1000036740 Fotos prüfen | PhotoReviewScreen mit echten Bildern, sechs Delivery-Plätzen und Status | 22-reference-photo-review |
 | 1000036742 Galerie | Galerie-Containerliste, Filter, echte Thumbnail-/Upload-Daten | 23-reference-gallery |
 | 1000036745 Fotoauswahl | Auftragsraster mit Auswahl, Original-JPG-Speichern/Teilen | 24-reference-photo-selection |
@@ -19,22 +19,16 @@ Die ausgewählten Bildvorlagen werden in der bestehenden Kotlin/Compose-App umge
 
 ## Visuelle Messwerte
 
-Referenzen 592×1280; Android-Capture 1080×2340 mit nahezu identischem Seitenverhältnis. App-eigene Flächen werden verglichen; Systemleisten bleiben Androids Verantwortung. Grundfläche#151A1D, Lime#BEFF42, Weiß#F8FAF9, Linien#3B4348, Inter mit OFL-Lizenz. Markenleiste60dp, Navigation72dp, Außenabstand16dp, primäre Trefferfläche50dp, Radien5–10dp. Haupttitel44sp, Kennungen56sp, Eingaben52sp. Keine Standard-Material-Pills als Hauptnavigation, kein Glow.
+Referenzen 592×1280; Android-Capture 1080×2340 mit nahezu identischem Seitenverhältnis. App-eigene Flächen werden verglichen; Systemleisten bleiben Androids Verantwortung. Grundfläche#151A1D, Lime#BEFF42, Weiß#F8FAF9, Linien#3B4348, Inter mit OFL-Lizenz. Markenleiste60dp, Navigation72dp, Außenabstand16dp, primäre Trefferfläche50dp, Radien5–10dp. Haupttitel44sp, kurze Kennungen56sp, längere Auftragsreferenzen32sp mit begrenzten Zeilen, Eingaben52sp. Keine Standard-Material-Pills als Hauptnavigation, kein Glow.
 
 ## Fachliche Anpassungen
 
-Sechs Delivery-Pflichtfotos bleiben verbindlich. Die Beispiele mit vier oder fünf Fotos ersetzen diese Vorgabe nicht. Pflichtangaben bleiben im Formular erreichbar. Alle lokalen Aufträge und Fotos sind unabhängig von früheren Benutzerzuordnungen zugänglich. Geräteeinstellungen ersetzen das Profil; Benutzerverwaltung und Anmeldung erhalten keine Ersatzattrappen. Teams öffnet seine eigene Zielauswahl; Teilen bestätigt keinen Upload und startet keinen Timer erneut.
+Auftragsreferenz statt KT in Erfassung, Pflichtprüfung, Suche, Übersicht, Details, Fotoprüfung, Galerie und Export. Lieferungen benötigen nur Auftragsnummer, Containertyp und Menge; der optionale Erstcontainer/OCR bleibt erhalten. Alte KT-Werte verbleiben ausschließlich ungenutzt in der bestehenden Room-Spalte zur Datenbankkompatibilität. Sechs Delivery-Pflichtfotos, Return-Logger-Gate, Kopieren und manueller Teams-/Android-Share bleiben verbindlich. Kein bestätigter Upload durch bloßes Teilen.
 
 ## Verifikation
 
-[GitHub-Lauf 39915194786](https://github.com/samkruw/ContainerTrack/actions/runs/39915194786), geprüfter App-/Test-Commit `b19ff733d8d763dc008e894795938a1aea9256ce`: 41 Unit-Tests je Variante, 60 Android-Tests, neun Python-QA-Tests, Lint und APK-Berechtigungsprüfung erfolgreich. 24 Screenshot-PNGs, darunter sieben aktuelle Referenzansichten.
+[GitHub-Lauf 40330673261](https://github.com/samkruw/ContainerTrack/actions/runs/40330673261), App-/Test-Commit `f45788e8c1afaef03189302705f8d582a7696e1e`: 41 Unit-Tests je Variante, 60 Android-Tests, neun Python-QA-Tests, Lint und APK-Berechtigungsprüfung erfolgreich. 24 Screenshot-PNGs mit sieben Referenzansichten wurden erzeugt: [Screenshot-Artefakt](https://github.com/samkruw/ContainerTrack/actions/runs/40330673261/artifacts/12654148709).
 
-Die [finale Übersicht mit synthetischen Testdaten](design/verification/reference-ui-v1.4.3.jpg) wurde tatsächlich geöffnet und visuell geprüft: Graphit/Lime, Inter, große Kennungen, Segmente, Foto-Raster, Auswahlmarken, Markenleiste, Navigation mit Unterstrich sowie Einstellungen ohne Login/Rollen. Kein automatischer Pixelvergleich; keine freigegebenen Goldens vorhanden. Reale Teams-/SAF-/Hardware-Prüfung siehe [QA_STATUS.md](docs/QA_STATUS.md).
+Die aktuelle Übersicht wurde noch nicht manuell visuell geprüft. Nach der Wiederaufnahme sind die temporären Dateien nicht mehr vorhanden; der erneute GitHub-API-Abruf ist durch die Entwicklungs-Netzwerkregel blockiert. Die [visuell geprüfte Übersicht 1.4.3](design/verification/reference-ui-v1.4.3.jpg) ist ein historischer Nachweis und zeigt noch KT außerhalb der damaligen Fotoinfos. Sie wird nicht als Nachweis für die vollständige KT-Entfernung verwendet. Keine freigegebenen Goldens, kein behaupteter Pixelvergleich.
 
-## Ergänzung 1.4.2: Auftragsinfos
-
-Übertragung zeigt den tatsächlichen Begleittext und „Auftragsinfos kopieren“. In der Galerie stehen „Infos kopieren“ und Teams nebeneinander, damit keine weitere volle Buttonzeile den Fotobereich verkleinert. Die finale native Ansicht wurde visuell geprüft. Teams bestimmt seine eigenen Ziele und kann Text bei Bildern ignorieren; die App verspricht keine Kanalauswahl und bietet ausdrücklich Kopieren sowie den manuellen Kanalablauf an. Die reale Teams-Darstellung ist dadurch nicht als getestet behauptet.
-
-## Ergänzung 1.4.3: Fotoinfos ohne KT
-
-Die aktuelle Übertragungsansicht wurde tatsächlich visuell geprüft: Auftragsreferenz statt KT im Kopf, Begleittext und Kopieren ohne KT-Zeile. Übrige Erfassungs-/Übersichtsansichten und gespeicherte KT-Daten bleiben erhalten. Die Android-Schnittstelle meldet nummerierte JPG-Namen; eine „Shared Photos“-Anzeige in der fremden Teams-App wurde nicht als behoben behauptet.
+Unabhängiger statischer Review bestätigt keine aktiven KT-Verwendungen außerhalb der ignorierten Altspalte und keine wichtigen Restbefunde. Lange Referenzen und große Systemschriften sowie reale Teams-/SAF-/Hardware-Darstellung bleiben Geräte-Abnahme. Details: [QA_STATUS.md](docs/QA_STATUS.md).

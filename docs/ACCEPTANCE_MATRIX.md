@@ -1,3 +1,18 @@
+# V1.4.4 — KT vollständig aus der App-Nutzung entfernt
+
+Bestanden: [CI40330673261](https://github.com/samkruw/ContainerTrack/actions/runs/40330673261) am 26.10.2026, 41 Unit-Tests je Variante, 60 Android-Tests ohne übersprungene Tests, neun Python-QA-Tests, Lint und APK-Berechtigungsprüfung. Unabhängiger statischer Review ohne wichtige Restbefunde.
+
+| Anforderung | Nachweis | Status |
+| --- | --- | --- |
+| Kein KT-Eingabefeld oder KT-Pflichtfeld | RulesTest, NavigationTest | bestanden |
+| Auftragsnummer in Übersicht, Details, Fotoprüfung und Galerie | OrderFiltersTest, GalleryFiltersTest, ReferenceScreenshotsTest | bestanden |
+| Suche nach Auftrag/Container, nicht altem KT | OrderFiltersTest, GalleryFiltersTest | bestanden |
+| Exportvorschau/TXT/JSON ohne KT, Auftragsnummer vorhanden | RulesTest, ExportSharingTest, statischer Review | bestanden |
+| Alte Datenbank, Fotos und Erinnerungen erhalten | PersistenceTest, unverändertes Room-Schema 2 | bestanden |
+| Tatsächlicher manueller Bildvergleich für 1.4.4 | 24 CI-Screenshots vorhanden; erneuter API-Abruf gesperrt | offen, nicht als bestanden behauptet |
+
+Aktueller Build und Grenzen: [QA_STATUS.md](QA_STATUS.md). Die folgenden Tabellen sind historische Prüfstände; frühere KT-Anforderungen sind ab 1.4.4 aufgehoben.
+
 # V1.4.3 — Fotoinfos ohne KT und Dateinamen-Nachweis
 
 Bestanden: [CI39915194786](https://github.com/samkruw/ContainerTrack/actions/runs/39915194786), 41 Unit-Tests je Variante, 60 Android-Tests ohne übersprungene Tests, neun Python-QA-Tests, Lint und APK-Berechtigungsprüfung. 24 Screenshots, finale Übersicht tatsächlich visuell geprüft.

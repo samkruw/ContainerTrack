@@ -1,32 +1,34 @@
-# Update 1.4.4 — Prüfung läuft
+# Prüfstatus — Update 1.4.4
 
-KT entfällt vollständig aus Erfassung, Pflichtprüfung, Suche, Anzeige und Export. Room bleibt Schema 2; alte Daten bleiben erhalten. Der folgende Nachweis beschreibt noch Version 1.4.3.
+Geprüfter App-/Test-Commit: `f45788e8c1afaef03189302705f8d582a7696e1e`. [GitHub-Lauf 40330673261](https://github.com/samkruw/ContainerTrack/actions/runs/40330673261) wurde am 26.10.2026 mit erfolgreichem Build und erfolgreichen Gerätetests bestätigt. Dokumentation abgeschlossen am 28.10.2026; seit der Prüfung keine App-/Test-Änderung.
 
-# Prüfstatus — Update 1.4.3 — 23.10.2026
+[Debug-APK 1.4.4 herunterladen](https://github.com/samkruw/ContainerTrack/actions/runs/40330673261/artifacts/12654208357): ZIP mit `app-debug.apk`, Version 1.4.4 / versionCode 11. Artefakte haben begrenzte Aufbewahrungszeit.
 
-Geprüfter App-/Test-Commit: `b19ff733d8d763dc008e894795938a1aea9256ce`. [GitHub-Lauf 39915194786](https://github.com/samkruw/ContainerTrack/actions/runs/39915194786): Build und Gerätetests erfolgreich. Spätere Dokumentations-Commits ändern weder App noch Tests.
+## Bestätigte Prüfungen
 
-[Debug-APK herunterladen](https://github.com/samkruw/ContainerTrack/actions/runs/39915194786/artifacts/12484842232): ZIP mit `app-debug.apk`, Version 1.4.3 / versionCode 10. Artefakte haben begrenzte Aufbewahrungszeit.
+- 41 Unit-Tests je Variante erfolgreich, keine Fehler oder übersprungenen Tests. Vier angepasste Regressionen zunächst fehlgeschlagen, nach Implementierung bestanden. Neun Python-QA-Tests, Lint, Debug-/Instrumentation-Kompilierung und Manifest-/APK-Berechtigungsprüfung bestanden.
+- 60 Android-Tests auf API 35 erfolgreich, keine übersprungenen Tests. 24 Screenshot-PNGs erzeugt, darunter sieben Referenzansichten: [Geräteberichte und Screenshots](https://github.com/samkruw/ContainerTrack/actions/runs/40330673261/artifacts/12654148709).
+- RulesTest, OrderFiltersTest und GalleryFiltersTest prüfen Lieferungen ohne KT-Pflicht, Suche nach Auftrags-/Containernummer statt alter KT-Werte, Anzeige der Auftragsreferenz und TXT mit Auftragsnummer statt KT.
+- NavigationTest legt einen Lieferauftrag ohne KT-Feld an. ReferenceScreenshotsTest navigiert anhand der Auftragsreferenzen durch Übersicht, Galerie, Fotoprüfung und Übertragung.
+- PersistenceTest öffnet einen alten Datensatz mit gespeichertem KT-Wert erneut: Fotos, Erinnerung und Altwert bleiben erhalten; die Anzeige nutzt die Auftragsreferenz. Neue Aufträge speichern KT leer. Room-Schema und Datenbankversion bleiben unverändert bei 2.
+- ExportSharingTest prüft Exporte eines Datensatzes mit altem KT-Wert: kein kt-Feld in META.json, Export-schemaVersion 2, Auftragsreferenz statt KT im TXT. Vorhandene Archivdateien werden nicht umgeschrieben. Export-/Completion-/Reminder-Effekte bleiben einmalig.
+- Foto-Begleittext, Kopierfunktion, nummerierte JPG-Namen, temporäre Leserechte, Android-Fallback und deaktivierte automatische Graph-Uploads bleiben durch die bestehenden Regressionen geprüft. Keine Benutzerverwaltung, PINs oder Rollen.
+- Das lokal erhaltene APK wurde am 28.10.2026 erneut als `ch.zerogen.containertrack`, Code 11, Version 1.4.4 identifiziert. Die erhaltenen XML-Unit-Berichte bestätigen 41 Tests je Variante ohne Fehler oder übersprungene Tests; dies ist keine erneute Testausführung.
 
-- 41 Unit-Tests je Variante erfolgreich, keine Fehler oder übersprungenen Tests. Die angepasste Textregression ohne KT zunächst fehlgeschlagen, anschließend bestanden. Neun Python-QA-Tests, Lint, Debug-/Instrumentation-Kompilierung sowie Manifest-/APK-Berechtigungsprüfung bestanden.
-- 60 Android-Tests auf API 35 erfolgreich, keine übersprungenen Tests. 24 Screenshot-PNGs erzeugt; sieben aktuelle Ansichten in der [visuell geprüften Übersicht](../design/verification/reference-ui-v1.4.3.jpg).
-- Nachrichtentext enthält Auftrag, ausgewählte Container, Typ, tatsächliche Fotoanzahl und bei Return Quick/Zusatzarbeiten. Repository-Tests prüfen EXTRA_TEXT bei ganzen Aufträgen und ausgewählten Fotos; ungewählte Container werden nicht beschrieben. Der Android-Fallback behält Begleittext und Leserechte.
-- Reale Compose-Klicks prüfen die Systemzwischenablage in Galerie und Übertragungsansicht: passende Auftrags-/Containerdaten ohne KT und tatsächliche Fotoanzahl. Kopieren erfolgt nur nach explizitem Tastendruck; die Galerieaktion ist ohne Auswahl deaktiviert. Der vollständige Text ist in der Übertragungsansicht sichtbar.
-- Navigation, alte lokale/Microsoft-/leere Eigentümerkennungen, vollständige Fotoabläufe, Export, Migration, OCR, Erinnerungen und Activity-Neuerstellung bleiben geprüft. Keine Anmeldung, PINs oder Rollen. Vorhandene Daten bleiben erhalten, neue automatische Upload-Queues und alte Graph-Worker deaktiviert.
-- Teilen oder Kopieren bestätigt keinen Versand und ändert keine Completion-/Reminder-Effekte. Das lokal erzeugte APK wurde als `ch.zerogen.containertrack`, Code 10, Version 1.4.3 geprüft.
+Unabhängiger statischer Code-Review für `0316211..f45788e`: keine kritischen oder wichtigen Restbefunde. Der Review bestätigt keine eigene Geräte- oder Teams-Prüfung.
 
-Die native Screenshot-Übersicht wurde tatsächlich geöffnet und visuell geprüft. Sie enthält ausschließlich synthetische Testdaten. Galeriebuttons passen nebeneinander; keine zusätzliche volle Buttonzeile im Fotobereich. Kein automatischer Pixelvergleich: dafür liegen keine freigegebenen Goldens vor.
+## Offene Sichtprüfung und Entwicklungszugriff
 
-Zusätzlicher Dateinamen-Nachweis: PhotoSharingTest fragt für mehrere Fotoanhänge die tatsächlichen Android-ContentProvider-Werte `DISPLAY_NAME` ab und prüft die URI-Dateinamen gegen `0708_01.jpg`/`0708_02.jpg`. Beide Prüfungen sind bestanden. Der private Cacheordner heißt `shared-photos`, wird aber nicht als Dateiname gemeldet. Die konkrete „Shared Photos“-Anzeige innerhalb von Teams wurde damit nicht reproduziert oder geändert; Gruppenüberschrift gegenüber tatsächlich umbenannter Datei bleibt ohne Rückmeldung vom Nutzergerät ungeklärt.
+Die Screenshots wurden im erfolgreichen CI-Lauf erzeugt, aber für 1.4.4 noch nicht manuell visuell geprüft. Die temporär heruntergeladene Übersicht ging bei der Wiederaufnahme der Entwicklungsumgebung verloren. Der erneute Abruf von `api.github.com` wird am 28.10.2026 durch die aktuelle Netzwerk-Positivliste blockiert. Normaler Git-Zugriff funktioniert. Die API-Freigabe ist im Entwicklungsentwurf bereits vorgesehen, aber nicht in der laufenden Umgebung aktiv. Der APK-Link und die Testergebnisse oben wurden vor dieser Unterbrechung bestätigt; kein erneuter API-Abruf wird behauptet.
 
-KT entfällt aus Foto-Begleittext, Kopierinfos und Übertragungsansicht. Das KT-Feld in Erfassung/Übersicht und gespeicherte KT-Werte bleiben erhalten; es wurde keine vollständige Entfernung aus dem Datenmodell durchgeführt.
+Die bisherige visuelle Übersicht [1.4.3](../design/verification/reference-ui-v1.4.3.jpg) dokumentiert ausdrücklich den älteren Stand und gilt nicht als Bildnachweis für 1.4.4. Kein automatischer Pixelvergleich; keine freigegebenen Goldens vorhanden. Lange Auftragsreferenzen und große Systemschriften benötigen weiter Geräteprüfung.
 
-## Grenzen
+Eine finale PR-Beschreibung ist außerhalb des Checkouts unter `/workspace/.containertrack-setup/pr-1.4.4.json` vorbereitet. Das Aktualisieren der GitHub-PR-Metadaten bleibt bis zum API-Zugriff offen; Code und Dokumentation werden über den normalen Git-Weg gespeichert. Kein Merge oder Release.
 
-Die Tests prüfen die Übergabe an Teams/Android, nicht die interne Darstellung in einer echten Teams-Installation. Teams kann bei Fotos den Nachrichtentext ignorieren und beim Teilen nur Chats anbieten. ContainerTrack kann die Teams-Zielauswahl nicht erzwingen. Der ausdrückliche Kopierweg bleibt verfügbar. Für Kanalbeiträge: Fotos in der Galerie herunterladen, Teams direkt öffnen und Fotos sowie kopierte Infos dort einfügen. Die frühere Zusage einer Kanalauswahl im Share-Dialog ist aufgehoben.
+## Weitere Grenzen
 
-Es gibt keine zentrale Anmeldung, Rollenverwaltung, Team-Galerie oder Synchronisierung zwischen Geräten. Reale Teams-Ziele, Textübernahme, SAF-Provider, Kamera/OEM und TalkBack benötigen Prüfung auf dem Nutzergerät. Der Teilen-Dialog bestätigt keinen Versand.
+Teams bestimmt seine Ziele und kann bei Fotos den Nachrichtentext ignorieren oder nur Chats anbieten. Kopieren der Auftragsinfos und der manuelle Kanalablauf bleiben verfügbar. Die konkrete „Shared Photos“-Anzeige in Teams ist ohne Rückmeldung zum Gruppen-/Dateinamen weiter ungeklärt. Die App meldet nummerierte JPG-Namen; eine Veränderung durch Teams wird nicht als behoben behauptet.
 
-Eine Update-Installation benötigt dasselbe Debug-Zertifikat; ein frischer Runner garantiert dies nicht. Nicht zur Aktualisierung deinstallieren: das würde lokale Aufträge und Fotos löschen. Die Datenbank bleibt Schema 2, ohne destruktive Migration.
+Reale Teams-Ziele, Textübernahme und Dateinamen, SAF-Provider, Kamera/OEM und TalkBack benötigen Prüfung auf dem Nutzergerät. Eine Update-Installation benötigt dasselbe Debug-Zertifikat; ein frischer Runner garantiert dies nicht. Nicht zur Aktualisierung deinstallieren: das würde lokale Aufträge und Fotos löschen.
 
-Details: [UPDATE_1_4_3.md](UPDATE_1_4_3.md). Der frühere Microsoft-Adapter bleibt als deaktivierter Kompatibilitätscode erhalten; für diesen Ablauf ist keine Firmenkonfiguration nötig. Der Bildschirmnachweis wurde aus dem regulären CI-Protokoll gewonnen.
+Details: [UPDATE_1_4_4.md](UPDATE_1_4_4.md). Die Android-App benötigt keinen Cloud-Dienst; die erwähnte Netzwerkfreigabe betrifft ausschließlich die Codex-Entwicklungsumgebung.
