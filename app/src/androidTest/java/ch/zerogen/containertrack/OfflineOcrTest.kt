@@ -54,7 +54,11 @@ class OfflineOcrTest {
             while(connectivity.getNetworkCapabilities(connectivity.activeNetwork)?.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_VALIDATED)==true && android.os.SystemClock.elapsedRealtime()<deadline) Thread.sleep(100)
             assertFalse("OCR must run without a validated network",connectivity.getNetworkCapabilities(connectivity.activeNetwork)?.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_VALIDATED)==true)
             if (Build.VERSION.SDK_INT >= 29) assertEquals(1, Settings.Global.getInt(app.contentResolver, Settings.Global.AIRPLANE_MODE_ON, 0))
-            val result = Tasks.await(recognizer.process(InputImage.fromBitmap(bitmap, 0)), 30, TimeUnit.SECONDS)
+            // This verifies offline correctness, not latency. Cold native-model initialization
+            // and graph preparation can exceed 30 seconds on a software-only emulator.
+            val recognitionStarted = android.os.SystemClock.elapsedRealtime()
+            val result = Tasks.await(recognizer.process(InputImage.fromBitmap(bitmap, 0)), 120, TimeUnit.SECONDS)
+            android.util.Log.i("OfflineOcrTest", "Bundled offline OCR completed in ${android.os.SystemClock.elapsedRealtime() - recognitionStarted} ms")
             val candidates = result.textBlocks.flatMap { it.lines.flatMap { line -> line.elements.map { element -> element.text } + line.text } }
             assertEquals("0708", firstContainerNumber(candidates))
         } finally {

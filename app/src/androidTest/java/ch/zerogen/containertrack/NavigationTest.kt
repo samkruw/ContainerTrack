@@ -1,5 +1,9 @@
 package ch.zerogen.containertrack
 
+import android.Manifest
+import android.os.Build
+import androidx.test.rule.GrantPermissionRule
+
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -9,7 +13,11 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class NavigationTest {
-    @get:Rule val compose = createAndroidComposeRule<MainActivity>()
+    // Grant before launching MainActivity so reminder setup cannot open a system dialog.
+    @get:Rule(order = 0) val notifications: GrantPermissionRule = GrantPermissionRule.grant(
+        *if (Build.VERSION.SDK_INT >= 33) arrayOf(Manifest.permission.POST_NOTIFICATIONS) else emptyArray()
+    )
+    @get:Rule(order = 1) val compose = createAndroidComposeRule<MainActivity>()
 
     @Test fun returnFieldsAreLockedUntilLoggerStopped() {
         compose.onNodeWithContentDescription("Neuer Auftrag").performClick()

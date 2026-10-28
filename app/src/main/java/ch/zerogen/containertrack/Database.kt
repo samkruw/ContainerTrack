@@ -147,6 +147,8 @@ interface TrackDao {
     fun observeReminders(): Flow<List<LoggerReminder>>
     @Query("SELECT * FROM reminders WHERE confirmedAt IS NULL ORDER BY dueAt")
     suspend fun pendingReminders(): List<LoggerReminder>
+    @Query("SELECT * FROM reminders WHERE confirmedAt IS NOT NULL")
+    suspend fun confirmedReminders(): List<LoggerReminder>
     @Query("SELECT * FROM reminders WHERE id = :id")
     suspend fun reminder(id: Int): LoggerReminder?
     @Query("SELECT * FROM reminders WHERE jobId = :jobId")

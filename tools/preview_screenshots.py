@@ -5,7 +5,7 @@ from pathlib import Path
 from PIL import Image, ImageOps, ImageDraw
 
 directory = Path('app/build/screenshots')
-names = ['20-reference-orders', '21-reference-new-order', '22-reference-photo-review', '23-reference-gallery', '24-reference-photo-selection', '25-reference-settings', '26-reference-upload']
+names = ['20-reference-orders', '21-reference-new-order', '22-reference-photo-review', '23-reference-gallery', '24-reference-photo-selection', '25-reference-settings', '26-reference-upload', '28-reference-return-workflow', '28b-reference-return-optional-photos', '28c-reference-return-photo-review']
 missing = [name for name in names if not (directory / f'{name}.png').is_file()]
 if missing: print('MISSING_REFERENCE_CAPTURES=' + ','.join(missing))
 names = [name for name in names if (directory / f'{name}.png').is_file()]

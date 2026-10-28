@@ -65,7 +65,7 @@ fun returnPhotoLabel(phase: ReturnPhotoPhase, category: ReturnPhotoCategory): St
         ReturnPhotoCategory.CONTENT -> "Inhalt bei Return"
         ReturnPhotoCategory.DAMAGE -> "Schaden bei Return"
         ReturnPhotoCategory.OTHER -> "Zusatzfoto bei Return"
-        ReturnPhotoCategory.CLEAN -> "Leer und sauber"
+        ReturnPhotoCategory.CLEAN -> "Leer / sauber"
     }
 }
 

@@ -1,5 +1,6 @@
 package ch.zerogen.containertrack
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -190,7 +191,9 @@ private fun ReturnPendingPhoto(file: File?, phase: ReturnPhotoPhase, category: R
     if (replacing) Information("Diese Aufnahme ersetzt nur das ausgewählte Foto in derselben Phase und Kategorie.")
     if (!maySave && file != null) Information("Speichern derzeit nicht möglich. Bitte die Anfangsdokumentation und das aktuelle Sauberfoto-Soll prüfen.", warning = true)
     PrimaryButton("Foto verwenden", !busy && maySave, onSave)
-    OutlinedButton(enabled = !busy, onClick = onRetake, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text("Erneut aufnehmen") }
+    OutlinedButton(enabled = !busy, onClick = onRetake, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+        shape = MaterialTheme.shapes.small, border = BorderStroke(1.dp, Hairline),
+        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface)) { Text("Erneut aufnehmen") }
     TextButton(enabled = !busy, onClick = onDiscard) { Text("Aufnahme verwerfen") }
 }
 
@@ -203,7 +206,9 @@ private fun ReturnPhotoReview(photo: PhotoEntity, label: String, fileName: Strin
     fileName?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = Muted) }
     if (!readonly) {
         PrimaryButton("Dieses Foto erneut aufnehmen", !busy && canRetake, onRetake)
-        OutlinedButton(enabled = !busy, onClick = onDelete, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
+        OutlinedButton(enabled = !busy, onClick = onDelete, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+            shape = MaterialTheme.shapes.small, border = BorderStroke(1.dp, Hairline),
+        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface)) {
             Text("Dieses Foto löschen", color = MaterialTheme.colorScheme.error)
         }
     }
@@ -220,9 +225,13 @@ private fun ReturnCaptureActions(phase: ReturnPhotoPhase, hasContent: Boolean, c
         }
         Information("Schäden und weitere Details können zusätzlich dokumentiert werden. Zusatzfotos erhöhen das Sauberfoto-Soll dieses Containers.")
         OutlinedButton(enabled = !busy && hasContent, onClick = { onCapture(ReturnPhotoPhase.INITIAL, ReturnPhotoCategory.DAMAGE) },
-            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text("Schaden ergänzen · optional") }
+            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp), shape = MaterialTheme.shapes.small,
+            border = BorderStroke(1.dp, Hairline),
+        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface)) { Text("Schaden ergänzen · optional") }
         OutlinedButton(enabled = !busy && hasContent, onClick = { onCapture(ReturnPhotoPhase.INITIAL, ReturnPhotoCategory.OTHER) },
-            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text("Sonstiges ergänzen · optional") }
+            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp), shape = MaterialTheme.shapes.small,
+            border = BorderStroke(1.dp, Hairline),
+        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface)) { Text("Sonstiges ergänzen · optional") }
     } else {
         Text("Sauberfotos", style = MaterialTheme.typography.titleLarge)
         Information("Den gereinigten Container dokumentieren. Die Anzahl muss den Anfangsfotos dieses Containers entsprechen.")
@@ -239,7 +248,9 @@ private fun ReturnSavedPhotos(photos: List<PhotoEntity>, names: Map<String, Name
     Text("Gespeicherte Fotos · ${photos.size}", style = MaterialTheme.typography.titleMedium)
     if (photos.isEmpty()) Information("In dieser Phase sind noch keine Fotos gespeichert.")
     photos.sortedBy { it.step }.forEach { photo ->
-        OutlinedButton(enabled = !busy, onClick = { onSelect(photo) }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
+        OutlinedButton(enabled = !busy, onClick = { onSelect(photo) }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+            shape = MaterialTheme.shapes.small, border = BorderStroke(1.dp, Hairline),
+        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface)) {
             Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(names[photo.id]?.label ?: returnPhotoTitle(photo.returnPhase, photo.returnCategory))
                 names[photo.id]?.fileName?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = Muted) }

@@ -347,6 +347,7 @@ class TrackRepository(private val context: Context, val database: TrackDatabase,
                     }
                 }
             }
+            dao.confirmedReminders().forEach { reminder -> runCatching { alarms.cancel(reminder.id) } }
             dao.pendingReminders().forEach { dispatch(CompletionEffects(reminder = it)) }
             dao.uploadJobs().filter { it.state in setOf("COMPLETE_PENDING_UPLOAD","UPLOADING") }.forEach { dispatch(CompletionEffects(uploadJobId = it.jobId)) }
         }

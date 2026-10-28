@@ -2,6 +2,10 @@ package ch.zerogen.containertrack
 
 import android.graphics.Bitmap
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.ClipboardManager
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.test.core.app.ApplicationProvider
@@ -12,6 +16,7 @@ import java.io.File
 
 class GalleryProfileTest {
     @get:Rule val compose=createComposeRule()
+    @Suppress("DEPRECATION")
     @Test fun oneSelectedPhotoPreparesItsWholeOrderAndPreviewShowsOriginal() {
         val app=ApplicationProvider.getApplicationContext<ContainerTrackApp>()
         val file=File.createTempFile("gallery", ".jpg",app.cacheDir)
@@ -25,11 +30,17 @@ class GalleryProfileTest {
         val missingContainer=container.copy(id="missing-container",jobId=missingJob.id)
         val missing=photo.copy(id="missing",containerId=missingContainer.id,localPath=file.path+"-missing")
         var shared:String?=null
+        var copied:AnnotatedString?=null
+        // Observe the copy action without depending on Android's focus-restricted global clipboard.
+        val clipboard=object:ClipboardManager {
+            override fun setText(annotatedString:AnnotatedString) { copied=annotatedString }
+            override fun getText():AnnotatedString?=copied
+        }
         try {
-            compose.setContent { ContainerTheme { Surface { GalleryScreen(listOf(
+            compose.setContent { CompositionLocalProvider(LocalClipboardManager provides clipboard) { ContainerTheme { Surface { GalleryScreen(listOf(
                 JobWithContainers(job,listOf(ContainerWithPhotos(container,listOf(photo,clean)))),
                 JobWithContainers(missingJob,listOf(ContainerWithPhotos(missingContainer,listOf(missing)))))
-                ,emptyList(),onShare={shared=it.jobId}) } } }
+                ,emptyList(),onShare={shared=it.jobId}) } } } }
             compose.waitUntil(10_000) { compose.onAllNodesWithText("RET-GALLERY · 0708").fetchSemanticsNodes().isNotEmpty() }
             compose.onNodeWithText("MISSING · 0708").assertDoesNotExist()
             compose.onNodeWithText("RET-GALLERY · 0708").performClick()
@@ -43,9 +54,9 @@ class GalleryProfileTest {
             compose.onNodeWithText("Auftrag per E-Mail").assertIsEnabled().performClick()
             compose.runOnIdle { assertEquals(job.id,shared) }
             compose.onNodeWithText("Auftragsinfos kopieren").assertIsEnabled().performClick()
+            compose.onNodeWithText("Auftragsinfos kopiert").assertExists()
             compose.runOnIdle {
-                val clipboard=app.getSystemService(android.content.ClipboardManager::class.java)
-                val text=clipboard.primaryClip!!.getItemAt(0).text.toString()
+                val text=checkNotNull(copied) { "The copy action did not provide order information" }.text
                 org.junit.Assert.assertTrue(text.contains("Auftrag: RET-GALLERY"))
                 org.junit.Assert.assertTrue(text.contains("Container: 0708"))
                 org.junit.Assert.assertTrue(text.contains("Fotos: 1"))
