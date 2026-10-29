@@ -3,10 +3,13 @@ package ch.zerogen.containertrack
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -20,37 +23,48 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ScanScreen(batch: JobWithContainers, vm: TrackViewModel, busy: Boolean, onAdded: (String) -> Unit) {
     var manual by rememberSaveable { mutableStateOf("") }
     var error by rememberSaveable { mutableStateOf<String?>(null) }
     var scanned by rememberSaveable { mutableStateOf<String?>(null) }
     var attempt by remember { mutableIntStateOf(0) }
+    var manualOpen by rememberSaveable { mutableStateOf(false) }
     val existing = batch.containers.map { it.container.containerNumber }.toSet()
     fun accept(number: String) {
         val validation = containerError(number, existing)
-        if (validation != null) { error = validation; scanned = number; manual = number }
+        if (validation != null) { error = validation; scanned = number; manual = number; manualOpen = true }
         else { scanned = number; manual = number; error = null; vm.addContainer(batch.job.id, number, onAdded) }
     }
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        ScreenTitle("Container scannen", "${batch.job.draft.referenceNumber} · Container ${batch.containers.size + 1} / ${batch.job.draft.quantity}")
-        Information("Die vierstellige Nummer vollständig in den Rahmen halten. Der erste gültige Treffer wird sofort übernommen.")
-        if (scanned == null) key(attempt) { CameraSurface(scan = true, enabled = !busy, onNumber = ::accept) }
-        else {
-            Information("Erkannt · $scanned", warning = error != null)
-            OutlinedButton(enabled = !busy, onClick = { scanned = null; attempt++; error = null }) { Text("Erneut scannen") }
+    CaptureWorkspace(header = {
+        CaptureContextHeader("Container scannen", batch.job.draft.referenceNumber,
+            "${batch.containers.size + 1} / ${batch.job.draft.quantity}")
+    }, media = { modifier ->
+        if (scanned == null) key(attempt) { CameraSurface(scan = true, enabled = !busy && !manualOpen, onNumber = { if (!manualOpen) accept(it) }, modifier = modifier) }
+        else Box(modifier.background(Graphite), contentAlignment = Alignment.Center) {
+            Text(error ?: "Erkannt · $scanned", Modifier.padding(12.dp))
         }
-        HorizontalDivider()
-        OutlinedTextField(value = manual, onValueChange = { manual = it; error = null },
+    }, actions = {
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            if (scanned != null) CaptureAction("Erneut scannen", !busy) { scanned = null; attempt++; error = null }
+            else Text("4 Ziffern in den Rahmen halten", style = MaterialTheme.typography.labelSmall, color = Muted)
+            CaptureAction("Nummer manuell eingeben", !busy) { manualOpen = true }
+        }
+    })
+    if (manualOpen) AlertDialog(onDismissRequest = { if (!busy) manualOpen = false },
+        title = { Text("Container-Nummer") },
+        text = { OutlinedTextField(value = manual, onValueChange = { manual = it; error = null },
             label = { Text("Container-Nummer manuell") }, modifier = Modifier.fillMaxWidth(), singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), enabled = !busy,
-            isError = error != null, supportingText = { Text(error ?: "Exakt 4 Ziffern, z. B. 0708") })
-        PrimaryButton("Nummer übernehmen", !busy) { accept(manual) }
-    }
+            isError = error != null, supportingText = { Text(error ?: "Exakt 4 Ziffern, z. B. 0708") }) },
+        confirmButton = { TextButton(enabled = !busy, onClick = { accept(manual) }) { Text("Nummer übernehmen") } },
+        dismissButton = { TextButton(enabled = !busy, onClick = { manualOpen = false }) { Text("Abbrechen") } })
+
 }
 
 @Composable
-fun LocalPhoto(path: String, description: String, modifier: Modifier = Modifier) {
+fun LocalPhoto(path: String, description: String, modifier: Modifier = Modifier, bounded: Boolean = false) {
     val bitmap by produceState<Bitmap?>(null, path) {
         value = withContext(Dispatchers.IO) {
             val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
@@ -62,10 +76,14 @@ fun LocalPhoto(path: String, description: String, modifier: Modifier = Modifier)
             BitmapFactory.decodeFile(path, options)
         }
     }
-    if (bitmap != null) Image(bitmap!!.asImageBitmap(), contentDescription = description, modifier = modifier.fillMaxWidth().heightIn(min = 160.dp, max = 320.dp), contentScale = ContentScale.Fit)
-    else Information("Foto wird geladen. Falls die Datei fehlt, bitte erneut aufnehmen.", warning = true)
+    if (bitmap != null) Image(bitmap!!.asImageBitmap(), contentDescription = description, modifier = if (bounded) modifier else modifier.fillMaxWidth().heightIn(min = 160.dp, max = 320.dp), contentScale = ContentScale.Fit)
+    else Box(if (bounded) modifier else Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+        Text("Foto wird geladen. Falls die Datei fehlt, bitte erneut aufnehmen.", Modifier.padding(8.dp),
+            style = MaterialTheme.typography.bodySmall, maxLines = 3, overflow = TextOverflow.Ellipsis)
+    }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PhotoScreen(batch: JobWithContainers, containerId: String, selectedStep: Int, vm: TrackViewModel,
                 busy: Boolean, onDone: () -> Unit) {
@@ -87,61 +105,73 @@ fun PhotoScreen(batch: JobWithContainers, containerId: String, selectedStep: Int
     var renameValue by remember { mutableStateOf("") }
     var renameError by remember { mutableStateOf<String?>(null) }
     var deleting by remember { mutableStateOf<Int?>(null) }
+    var showPhotos by rememberSaveable(containerId) { mutableStateOf(false) }
     val step = if (pendingPhoto != null) pendingStep.takeIf { it in 1..kind.photoCount }
         else if (retaking && reviewStep in completed) reviewStep else nextStep
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        ScreenTitle("Container ${item.container.containerNumber}", "${batch.job.draft.referenceNumber} · ${item.photos.size} / ${kind.photoCount} Fotos")
-        if (!readonly) TextButton(enabled = !busy, onClick = { renameValue = item.container.containerNumber; renameError = null; rename = true }) { Text("Container-Nummer bearbeiten") }
-        GlassSurface {
-            Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text(if (item.photos.size == kind.photoCount) "Fotodokumentation vollständig" else "Pflichtfotos in der angegebenen Reihenfolge aufnehmen.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = if (item.photos.size == kind.photoCount) Success else MaterialTheme.colorScheme.onSurfaceVariant)
-                LinearProgressIndicator(progress = { item.photos.size.toFloat() / kind.photoCount }, modifier = Modifier.fillMaxWidth())
-            }
-        }
-        if (!readonly && kind == JobKind.DELIVERY && completed.containsAll((1..5).toSet()) && 6 !in completed) {
-            Information("Leerdokumentation vollständig · Befüllt-Foto kann später ergänzt werden.")
-            PrimaryButton("Befüllt später · zum Auftrag", !busy, onDone)
-        }
-        val selected = item.photos.find { it.step == reviewStep }
+    val selected = item.photos.find { it.step == reviewStep }
+    val showReview = selected != null && !retaking && pendingPhoto == null
+    val deferredFill = !readonly && kind == JobKind.DELIVERY && completed.containsAll((1..5).toSet()) && 6 !in completed
+    val label = when {
+        pendingPhoto != null && step != null -> "Foto $step · ${photoLabel(kind, step)}"
+        showReview -> "Foto ${selected!!.step} · ${photoLabel(kind, selected.step)}"
+        !readonly && step != null -> "Foto $step / ${kind.photoCount} · ${photoLabel(kind, step)}"
+        else -> "Fotodokumentation vollständig"
+    }
+    CaptureWorkspace(header = {
+        CaptureContextHeader("Container ${item.container.containerNumber}", batch.job.draft.referenceNumber,
+            "${item.photos.size} / ${kind.photoCount} Fotos",
+            if (readonly || busy) null else { { renameValue = item.container.containerNumber; renameError = null; rename = true } })
+        Text(label, style = MaterialTheme.typography.labelMedium, color = Lime, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    }, media = { modifier ->
         when {
-            pendingPhoto != null && step != null -> {
-                Text("Foto $step · ${photoLabel(kind, step)}", style = MaterialTheme.typography.titleMedium)
-                LocalPhoto(pendingPhoto!!.path, "Vorschau ${photoLabel(kind, step)}")
-                PrimaryButton("Foto verwenden", !busy) {
-                    val file = pendingPhoto ?: return@PrimaryButton
-                    vm.savePhoto(batch.job.id, containerId, step, file) { retaking = false; reviewStep = 0 }
-                }
-                OutlinedButton(enabled = !busy, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp), onClick = { vm.discardPhoto(batch.job.id, containerId) }) { Text("Erneut aufnehmen") }
+            pendingPhoto != null -> LocalPhoto(pendingPhoto.path, "Vorschau $label", modifier, bounded = true)
+            showReview -> LocalPhoto(selected!!.localPath, photoLabel(kind, selected.step), modifier, bounded = true)
+            !readonly && step != null -> key(containerId, step, retaking) {
+                CameraSurface(scan = false, enabled = !busy,
+                    onPhoto = { vm.stagePhoto(batch.job.id, containerId, step, it) }, modifier = modifier)
             }
-            selected != null && !retaking -> {
-                Text("Foto ${selected.step} · ${photoLabel(kind, selected.step)}", style = MaterialTheme.typography.titleMedium)
-                LocalPhoto(selected.localPath, photoLabel(kind, selected.step))
-                if (!readonly) {
-                    PrimaryButton("Dieses Foto erneut aufnehmen", !busy) { retaking = true }
-                    OutlinedButton(enabled = !busy, onClick = { deleting = selected.step }) { Text("Ab diesem Schritt löschen", color = MaterialTheme.colorScheme.error) }
-                }
-                TextButton(onClick = { reviewStep = 0 }) { Text("Zur Übersicht") }
-            }
-            !readonly && step != null -> {
-                Text("Foto $step / ${kind.photoCount}", color = LightBlue, style = MaterialTheme.typography.labelLarge)
-                Text(photoLabel(kind, step), style = MaterialTheme.typography.titleLarge)
-                key(containerId, step, retaking) {
-                    CameraSurface(scan = false, enabled = !busy, onPhoto = { vm.stagePhoto(batch.job.id, containerId, step, it) })
-                }
-                if (retaking) TextButton(enabled = !busy, onClick = { retaking = false; reviewStep = 0 }) { Text("Neuaufnahme abbrechen") }
-            }
-            else -> {
-                Information(if (readonly) "Auftrag exportiert. Fotos sind zur Ansicht verfügbar." else "Alle Pflichtfotos sind gespeichert.")
-                PrimaryButton("Zum Auftrag", !busy, onDone)
+            else -> Box(modifier.background(Graphite), contentAlignment = Alignment.Center) {
+                Text(if (readonly) "Fotos zur Ansicht verfügbar." else "Alle Pflichtfotos sind gespeichert.", Modifier.padding(16.dp))
             }
         }
-        if (item.photos.isNotEmpty() && pendingPhoto == null && !retaking) {
-            Text("Gespeicherte Fotos", style = MaterialTheme.typography.titleMedium)
-            item.photos.sortedBy { it.step }.forEach { photo ->
-                OutlinedButton(enabled = !busy, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp), onClick = { reviewStep = photo.step }) {
-                    Text("${photo.step.toString().padStart(2, '0')} · ${photoLabel(kind, photo.step)}")
+    }, actions = {
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            when {
+                pendingPhoto != null && step != null -> {
+                    CaptureAction("Foto verwenden", !busy, primary = true) {
+                        vm.savePhoto(batch.job.id, containerId, step, pendingPhoto) { retaking = false; reviewStep = 0 }
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        CaptureAction("Erneut aufnehmen", !busy, modifier = Modifier.weight(1f)) { vm.discardPhoto(batch.job.id, containerId) }
+                        CaptureAction("Verwerfen", !busy, modifier = Modifier.weight(1f)) {
+                            vm.discardPhoto(batch.job.id, containerId); retaking = false; reviewStep = 0
+                        }
+                    }
+                }
+                showReview -> {
+                    if (!readonly) CaptureAction("Dieses Foto erneut aufnehmen", !busy, primary = true) { retaking = true }
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        if (!readonly) CaptureAction("Löschen …", !busy, modifier = Modifier.weight(1f)) { deleting = selected!!.step }
+                        CaptureAction("Zur Übersicht", !busy, modifier = Modifier.weight(1f)) { reviewStep = 0 }
+                    }
+                }
+                else -> {
+                    if (retaking) CaptureAction("Neuaufnahme abbrechen", !busy) { retaking = false; reviewStep = 0 }
+                    else if (deferredFill) CaptureAction("Befüllt später · zum Auftrag", !busy, onClick = onDone)
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        CaptureAction("Fotos (${item.photos.size})", !busy && item.photos.isNotEmpty(), modifier = Modifier.weight(1f)) { showPhotos = true }
+                        CaptureAction("Zum Auftrag", !busy, modifier = Modifier.weight(1f), onClick = onDone)
+                    }
+                }
+            }
+        }
+    })
+    if (showPhotos) ModalBottomSheet(onDismissRequest = { showPhotos = false }) {
+        Text("Gespeicherte Fotos", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(16.dp))
+        LazyColumn(Modifier.fillMaxWidth(), contentPadding = PaddingValues(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            items(item.photos.sortedBy { it.step }, key = { it.id }) { photo ->
+                CaptureAction("${photo.step.toString().padStart(2, '0')} · ${photoLabel(kind, photo.step)}", !busy) {
+                    reviewStep = photo.step; retaking = false; showPhotos = false
                 }
             }
         }

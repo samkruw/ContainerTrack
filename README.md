@@ -2,7 +2,7 @@
 
 Native Kotlin-App zur lokalen Erfassung von Lieferungen und Returns. Ein `:app`-Modul mit Compose, Room, CameraX und gebündeltem ML Kit. Kein WebView. Direkter Start ohne Anmeldung, Benutzerverwaltung oder Rollen; Fotos werden als vollständige Auftrags-E-Mail im Smartphone-Mailprogramm vorbereitet.
 
-**Stand:** Update 1.5.0 / versionCode 12. Return-Anfangs-/Zusatzfotos und gleich viele Leer-/Sauber-Fotos je Container, feste 24h-Erinnerung bis zur manuellen E-Mail-Versandbestätigung, vollständige Auftrags-E-Mail statt Teams: [UPDATE_1_5_0.md](docs/UPDATE_1_5_0.md). Native Architektur/App-ID bleiben erhalten; Room migriert ohne Datenlöschung auf Schema 3. KT, Benutzerverwaltung, PINs und Rollen entfallen. Historische Anleitungen beschreiben frühere Versionen; aktuell gilt [QA_STATUS.md](docs/QA_STATUS.md).
+**Stand:** Update 1.5.1 / versionCode 13. Adaptive Kamera mit festem Auslöser, kompakter Bedienung und seitlicher Anordnung im Querformat: [UPDATE_1_5_1.md](docs/UPDATE_1_5_1.md). Return-Zusatzfotos, gleich viele Leer-/Sauber-Fotos und die 24h-Erinnerung bis zur E-Mail-Versandbestätigung bleiben erhalten. Native Architektur/App-ID und Room-Schema 3 bleiben erhalten. KT, Benutzerverwaltung, PINs und Rollen entfallen. Historische Anleitungen beschreiben frühere Versionen; aktuell gilt [QA_STATUS.md](docs/QA_STATUS.md).
 
 ## Projekt öffnen und APK bauen
 

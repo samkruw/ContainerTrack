@@ -1,19 +1,30 @@
 package ch.zerogen.containertrack
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import java.io.File
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReturnPhotoScreen(batch: JobWithContainers, containerId: String, vm: TrackViewModel,
                       busy: Boolean, onDone: () -> Unit, selectedStep: Int = 0) {
@@ -33,6 +44,8 @@ fun ReturnPhotoScreen(batch: JobWithContainers, containerId: String, vm: TrackVi
     var renaming by rememberSaveable(jobId, containerId) { mutableStateOf(false) }
     var renameValue by rememberSaveable(jobId, containerId) { mutableStateOf("") }
     var renameError by remember { mutableStateOf<String?>(null) }
+    var photosOpen by rememberSaveable(jobId, containerId) { mutableStateOf(false) }
+    var informationOpen by rememberSaveable(jobId, containerId) { mutableStateOf(false) }
     val pendingPath by vm.pendingPhoto(jobId, containerId).collectAsStateWithLifecycle()
     val pendingPhaseName by vm.pendingReturnPhase(jobId, containerId).collectAsStateWithLifecycle()
     val pendingCategoryName by vm.pendingReturnCategory(jobId, containerId).collectAsStateWithLifecycle()
@@ -55,224 +68,238 @@ fun ReturnPhotoScreen(batch: JobWithContainers, containerId: String, vm: TrackVi
         (capturePhase == ReturnPhotoPhase.INITIAL ||
             (batch.initialDocumentationComplete && (replacement != null || cleanAvailable)))
     val named = namedPhotos(batch).filter { it.photo.containerId == containerId }.associateBy { it.photo.id }
+    val phasePhotos = item.photos.filter { it.returnPhase == displayedPhase }.sortedBy { it.step }
+    val reviewing = selected != null && (!capturing || readonly) && !hasPending
+    val showingCamera = !hasPending && !reviewing && !readonly && (capturing || automaticContent) && captureAllowed
+    val pendingTarget = item.photos.find { it.id == pendingReplaceId }
+    val maySave = pendingFile != null && (pendingReplaceId == null || pendingTarget != null) &&
+        (pendingPhase == ReturnPhotoPhase.INITIAL ||
+            (batch.initialDocumentationComplete && (pendingTarget != null || cleanAvailable)))
 
     fun startCapture(nextPhase: ReturnPhotoPhase, nextCategory: ReturnPhotoCategory, photoId: String? = null) {
-        phaseName = nextPhase.name
-        categoryName = nextCategory.name
-        replaceId = photoId
-        reviewId = null
-        capturing = true
+        phaseName = nextPhase.name; categoryName = nextCategory.name
+        replaceId = photoId; reviewId = null; photosOpen = false; capturing = true
     }
+    fun openOverview() { reviewId = null; replaceId = null; capturing = false }
+    fun openSavedPhotos() { openOverview(); photosOpen = true }
+    LaunchedEffect(hasPending) { if (hasPending) photosOpen = false }
 
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        ScreenTitle("Container ${item.container.containerNumber}", "${batch.job.draft.referenceNumber} · Rücknahme")
-        if (!readonly) TextButton(enabled = !busy, onClick = {
-            renameValue = item.container.containerNumber; renameError = null; renaming = true
-        }) { Text("Container-Nummer bearbeiten") }
-        ReturnProgressSummary(progress.initialCount, progress.cleanCount, progress.hasContent, progress.complete)
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            ReturnPhotoPhase.entries.forEach { tab ->
-                FilterChip(selected = displayedPhase == tab, enabled = !busy && !hasPending,
-                    modifier = Modifier.weight(1f).heightIn(min = 48.dp),
-                    onClick = { phaseName = tab.name; reviewId = null; replaceId = null; capturing = false },
-                    label = { Text(if (tab == ReturnPhotoPhase.INITIAL) "Anfang · ${progress.initialCount}" else "Sauber · ${progress.cleanCount}/${progress.initialCount}") })
-            }
-        }
-        if (readonly) Information("Auftrag abgeschlossen. Die gespeicherten Fotos sind zur Ansicht verfügbar.")
-        else if (displayedPhase == ReturnPhotoPhase.CLEAN && !batch.initialDocumentationComplete) {
-            Information("Sauberfotos werden freigegeben, sobald bei allen Containern das Anfangsfoto vom Inhalt gespeichert ist.", warning = true)
-        }
-        when {
-            hasPending -> {
-                val pendingTarget = item.photos.find { it.id == pendingReplaceId }
-                val maySave = pendingFile != null && (pendingReplaceId == null || pendingTarget != null) &&
-                    (pendingPhase == ReturnPhotoPhase.INITIAL ||
-                        (batch.initialDocumentationComplete && (pendingTarget != null || cleanAvailable)))
-                ReturnPendingPhoto(pendingFile, pendingPhase, pendingCategory, pendingReplaceId != null, busy, maySave,
-                    onSave = {
-                        vm.savePendingReturnPhoto(jobId, containerId) {
-                            phaseName = pendingPhase.name; capturing = false; replaceId = null; reviewId = null
-                        }
-                    },
-                    onRetake = {
-                        startCapture(pendingPhase, pendingCategory, pendingReplaceId)
-                        vm.discardPhoto(jobId, containerId)
-                    },
-                    onDiscard = { vm.discardPhoto(jobId, containerId); capturing = false; replaceId = null })
-            }
-            selected != null && (!capturing || readonly) -> {
-                ReturnPhotoReview(selected, named[selected.id]?.label ?: returnPhotoTitle(selected.returnPhase, selected.returnCategory),
-                    named[selected.id]?.fileName, busy, readonly,
-                    canRetake = selected.returnPhase != ReturnPhotoPhase.CLEAN || batch.initialDocumentationComplete,
-                    onRetake = { startCapture(selected.returnPhase, selected.returnCategory, selected.id) },
-                    onDelete = { deletingId = selected.id }, onBack = { reviewId = null })
-            }
-            !readonly && (capturing || automaticContent) && captureAllowed -> {
-                Text(if (captureReplaceId != null) "Neuaufnahme" else if (automaticContent) "Pflichtfoto · Inhalt" else "Foto ergänzen",
-                    color = Lime, style = MaterialTheme.typography.labelLarge)
-                Text(returnPhotoTitle(capturePhase, captureCategory), style = MaterialTheme.typography.titleLarge)
-                if (captureReplaceId != null) Information("Das gespeicherte Foto wird erst ersetzt, wenn die Neuaufnahme bestätigt ist.")
-                key(jobId, containerId, capturePhase, captureCategory, captureReplaceId) {
-                    CameraSurface(scan = false, enabled = !busy, onPhoto = {
-                        vm.stageReturnPhoto(jobId, containerId, capturePhase, captureCategory, captureReplaceId, it)
-                    })
+    CaptureWorkspace(
+        header = {
+            CaptureContextHeader("Container ${item.container.containerNumber}",
+                "${batch.job.draft.referenceNumber} · Rücknahme",
+                "${progress.initialCount} Anfangsfotos · ${progress.cleanCount} / ${progress.initialCount} Sauberfotos",
+                onEdit = if (readonly || busy) null else ({
+                    renameValue = item.container.containerNumber; renameError = null; renaming = true
+                }))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                ReturnPhotoPhase.entries.forEach { tab ->
+                    FilterChip(selected = displayedPhase == tab, enabled = !busy && !hasPending,
+                        modifier = Modifier.weight(1f).heightIn(min = 48.dp), shape = MaterialTheme.shapes.small,
+                        onClick = { phaseName = tab.name; openOverview() },
+                        label = { Text(if (tab == ReturnPhotoPhase.INITIAL) "Anfang · ${progress.initialCount}" else "Sauber · ${progress.cleanCount}/${progress.initialCount}",
+                            style = MaterialTheme.typography.labelMedium, maxLines = 1, overflow = TextOverflow.Ellipsis) })
                 }
-                if (!automaticContent) TextButton(enabled = !busy, onClick = {
-                    capturing = false; replaceId = null
-                }) { Text("Aufnahme abbrechen") }
+                IconButton(onClick = { informationOpen = true }, modifier = Modifier.size(48.dp)) {
+                    Icon(Icons.Outlined.Info, "Return-Fotohinweise", tint = Muted)
+                }
             }
-            !readonly && capturing -> {
-                Information("Diese Aufnahme ist derzeit nicht möglich. Bitte die Anfangsdokumentation und das Sauberfoto-Soll prüfen.", warning = true)
-                TextButton(enabled = !busy, onClick = { capturing = false; replaceId = null }) { Text("Zur Fotoübersicht") }
+        },
+        media = { mediaModifier ->
+            when {
+                hasPending -> ReturnPhotoMedia(pendingFile?.path, "Vorschau ${returnPhotoTitle(pendingPhase, pendingCategory)}",
+                    null, when {
+                        pendingFile == null -> "Aufnahme nicht mehr verfügbar. Bitte erneut aufnehmen."
+                        !maySave -> "Speichern derzeit nicht möglich. Anfangsfotos und Fotoanzahl prüfen."
+                        else -> null
+                    }, mediaModifier)
+                reviewing -> ReturnPhotoMedia(selected!!.localPath,
+                    named[selected.id]?.label ?: returnPhotoTitle(selected.returnPhase, selected.returnCategory),
+                    named[selected.id]?.fileName, null, mediaModifier)
+                showingCamera -> key(jobId, containerId, capturePhase, captureCategory, captureReplaceId) {
+                    Column(mediaModifier) {
+                        Text(if (captureReplaceId != null) "Neuaufnahme · ${returnPhotoTitle(capturePhase, captureCategory)}"
+                            else if (automaticContent) "Pflichtfoto · Inhalt" else returnPhotoTitle(capturePhase, captureCategory),
+                            modifier = Modifier.padding(bottom = 4.dp), color = Lime,
+                            style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        CameraSurface(scan = false, enabled = !busy, onPhoto = {
+                            vm.stageReturnPhoto(jobId, containerId, capturePhase, captureCategory, captureReplaceId, it)
+                        }, modifier = Modifier.fillMaxWidth().weight(1f))
+                    }
+                }
+                else -> {
+                    val last = phasePhotos.lastOrNull()
+                    val message = when {
+                        readonly -> "Abgeschlossen · Fotos zur Ansicht"
+                        capturing -> "Aufnahme derzeit nicht möglich. Anfangsfotos und Fotoanzahl prüfen."
+                        displayedPhase == ReturnPhotoPhase.CLEAN && !batch.initialDocumentationComplete ->
+                            "Zuerst bei allen Containern das Inhaltsfoto aufnehmen."
+                        progress.cleanCount > progress.initialCount -> "Überzählige Sauberfotos über Fotos einzeln löschen."
+                        displayedPhase == ReturnPhotoPhase.CLEAN && progress.complete -> "Fotodokumentation vollständig"
+                        last == null -> "Noch keine Fotos in dieser Phase"
+                        else -> null
+                    }
+                    ReturnPhotoMedia(last?.localPath, last?.let { named[it.id]?.label } ?: "Return-Fotodokumentation",
+                        last?.let { named[it.id]?.fileName }, message, mediaModifier)
+                }
             }
-            !readonly -> ReturnCaptureActions(phase, progress.hasContent, cleanAvailable, busy,
-                onCapture = { nextPhase, nextCategory -> startCapture(nextPhase, nextCategory) })
-        }
-        if (!hasPending && (!capturing || readonly) && progress.hasContent) {
-            PrimaryButton(when {
-                readonly || progress.complete -> "Zum Auftrag"
-                !batch.initialDocumentationComplete -> "Zum Auftrag · nächster Container"
-                else -> "Zum Auftrag · Sauberfotos später"
-            }, !busy, onDone)
-        } else {
-            TextButton(enabled = !busy, onClick = onDone) { Text("Zum Auftrag") }
-        }
-        if (!hasPending && (!capturing || readonly)) {
-            ReturnSavedPhotos(item.photos.filter { it.returnPhase == phase }, named, busy,
-                onSelect = { photo -> reviewId = photo.id; phaseName = photo.returnPhase.name })
+        },
+        actions = {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                when {
+                    hasPending -> {
+                        ReturnPrimaryAction("Foto verwenden", !busy && maySave) {
+                            vm.savePendingReturnPhoto(jobId, containerId) {
+                                phaseName = pendingPhase.name; openOverview()
+                            }
+                        }
+                        ReturnActionRow(
+                            "Erneut aufnehmen", !busy, { startCapture(pendingPhase, pendingCategory, pendingReplaceId); vm.discardPhoto(jobId, containerId) },
+                            "Aufnahme verwerfen", !busy, { vm.discardPhoto(jobId, containerId); openOverview() })
+                    }
+                    reviewing -> {
+                        if (!readonly) {
+                            ReturnPrimaryAction("Dieses Foto erneut aufnehmen",
+                                !busy && (selected!!.returnPhase != ReturnPhotoPhase.CLEAN || batch.initialDocumentationComplete)) {
+                                startCapture(selected!!.returnPhase, selected.returnCategory, selected.id)
+                            }
+                            ReturnActionRow("Dieses Foto löschen", !busy, { deletingId = selected!!.id },
+                                "Zur Fotoübersicht", !busy, ::openSavedPhotos, firstDestructive = true)
+                        } else ReturnActionRow("Zur Fotoübersicht", !busy, ::openSavedPhotos, "Zum Auftrag", !busy, onDone)
+                    }
+                    else -> {
+                        if (showingCamera && !automaticContent) {
+                            ReturnPrimaryAction("Aufnahme abbrechen", !busy, ::openOverview)
+                        } else if (!showingCamera && !readonly && capturing) {
+                            ReturnPrimaryAction("Zur Fotoübersicht", !busy, ::openOverview)
+                        } else if (!showingCamera && !readonly && displayedPhase == ReturnPhotoPhase.INITIAL) {
+                            ReturnActionRow("Schaden ergänzen · optional", !busy && progress.hasContent,
+                                { startCapture(ReturnPhotoPhase.INITIAL, ReturnPhotoCategory.DAMAGE) },
+                                "Sonstiges ergänzen · optional", !busy && progress.hasContent,
+                                { startCapture(ReturnPhotoPhase.INITIAL, ReturnPhotoCategory.OTHER) })
+                        } else if (!showingCamera && !readonly && displayedPhase == ReturnPhotoPhase.CLEAN) {
+                            ReturnPrimaryAction("Sauberfoto aufnehmen", !busy && cleanAvailable) {
+                                startCapture(ReturnPhotoPhase.CLEAN, ReturnPhotoCategory.CLEAN)
+                            }
+                        }
+                        ReturnActionRow("Fotos (${phasePhotos.size})", !busy && phasePhotos.isNotEmpty(), { photosOpen = true },
+                            "Zum Auftrag", !busy, onDone)
+                    }
+                }
+            }
+        })
+
+    if (photosOpen) ModalBottomSheet(onDismissRequest = { photosOpen = false },
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
+        Column(Modifier.fillMaxWidth().fillMaxHeight(.92f).padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Gespeicherte Fotos · ${phasePhotos.size}", style = MaterialTheme.typography.titleMedium,
+                maxLines = 1, overflow = TextOverflow.Ellipsis)
+            LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                items(phasePhotos, key = { it.id }) { photo ->
+                    ReturnOutlineAction(named[photo.id]?.label ?: returnPhotoTitle(photo.returnPhase, photo.returnCategory), !busy,
+                        onClick = { reviewId = photo.id; phaseName = photo.returnPhase.name; capturing = false; replaceId = null; photosOpen = false },
+                        caption = named[photo.id]?.fileName)
+                }
+            }
+            TextButton(onClick = { photosOpen = false }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text("Schliessen") }
         }
     }
+    if (informationOpen) AlertDialog(onDismissRequest = { informationOpen = false }, title = { Text("Return-Fotodokumentation") },
+        text = { Column(Modifier.verticalScroll(rememberScrollState())) {
+            Text("Je Container ist ein Inhaltsfoto erforderlich. Schaden und Sonstiges sind zusätzliche Anfangsfotos. Jedes Anfangsfoto zählt zum Soll der Leer-/Sauber-Fotos.\n\nAbschlussfotos sind möglich, sobald bei allen Containern der Inhalt dokumentiert ist. Die Anzahl muss pro Container genau übereinstimmen.\n\nNeuaufnahmen ersetzen das ausgewählte Foto erst nach dem Bestätigen. Einzelnes Löschen entfernt keine anderen Fotos. Die 24h-Erinnerung bleibt bis zur Versandbestätigung offen.")
+        } },
+        confirmButton = { TextButton(onClick = { informationOpen = false }) { Text("Verstanden") } })
     item.photos.find { it.id == deletingId }?.takeIf { !readonly }?.let { photo ->
         ReturnDeletePhotoDialog(photo, busy, onDismiss = { deletingId = null }, onDelete = {
-            deletingId = null; reviewId = null; replaceId = null; capturing = false
-            vm.deleteReturnPhoto(jobId, containerId, photo.id)
+            deletingId = null; openOverview(); vm.deleteReturnPhoto(jobId, containerId, photo.id)
         })
     }
     if (renaming && !readonly) AlertDialog(onDismissRequest = { if (!busy) renaming = false },
         title = { Text("Container-Nummer bearbeiten") },
-        text = {
-            OutlinedTextField(value = renameValue, onValueChange = { renameValue = it; renameError = null },
-                label = { Text("4 Ziffern") }, singleLine = true, enabled = !busy,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), isError = renameError != null,
-                supportingText = { renameError?.let { Text(it) } })
-        },
-        confirmButton = {
-            TextButton(enabled = !busy, onClick = {
-                renameError = containerError(renameValue, batch.containers.filter { it.container.id != containerId }.map { it.container.containerNumber }.toSet())
-                if (renameError == null) vm.rename(jobId, containerId, renameValue) { renaming = false }
-            }) { Text("Speichern") }
-        }, dismissButton = { TextButton(enabled = !busy, onClick = { renaming = false }) { Text("Abbrechen") } })
+        text = { OutlinedTextField(value = renameValue, onValueChange = { renameValue = it; renameError = null },
+            label = { Text("4 Ziffern") }, singleLine = true, enabled = !busy,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), isError = renameError != null,
+            supportingText = { renameError?.let { Text(it) } }) },
+        confirmButton = { TextButton(enabled = !busy, onClick = {
+            renameError = containerError(renameValue, batch.containers.filter { it.container.id != containerId }.map { it.container.containerNumber }.toSet())
+            if (renameError == null) vm.rename(jobId, containerId, renameValue) { renaming = false }
+        }) { Text("Speichern") } }, dismissButton = { TextButton(enabled = !busy, onClick = { renaming = false }) { Text("Abbrechen") } })
 }
 
 @Composable
-private fun ReturnProgressSummary(initialCount: Int, cleanCount: Int, hasContent: Boolean, complete: Boolean) {
-    GlassSurface {
-        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text(if (complete) "Fotodokumentation vollständig" else "Anfang dokumentieren, danach sauber fotografieren.",
-                style = MaterialTheme.typography.bodyMedium, color = if (complete) Lime else Muted)
-            StatusBadge(if (hasContent) "Inhalt dokumentiert" else "Pflichtfoto Inhalt fehlt", confirmed = hasContent)
-            Text("$initialCount Anfangsfotos · $cleanCount / $initialCount Sauberfotos", style = MaterialTheme.typography.titleMedium)
-            LinearProgressIndicator(progress = { if (initialCount == 0) 0f else (cleanCount.toFloat() / initialCount).coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth())
-            Text("Jedes Anfangsfoto zählt zum Soll der Sauberfotos, auch Schaden und Sonstiges.", style = MaterialTheme.typography.bodySmall, color = Muted)
-            if (cleanCount > initialCount) {
-                Information("${cleanCount - initialCount} Sauberfotos über dem Soll. Bitte überzählige Fotos einzeln auswählen und löschen. Es wird nichts automatisch gelöscht.", warning = true)
-            }
+private fun ReturnPhotoMedia(path: String?, description: String, fileName: String?, message: String?, modifier: Modifier) {
+    Box(modifier.background(Graphite, MaterialTheme.shapes.small), contentAlignment = Alignment.Center) {
+        if (path != null) LocalPhoto(path, description, Modifier.fillMaxSize(), bounded = true)
+        else Icon(Icons.Outlined.PhotoCamera, null, Modifier.size(48.dp), tint = Muted)
+        if (message != null) Text(message, modifier = Modifier.align(Alignment.Center).background(Navy.copy(alpha = .90f)).padding(12.dp),
+            style = MaterialTheme.typography.bodyMedium, maxLines = 4, overflow = TextOverflow.Ellipsis)
+        if (path != null) Column(Modifier.align(Alignment.BottomStart).fillMaxWidth().background(Navy.copy(alpha = .90f)).padding(8.dp)) {
+            Text(description, style = MaterialTheme.typography.labelMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            fileName?.let { Text(it, color = Muted, style = MaterialTheme.typography.labelSmall, maxLines = 1, overflow = TextOverflow.Ellipsis) }
         }
     }
 }
 
 @Composable
-private fun ReturnPendingPhoto(file: File?, phase: ReturnPhotoPhase, category: ReturnPhotoCategory,
-                               replacing: Boolean, busy: Boolean, maySave: Boolean,
-                               onSave: () -> Unit, onRetake: () -> Unit, onDiscard: () -> Unit) {
-    Text("Vorschau · ${returnPhotoTitle(phase, category)}", style = MaterialTheme.typography.titleMedium)
-    if (file != null) LocalPhoto(file.path, "Vorschau ${returnPhotoTitle(phase, category)}")
-    else Information("Die vorgemerkte Fotodatei ist nicht mehr verfügbar. Bitte erneut aufnehmen.", warning = true)
-    if (replacing) Information("Diese Aufnahme ersetzt nur das ausgewählte Foto in derselben Phase und Kategorie.")
-    if (!maySave && file != null) Information("Speichern derzeit nicht möglich. Bitte die Anfangsdokumentation und das aktuelle Sauberfoto-Soll prüfen.", warning = true)
-    PrimaryButton("Foto verwenden", !busy && maySave, onSave)
-    OutlinedButton(enabled = !busy, onClick = onRetake, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+private fun ReturnPrimaryAction(text: String, enabled: Boolean, onClick: () -> Unit) {
+    Button(onClick, enabled = enabled, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).semantics { contentDescription = text },
+        shape = MaterialTheme.shapes.small, colors = ButtonDefaults.buttonColors(containerColor = Lime, contentColor = Navy)) {
+        Text(returnActionLabel(text), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    }
+}
+
+@Composable
+private fun ReturnActionRow(first: String, firstEnabled: Boolean, onFirst: () -> Unit,
+                            second: String, secondEnabled: Boolean, onSecond: () -> Unit,
+                            firstDestructive: Boolean = false) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        Box(Modifier.weight(1f)) { ReturnOutlineAction(first, firstEnabled, onFirst, destructive = firstDestructive) }
+        Box(Modifier.weight(1f)) { ReturnOutlineAction(second, secondEnabled, onSecond) }
+    }
+}
+
+@Composable
+private fun ReturnOutlineAction(text: String, enabled: Boolean, onClick: () -> Unit,
+                                caption: String? = null, destructive: Boolean = false) {
+    OutlinedButton(onClick = onClick, enabled = enabled, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).semantics { contentDescription = text },
         shape = MaterialTheme.shapes.small, border = BorderStroke(1.dp, Hairline),
-        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface)) { Text("Erneut aufnehmen") }
-    TextButton(enabled = !busy, onClick = onDiscard) { Text("Aufnahme verwerfen") }
-}
-
-@Composable
-private fun ReturnPhotoReview(photo: PhotoEntity, label: String, fileName: String?, busy: Boolean,
-                              readonly: Boolean, canRetake: Boolean, onRetake: () -> Unit,
-                              onDelete: () -> Unit, onBack: () -> Unit) {
-    Text(label, style = MaterialTheme.typography.titleLarge)
-    LocalPhoto(photo.localPath, label)
-    fileName?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = Muted) }
-    if (!readonly) {
-        PrimaryButton("Dieses Foto erneut aufnehmen", !busy && canRetake, onRetake)
-        OutlinedButton(enabled = !busy, onClick = onDelete, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
-            shape = MaterialTheme.shapes.small, border = BorderStroke(1.dp, Hairline),
-        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface)) {
-            Text("Dieses Foto löschen", color = MaterialTheme.colorScheme.error)
-        }
-    }
-    TextButton(enabled = !busy, onClick = onBack) { Text("Zur Fotoübersicht") }
-}
-
-@Composable
-private fun ReturnCaptureActions(phase: ReturnPhotoPhase, hasContent: Boolean, cleanAvailable: Boolean,
-                                busy: Boolean, onCapture: (ReturnPhotoPhase, ReturnPhotoCategory) -> Unit) {
-    if (phase == ReturnPhotoPhase.INITIAL) {
-        Text("Anfangsfotos", style = MaterialTheme.typography.titleLarge)
-        if (!hasContent) PrimaryButton("Inhalt aufnehmen · Pflichtfoto", !busy) {
-            onCapture(ReturnPhotoPhase.INITIAL, ReturnPhotoCategory.CONTENT)
-        }
-        Information("Schäden und weitere Details können zusätzlich dokumentiert werden. Zusatzfotos erhöhen das Sauberfoto-Soll dieses Containers.")
-        OutlinedButton(enabled = !busy && hasContent, onClick = { onCapture(ReturnPhotoPhase.INITIAL, ReturnPhotoCategory.DAMAGE) },
-            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp), shape = MaterialTheme.shapes.small,
-            border = BorderStroke(1.dp, Hairline),
-        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface)) { Text("Schaden ergänzen · optional") }
-        OutlinedButton(enabled = !busy && hasContent, onClick = { onCapture(ReturnPhotoPhase.INITIAL, ReturnPhotoCategory.OTHER) },
-            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp), shape = MaterialTheme.shapes.small,
-            border = BorderStroke(1.dp, Hairline),
-        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface)) { Text("Sonstiges ergänzen · optional") }
-    } else {
-        Text("Sauberfotos", style = MaterialTheme.typography.titleLarge)
-        Information("Den gereinigten Container dokumentieren. Die Anzahl muss den Anfangsfotos dieses Containers entsprechen.")
-        PrimaryButton("Sauberfoto aufnehmen", !busy && cleanAvailable) {
-            onCapture(ReturnPhotoPhase.CLEAN, ReturnPhotoCategory.CLEAN)
+        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp),
+        colors = ButtonDefaults.outlinedButtonColors(contentColor = if (destructive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface)) {
+        Column(Modifier.fillMaxWidth()) {
+            Text(returnActionLabel(text), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold,
+                maxLines = 1, overflow = TextOverflow.Ellipsis)
+            caption?.let { Text(it, color = Muted, style = MaterialTheme.typography.labelSmall, maxLines = 2, overflow = TextOverflow.Ellipsis) }
         }
     }
 }
 
-@Composable
-private fun ReturnSavedPhotos(photos: List<PhotoEntity>, names: Map<String, NamedPhoto>, busy: Boolean,
-                              onSelect: (PhotoEntity) -> Unit) {
-    HorizontalDivider()
-    Text("Gespeicherte Fotos · ${photos.size}", style = MaterialTheme.typography.titleMedium)
-    if (photos.isEmpty()) Information("In dieser Phase sind noch keine Fotos gespeichert.")
-    photos.sortedBy { it.step }.forEach { photo ->
-        OutlinedButton(enabled = !busy, onClick = { onSelect(photo) }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
-            shape = MaterialTheme.shapes.small, border = BorderStroke(1.dp, Hairline),
-        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface)) {
-            Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(names[photo.id]?.label ?: returnPhotoTitle(photo.returnPhase, photo.returnCategory))
-                names[photo.id]?.fileName?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = Muted) }
-            }
-        }
-    }
+/** Keep dock labels legible on narrow screens; full actions remain available to accessibility. */
+private fun returnActionLabel(text: String): String = when (text) {
+    "Dieses Foto erneut aufnehmen", "Erneut aufnehmen" -> "Neu aufnehmen"
+    "Aufnahme verwerfen" -> "Verwerfen"
+    "Aufnahme abbrechen" -> "Abbrechen"
+    "Dieses Foto löschen" -> "Löschen"
+    "Zur Fotoübersicht" -> "Fotos"
+    "Schaden ergänzen · optional" -> "Schaden"
+    "Sonstiges ergänzen · optional" -> "Sonstiges"
+    else -> text
 }
 
 @Composable
 private fun ReturnDeletePhotoDialog(photo: PhotoEntity, busy: Boolean, onDismiss: () -> Unit, onDelete: () -> Unit) {
     AlertDialog(onDismissRequest = { if (!busy) onDismiss() }, title = { Text("Dieses Foto löschen?") },
-        text = {
+        text = { Column(Modifier.verticalScroll(rememberScrollState())) {
             Text(if (photo.returnPhase == ReturnPhotoPhase.INITIAL)
                 "Nur dieses Anfangsfoto wird gelöscht. Das Sauberfoto-Soll wird neu berechnet. Bereits gespeicherte Sauberfotos bleiben erhalten und können bei Bedarf einzeln gelöscht werden."
             else "Nur dieses Sauberfoto wird gelöscht. Die anderen Fotos bleiben gespeichert.")
-        }, confirmButton = {
+        } }, confirmButton = {
             TextButton(enabled = !busy, onClick = onDelete) { Text("Foto löschen", color = MaterialTheme.colorScheme.error) }
         }, dismissButton = { TextButton(enabled = !busy, onClick = onDismiss) { Text("Abbrechen") } })
 }
 
 private fun returnPhotoTitle(phase: ReturnPhotoPhase, category: ReturnPhotoCategory): String =
-    if (phase == ReturnPhotoPhase.CLEAN) "Sauber · gereinigter Container" else "Anfang · " + when (category) {
+    if (phase == ReturnPhotoPhase.CLEAN) "Leer / sauber · gereinigter Container" else "Anfang · " + when (category) {
         ReturnPhotoCategory.CONTENT -> "Inhalt"
         ReturnPhotoCategory.DAMAGE -> "Schaden"
         ReturnPhotoCategory.OTHER -> "Sonstiges"

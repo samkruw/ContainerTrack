@@ -10,6 +10,9 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.layout.*
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.Alignment
@@ -52,6 +55,8 @@ fun TrackApp(vm: TrackViewModel = viewModel(), requestedJob: String? = null, onR
     val nav = rememberNavController()
     val entry by nav.currentBackStackEntryAsState()
     val route = entry?.destination?.route ?: "jobs"
+    val capturing = route.startsWith("photo/") || route.startsWith("scan/")
+    var showCaptureReminders by rememberSaveable { mutableStateOf(false) }
     val jobs by vm.jobs.collectAsStateWithLifecycle()
     val allReminders by vm.reminders.collectAsStateWithLifecycle()
     val reminders=allReminders.filter{reminder->jobs.any{it.job.id==reminder.jobId}}
@@ -135,17 +140,29 @@ fun TrackApp(vm: TrackViewModel = viewModel(), requestedJob: String? = null, onR
         if(uri!=null && savingPhotos.isNotEmpty()) vm.saveSelectedPhotos(savingPhotos.toSet(),uri)
         savingPhotos=arrayListOf()
     }
-    Scaffold(containerColor=Navy,topBar={BrandHeader(null){if(!busy)nav.navigate("profile"){launchSingleTop=true}}},
+    Scaffold(containerColor=Navy,topBar={
+        if (capturing) Column(Modifier.windowInsetsPadding(WindowInsets.statusBars)) {
+            Row(Modifier.fillMaxWidth().height(48.dp), verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = { if (!busy) nav.popBackStack() }, enabled = !busy) { Icon(Icons.Default.ArrowBack, "Zurück zum Auftrag") }
+                Text("Container Track", Modifier.weight(1f), style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                if (reminders.isNotEmpty()) IconButton(onClick = { showCaptureReminders = true }) {
+                    BadgedBox(badge = { Badge { Text(reminders.size.toString()) } }) {
+                        Icon(Icons.Default.Notifications, "Erinnerungen anzeigen", tint = if (reminders.any { it.dueAt <= now }) Warning else Lime)
+                    }
+                }
+            }
+        } else BrandHeader(null){if(!busy)nav.navigate("profile"){launchSingleTop=true}}
+    },
         floatingActionButton={if(route=="jobs")FloatingActionButton(onClick={if(!busy){vm.begin(JobKind.DELIVERY);nav.navigate("setup")}},containerColor=Lime,contentColor=Navy,shape=MaterialTheme.shapes.small){Icon(Icons.Default.Add,"Neuer Auftrag")}},
-        bottomBar={ReferenceBottomBar(route,!busy){path->nav.navigate(path){popUpTo(nav.graph.startDestinationId){saveState=true};launchSingleTop=true;restoreState=true}}}
+        bottomBar={if (!capturing) ReferenceBottomBar(route,!busy){path->nav.navigate(path){popUpTo(nav.graph.startDestinationId){saveState=true};launchSingleTop=true;restoreState=true}}}
     ) { insets ->
         Column(Modifier.padding(insets).imePadding().fillMaxSize()) {
-            if(route !in tabs.map{it.first} && route!="setup" && route!="profile" && !route.startsWith("upload/")) Row(verticalAlignment=Alignment.CenterVertically) {
+            if(!capturing && route !in tabs.map{it.first} && route!="setup" && route!="profile" && !route.startsWith("upload/")) Row(verticalAlignment=Alignment.CenterVertically) {
                 IconButton(onClick={if(!busy)nav.popBackStack()},enabled=!busy){Icon(Icons.Default.ArrowBack,"Zurück")}
                 Text(when {route=="profile"->"Einstellungen";route.startsWith("upload/")->"Auftrag per E-Mail";route.startsWith("review/")->"Fotos prüfen";route.startsWith("job/")->"Auftragsdetails";else->"Zurück zum Auftrag"},style=MaterialTheme.typography.titleLarge)
             }
             if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
-            reminders.firstOrNull()?.let { ReminderStrip(it, reminders.size - 1, now) }
+            if (!capturing) reminders.firstOrNull()?.let { ReminderStrip(it, reminders.size - 1, now) }
             NavHost(nav, startDestination = "jobs", modifier = Modifier.weight(1f)) {
                 composable("home") { HomeScreen(jobs, onBegin = { kind -> vm.begin(kind); nav.navigate("setup") }, onJob = ::openJob) }
                 composable("jobs") { OrderListScreen(jobs,uploads,uploadedPhotos,reminders,now,online,query,
@@ -196,6 +213,17 @@ fun TrackApp(vm: TrackViewModel = viewModel(), requestedJob: String? = null, onR
                     jobs.find { it.job.id == id }?.let { batch ->
                         ExportReviewScreen(batch, busy, onShare = { vm.share(id) }, onExport = { exportJob(batch) })
                     }
+                }
+            }
+        }
+    }
+    if (showCaptureReminders) ModalBottomSheet(onDismissRequest = { showCaptureReminders = false }) {
+        Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Offene Erinnerungen", style = MaterialTheme.typography.titleMedium)
+            reminders.forEach { reminder ->
+                ReminderStrip(reminder, 0, now)
+                CaptureAction("Auftrag ${reminder.referenceNumber}", !busy) {
+                    showCaptureReminders = false; openJob(reminder.jobId)
                 }
             }
         }

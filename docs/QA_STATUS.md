@@ -1,3 +1,14 @@
+# Update 1.5.1 — adaptive Kamera
+
+Native Debug-APK 1.5.1 / versionCode 13, `ch.zerogen.containertrack`.
+
+- `test lint assembleDebug assembleDebugAndroidTest` erfolgreich: 50 Unit-Tests je Variante, Lint und beide Debug-APKs gebaut.
+- Neun Python-QA-Tests sowie Quellcode-, gemergte Manifest- und tatsächliche APK-Berechtigungsprüfung bestanden.
+- Neue Geräteprüfungen für feste Bedienelemente, kleine Viewports, Querformat und Schriftfaktor 1,5 sind kompiliert. Die Ausführung und visuelle Abnahme stehen an diesem Zwischenstand noch aus.
+- Die App bleibt lokal; Return-Zählung, E-Mail und Erinnerungen sind unverändert. Details: [UPDATE_1_5_1.md](UPDATE_1_5_1.md).
+
+Der folgende Bericht hält die tatsächlich belegte Prüfung der Vorgängerversion fest.
+
 # Update 1.5.0 — Debug-APK gebaut, UI-Freigabe teilweise offen
 
 App-/Test-Commit: `2b889f5b0da22423ea57a2d9b634ca664e204891`. Native Debug-APK 1.5.0 / versionCode 12, `ch.zerogen.containertrack`, gebaut am 28.10.2026. Lokale Datei: `/workspace/ContainerTrack-1.5.0-debug.apk`. SHA-256: `51e2220b68f10290c82d91d9e18499210fa9cf5d57b2c3cfdb7838286c3cb831`.

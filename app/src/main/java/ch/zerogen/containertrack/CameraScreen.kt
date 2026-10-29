@@ -30,6 +30,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
@@ -48,7 +51,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.roundToInt
 
 @Composable
-fun CameraSurface(scan: Boolean, enabled: Boolean, onNumber: (String) -> Unit = {}, onPhoto: (File) -> Unit = {}) {
+fun CameraSurface(scan: Boolean, enabled: Boolean, onNumber: (String) -> Unit = {}, onPhoto: (File) -> Unit = {}, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val owner = LocalLifecycleOwner.current
     val view = LocalView.current
@@ -62,12 +65,9 @@ fun CameraSurface(scan: Boolean, enabled: Boolean, onNumber: (String) -> Unit = 
         onDispose { owner.lifecycle.removeObserver(observer) }
     }
     if (!permission) {
-        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text("Kamerazugriff benötigt", style = MaterialTheme.typography.titleMedium)
-            Text(if (scan) "Kamera erlauben oder die Container-Nummer manuell eingeben." else "Für das Pflichtfoto ist Kamerazugriff erforderlich.")
-            Button(onClick = { permissionRequest.launch(Manifest.permission.CAMERA) }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Kamera erlauben") }
-            OutlinedButton(onClick = { context.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${context.packageName}"))) }) { Text("App-Einstellungen öffnen") }
-        }
+        CameraPermissionContent(modifier, scan,
+            onAllow = { permissionRequest.launch(Manifest.permission.CAMERA) },
+            onSettings = { context.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${context.packageName}"))) })
         return
     }
     val previewView = remember { PreviewView(context).apply { scaleType = PreviewView.ScaleType.FILL_CENTER; implementationMode = PreviewView.ImplementationMode.COMPATIBLE } }
@@ -153,32 +153,9 @@ fun CameraSurface(scan: Boolean, enabled: Boolean, onNumber: (String) -> Unit = 
             executor.shutdown()
         }
     }
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Box(Modifier.fillMaxWidth().height(if (scan) 300.dp else 350.dp).background(Color.Black, RoundedCornerShape(12.dp))) {
-            AndroidView(factory = { previewView }, modifier = Modifier.fillMaxSize())
-            if (scan) Canvas(Modifier.fillMaxSize()) {
-                val x = size.width * .1f; val y = size.height * .375f
-                val w = size.width * .8f; val h = size.height * .25f
-                drawRect(Color.Black.copy(alpha = .45f), Offset.Zero, ComposeSize(size.width, y))
-                drawRect(Color.Black.copy(alpha = .45f), Offset(0f, y + h), ComposeSize(size.width, size.height - y - h))
-                drawRect(Color.Black.copy(alpha = .45f), Offset(0f, y), ComposeSize(x, h))
-                drawRect(Color.Black.copy(alpha = .45f), Offset(x + w, y), ComposeSize(x, h))
-                drawRect(Color(0xFF60A5FA), Offset(x, y), ComposeSize(w, h), style = Stroke(3.dp.toPx()))
-            }
-            if (camera?.cameraInfo?.hasFlashUnit() == true) {
-                FilledTonalButton(onClick = {
-                    val next = !torch
-                    val future = camera?.cameraControl?.enableTorch(next)
-                    future?.addListener({
-                        try { future.get(); torch = next }
-                        catch (_: Exception) { error = "Kameralicht nicht verfügbar. Bitte ohne Licht fortfahren." }
-                    }, mainExecutor)
-                }, modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)) { Text(if (torch) "Licht aus" else "Licht an") }
-            }
-        }
-        error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-        if (!scan) Button(enabled = capture != null && !capturing && enabled, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp), onClick = {
-            val imageCapture = capture ?: return@Button
+    CameraCaptureLayout(modifier = modifier, scan = scan, enabled = capture != null && !capturing && enabled,
+        capturing = capturing, onCapture = capturePhoto@ {
+            val imageCapture = capture ?: return@capturePhoto
             capturing = true; error = null
             imageCapture.targetRotation = previewView.display?.rotation ?: android.view.Surface.ROTATION_0
             val file = File(context.cacheDir, "capture-${UUID.randomUUID()}.jpg")
@@ -198,7 +175,66 @@ fun CameraSurface(scan: Boolean, enabled: Boolean, onNumber: (String) -> Unit = 
                         mainExecutor.execute { if (!disposed.get()) { capturing = false; error = "Aufnahme fehlgeschlagen. Bitte erneut versuchen." } }
                     }
                 })
-        }) { Text(if (capturing) "Foto wird gespeichert …" else "Foto aufnehmen") }
+        }) {
+            AndroidView(factory = { previewView }, modifier = Modifier.fillMaxSize())
+            if (scan) Canvas(Modifier.fillMaxSize()) {
+                val x = size.width * .1f; val y = size.height * .375f
+                val w = size.width * .8f; val h = size.height * .25f
+                drawRect(Color.Black.copy(alpha = .45f), Offset.Zero, ComposeSize(size.width, y))
+                drawRect(Color.Black.copy(alpha = .45f), Offset(0f, y + h), ComposeSize(size.width, size.height - y - h))
+                drawRect(Color.Black.copy(alpha = .45f), Offset(0f, y), ComposeSize(x, h))
+                drawRect(Color.Black.copy(alpha = .45f), Offset(x + w, y), ComposeSize(x, h))
+                drawRect(Lime, Offset(x, y), ComposeSize(w, h), style = Stroke(3.dp.toPx()))
+            }
+            if (camera?.cameraInfo?.hasFlashUnit() == true) {
+                FilledTonalButton(onClick = {
+                    val next = !torch
+                    val future = camera?.cameraControl?.enableTorch(next)
+                    future?.addListener({
+                        try { future.get(); torch = next }
+                        catch (_: Exception) { error = "Kameralicht nicht verfügbar. Bitte ohne Licht fortfahren." }
+                    }, mainExecutor)
+                }, modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)) { Text(if (torch) "Licht aus" else "Licht an") }
+            }
+            error?.let { Text(it, color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().background(Navy.copy(alpha = .92f)).padding(8.dp),
+                maxLines = 3, overflow = TextOverflow.Ellipsis) }
+        }
+}
+
+@Composable
+fun CameraPermissionContent(modifier: Modifier = Modifier, scan: Boolean = false,
+                            onAllow: () -> Unit, onSettings: () -> Unit) {
+    BoxWithConstraints(modifier.fillMaxSize()) {
+        val compact = maxHeight < 170.dp
+        val showTitle = maxHeight >= 90.dp
+        val showExplanation = maxHeight > 220.dp
+        Column(Modifier.fillMaxSize().padding(4.dp), verticalArrangement = Arrangement.Center) {
+            if (showTitle) Text("Kamerazugriff benötigt", style = MaterialTheme.typography.labelSmall, maxLines = 1)
+            if (showExplanation) Text(if (scan) "Kamera erlauben oder Nummer manuell eingeben." else "Für das Foto bitte Kamera erlauben.",
+                style = MaterialTheme.typography.bodySmall)
+            if (compact) Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                CaptureAction("Kamera erlauben", primary = true, modifier = Modifier.weight(1f), onClick = onAllow)
+                CaptureAction("Einstellungen", modifier = Modifier.weight(1f), onClick = onSettings)
+            } else {
+                CaptureAction("Kamera erlauben", primary = true, onClick = onAllow)
+                CaptureAction("App-Einstellungen öffnen", onClick = onSettings)
+            }
+        }
+    }
+}
+
+/** Camera-free layout seam used by viewport tests; capture IO stays in CameraSurface. */
+@Composable
+fun CameraCaptureLayout(modifier: Modifier = Modifier, scan: Boolean = false, enabled: Boolean = true,
+                        capturing: Boolean = false, onCapture: () -> Unit = {},
+                        preview: @Composable BoxScope.() -> Unit) {
+    Column(modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Box(Modifier.weight(1f).fillMaxWidth().clip(RoundedCornerShape(8.dp)).background(Color.Black)
+            .testTag("camera-preview"), content = preview)
+        if (!scan) CaptureAction(if (capturing) "Foto wird gespeichert …" else "Foto aufnehmen",
+            enabled = enabled, primary = true, modifier = Modifier.testTag("camera-shutter"), onClick = onCapture)
     }
 }
 

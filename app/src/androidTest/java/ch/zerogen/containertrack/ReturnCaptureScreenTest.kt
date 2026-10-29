@@ -31,31 +31,32 @@ class ReturnCaptureScreenTest {
                 ContainerTheme { PhotoScreen(batch, "return-capture-container", 0, vm, false) {} }
             }
 
-            compose.onNodeWithText("3 Anfangsfotos · 1 / 3 Sauberfotos").assertIsDisplayed()
+            compose.onNodeWithText("3 Anfangsfotos · 1 / 3 Sauberfotos", substring = true).assertIsDisplayed()
             compose.onNodeWithText("Sauber · 1/3").assertExists()
             capture("28-reference-return-workflow")
 
-            compose.onNodeWithText("Schaden ergänzen · optional").performScrollTo().assertIsDisplayed().assertIsEnabled()
-            compose.onNodeWithText("Sonstiges ergänzen · optional").performScrollTo().assertIsDisplayed().assertIsEnabled()
+            compose.onNodeWithContentDescription("Schaden ergänzen · optional").assertIsDisplayed().assertIsEnabled()
+            compose.onNodeWithContentDescription("Sonstiges ergänzen · optional").assertIsDisplayed().assertIsEnabled()
             capture("28b-reference-return-optional-photos")
 
+            compose.onNodeWithText("Fotos (3)").assertIsDisplayed().performClick()
             val initialNames = listOf("0708_vorher_01_inhalt.jpg", "0708_vorher_02_schaden.jpg", "0708_vorher_03_schaden.jpg")
             initialNames.forEach { name ->
-                compose.onAllNodesWithText(name).assertCountEquals(1)
-                compose.onNodeWithText(name).performScrollTo().assertIsDisplayed()
+                compose.onAllNodesWithText(name).onLast().assertExists()
             }
-            compose.onNodeWithText(initialNames[1]).performScrollTo().performClick()
+            compose.onNodeWithText(initialNames[1]).performClick()
             compose.waitUntil(5_000) {
                 compose.onAllNodesWithContentDescription("Schaden bei Return").fetchSemanticsNodes().isNotEmpty()
             }
-            compose.onNodeWithContentDescription("Schaden bei Return").performScrollTo().assertIsDisplayed()
-            compose.onNodeWithText("Dieses Foto löschen").assertExists()
+            compose.onNodeWithContentDescription("Schaden bei Return").assertIsDisplayed()
+            compose.onNodeWithContentDescription("Dieses Foto löschen").assertIsDisplayed()
             capture("28c-reference-return-photo-review")
 
-            compose.onNodeWithText("Zur Fotoübersicht").performScrollTo().performClick()
-            compose.onNodeWithText("Sauber · 1/3").performScrollTo().performClick()
-            compose.onNodeWithText("Sauberfoto aufnehmen").performScrollTo().assertIsDisplayed().assertIsEnabled()
-            compose.onNodeWithText("0708_nachher_01_leer_sauber.jpg").performScrollTo().assertIsDisplayed()
+            compose.onNodeWithContentDescription("Zur Fotoübersicht").performClick()
+            compose.onNodeWithText("Schliessen").performClick()
+            compose.onNodeWithText("Sauber · 1/3").performClick()
+            compose.onNodeWithText("Sauberfoto aufnehmen").assertIsDisplayed().assertIsEnabled()
+            compose.onNodeWithText("0708_nachher_01_leer_sauber.jpg").assertIsDisplayed()
             compose.onNodeWithText("Kamera erlauben").assertDoesNotExist()
             compose.onNodeWithText("Foto aufnehmen").assertDoesNotExist()
         } finally {
