@@ -1,0 +1,111 @@
+name: Publish debug APK 1.5.1
+
+on:
+  push:
+    tags: [debug-v1.5.1]
+
+permissions: {}
+
+concurrency:
+  group: debug-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    if: github.repository == 'samkruw/ContainerTrack'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Verify the original successful build and immutable artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = refs/tags/debug-v1.5.1
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/12880372209" > source-artifact.json
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/40834801102/jobs?filter=latest&per_page=100" > source-jobs.json
+          python3 - <<'PY'
+          import json
+          artifact = json.load(open('source-artifact.json'))
+          assert artifact['id'] == 12880372209
+          assert artifact['name'] == 'Container-Track-debug-APK'
+          assert not artifact['expired'], 'The source APK artifact has expired'
+          assert artifact['workflow_run']['id'] == 40834801102
+          assert artifact['workflow_run']['head_sha'] == '651f2acd0b4c5ea28406b77ab507bb9aa318a015'
+          assert artifact['digest'] == 'sha256:dc022a29667e6af03336b611698be0ea807ee31857d08aa8d82461ec6330a05a'
+          jobs = json.load(open('source-jobs.json'))['jobs']
+          builds = [job for job in jobs if job['name'] == 'build']
+          assert len(builds) == 1 and builds[0]['conclusion'] == 'success', 'Source build did not pass'
+          print('Verified original build and APK artifact; device-test failure is disclosed in release notes.')
+          PY
+      - uses: actions/download-artifact@v4
+        with:
+          artifact-ids: '12880372209'
+          run-id: '40834801102'
+          github-token: ${{ github.token }}
+          merge-multiple: true
+          path: incoming
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: build-tools;36.0.0
+      - name: Verify the APK and stage its unchanged bytes
+        run: |
+          set -euo pipefail
+          apk=incoming/app-debug.apk
+          test -s "$apk"
+          test "$(apkanalyzer manifest application-id "$apk")" = ch.zerogen.containertrack
+          test "$(apkanalyzer manifest version-name "$apk")" = 1.5.1
+          test "$(apkanalyzer manifest version-code "$apk")" = 13
+          test "$(apkanalyzer manifest debuggable "$apk")" = true
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify "$apk"
+          apkanalyzer manifest permissions "$apk" > apk-permissions.txt
+          python3 tools/check_privacy.py --apk-permissions apk-permissions.txt
+          mkdir release
+          cp "$apk" release/ContainerTrack-1.5.1-debug.apk
+          cmp "$apk" release/ContainerTrack-1.5.1-debug.apk
+          cp docs/RELEASE_1_5_1_DEBUG.md release/release-notes.md
+          cd release
+          sha256sum ContainerTrack-1.5.1-debug.apk > ContainerTrack-1.5.1-debug.apk.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: verified-debug-release-1.5.1
+          path: release/
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: verified-debug-release-1.5.1
+          path: release
+      - name: Publish the requested debug prerelease
+        working-directory: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = refs/tags/debug-v1.5.1
+          sha256sum --check --strict ContainerTrack-1.5.1-debug.apk.sha256
+          gh release create debug-v1.5.1 \
+            ContainerTrack-1.5.1-debug.apk \
+            ContainerTrack-1.5.1-debug.apk.sha256 \
+            --repo "$RELEASE_REPOSITORY" \
+            --verify-tag --prerelease --latest=false \
+            --title 'Container Track 1.5.1 – Debug-APK' \
+            --notes-file release-notes.md
