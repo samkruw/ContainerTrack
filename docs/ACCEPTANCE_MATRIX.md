@@ -1,0 +1,219 @@
+# V1.5.0 — Return-Dokumentation und E-Mail
+
+Aktueller Umfang, Stand 28.10.2026: native lokale Android-App ohne KT-Nutzung, Anmeldung, Benutzerverwaltung, Rollen oder aktive Teams-Übergabe. E-Mail umfasst jeweils einen vollständigen Auftrag mit allen Fotos aller Container. Die Regeln dieser Sektion ersetzen abweichende Anforderungen der historischen Tabellen weiter unten.
+
+Prüfstand: 50 Unit-Tests je Variante, neun Python-QA-Tests und zwölf Android-Kernprüfungen bestanden. Erster Gesamtlauf: 68/76; gezielter Nachlauf: 26/30. Der abschließende Nachlauf wurde beim Cloud-Neustart nach zwei bestandenen von sechs Prüfungen unterbrochen. Vier UI-Prüfungen und der Fotoauswahl-Capture bleiben offen. Maßgeblich ist [QA_STATUS.md](QA_STATUS.md); keine vollständige Gerätefreigabe behauptet.
+
+| Aktuelle Anforderung | Nachweis / Abdeckung | Prüfstatus |
+| --- | --- | --- |
+| Direkter Start; kein KT-Eingabe-, Such-, Anzeige- oder Exportfeld; keine Benutzer, PINs oder Rollen | RulesTest, OrderFiltersTest, GalleryFiltersTest, LocalJobAccessTest, NavigationTest | Regeln und Navigation bestanden; Gesamtfreigabe separat offen |
+| Lieferung: unverändert sechs Pflichtfotos je Container; 30-Minuten-Logger-Erinnerung bleibt separat | WorkflowRulesTest, CompletionTest, TwoPhaseDeliveryTest, ReminderReceiverTest | bestehende Regressionen bestanden |
+| Return: je Container ein Inhalts-Pflichtfoto und optionale Schaden-/Sonstiges-Anfangsfotos | ReturnWorkflowTest, ReturnWorkflowRepositoryTest, ReturnCaptureScreenTest | Unit-/Kernprüfungen und Return-Oberfläche bestanden |
+| Return: exakt dieselbe Anzahl Leer-/Sauber-Fotos wie sämtliche Anfangsfotos je Container; alle vorgesehenen Container erforderlich | ReturnWorkflowTest, ReturnWorkflowRepositoryTest | Unit-/Kernprüfungen bestanden |
+| Feste Return-Erinnerung für Erstellung + 24 Stunden; Bearbeiten, Export und Mailvorbereitung setzen die Frist nicht zurück | ReturnWorkflowRepositoryTest, ReturnEmailConfirmationTest | Kernprüfungen bestanden |
+| Vollständige Fotos allein schließen den Return nicht; erst „E-Mail gesendet“ für die aktuell vorbereitete Dokumentationsrevision bestätigt die Erinnerung | ReturnWorkflowRepositoryTest, ReturnEmailConfirmationTest | Kernprüfungen bestanden; keine automatische Zustellbestätigung |
+| Änderungen verwerfen die bisherige Mailvorbereitung; nach Versandbestätigung ist die Dokumentation gesperrt | ReturnWorkflowRepositoryTest | Kernprüfungen bestanden |
+| E-Mail enthält alle Original-JPGs aller Container eines vollständigen Auftrags, auch aus der Galerie; mehrere Aufträge benötigen getrennte Mails | ReturnWorkflowRepositoryTest, EmailPhotoSharingTest, GalleryProfileTest | Kernverträge und GalleryProfileTest bestanden; Referenz-Fotoauswahl offen |
+| Betreff exakt Auftragsnummer; Begleittext vorhanden; Empfänger wird im Mailprogramm gewählt; temporäre Leserechte für alle Anhänge | EmailPhotoSharingTest, ReturnWorkflowRepositoryTest | Kernprüfungen bestanden; echte Mail-App-/Versandprüfung auf Nutzergerät offen |
+| Return-Namen enthalten Containernummer, vorher/nachher, Ordinal je Phase und Kategorie; Lieferung/alte abgeschlossene Returns behalten bisherige Namen | ReturnWorkflowTest, EmailPhotoSharingTest, ReturnWorkflowRepositoryTest | Unit-/Kernprüfungen bestanden |
+| Room 2→3 erhält Aufträge, Fotos, Upload-Altbestände und Lieferungs-Erinnerungen; offene Returns wechseln zum neuen Ablauf, abgeschlossene alte Returns bleiben kompatibel | ReturnMigrationTest, MigrationTest, PersistenceTest | Return-Migration und bestehende Migrations-/Persistenzprüfungen bestanden |
+| Graphit-/Lime-Referenzen, aktuelle Return-Zähler, optionale Fotoaktionen und E-Mail-Abschluss verständlich sichtbar | ReturnCaptureScreenTest, ReferenceScreenshotsTest, manueller Referenzvergleich | neun Captures gesichtet; Fotoauswahl-Capture und vollständige UI-Freigabe offen |
+
+# Historische Prüfstände bis 1.4.4
+
+Die folgenden Abschnitte bleiben als frühere Nachweise erhalten. Ihre Aussagen zu KT, Benutzern, Teams, einem einzelnen Return-Foto und damaligen Testergebnissen gelten ausschließlich für die jeweils genannte Version. Sie sind keine Abnahme von 1.5.0.
+
+# V1.4.4 — KT vollständig aus der App-Nutzung entfernt
+
+Bestanden: [CI40330673261](https://github.com/samkruw/ContainerTrack/actions/runs/40330673261) am 26.10.2026, 41 Unit-Tests je Variante, 60 Android-Tests ohne übersprungene Tests, neun Python-QA-Tests, Lint und APK-Berechtigungsprüfung. Unabhängiger statischer Review ohne wichtige Restbefunde.
+
+| Anforderung | Nachweis | Status |
+| --- | --- | --- |
+| Kein KT-Eingabefeld oder KT-Pflichtfeld | RulesTest, NavigationTest | bestanden |
+| Auftragsnummer in Übersicht, Details, Fotoprüfung und Galerie | OrderFiltersTest, GalleryFiltersTest, ReferenceScreenshotsTest | bestanden |
+| Suche nach Auftrag/Container, nicht altem KT | OrderFiltersTest, GalleryFiltersTest | bestanden |
+| Exportvorschau/TXT/JSON ohne KT, Auftragsnummer vorhanden | RulesTest, ExportSharingTest, statischer Review | bestanden |
+| Alte Datenbank, Fotos und Erinnerungen erhalten | PersistenceTest, unverändertes Room-Schema 2 | bestanden |
+| Tatsächlicher manueller Bildvergleich für 1.4.4 | 24 CI-Screenshots vorhanden; erneuter API-Abruf gesperrt | offen, nicht als bestanden behauptet |
+
+Aktueller Build und Grenzen: [QA_STATUS.md](QA_STATUS.md). Die folgenden Tabellen sind historische Prüfstände; frühere KT-Anforderungen sind ab 1.4.4 aufgehoben.
+
+# V1.4.3 — Fotoinfos ohne KT und Dateinamen-Nachweis
+
+Bestanden: [CI39915194786](https://github.com/samkruw/ContainerTrack/actions/runs/39915194786), 41 Unit-Tests je Variante, 60 Android-Tests ohne übersprungene Tests, neun Python-QA-Tests, Lint und APK-Berechtigungsprüfung. 24 Screenshots, finale Übersicht tatsächlich visuell geprüft.
+
+- Begleittext und kopierte Auftragsinfos ohne KT: PhotoShareTextTest, ReferenceScreenshotsTest.
+- Übertragungsansicht zeigt Auftragsreferenz statt KT: tatsächliche native Screenshot-Prüfung.
+- JPG-Dateinamen und ContentProvider-DISPLAY_NAME nummeriert nach Container: PhotoSharingTest.
+- „Shared Photos“ in Teams: konkrete Teams-Anzeige bleibt ungeklärt; kein behaupteter Eingriff in Teams oder vollständige KT-Entfernung aus der App.
+
+Aktueller Build: [QA_STATUS.md](QA_STATUS.md). Die folgenden Tabellen sind historische Prüfstände.
+
+# V1.4.2 — Foto-Begleittext und Kopieren
+
+Bestanden: [CI39913259080](https://github.com/samkruw/ContainerTrack/actions/runs/39913259080), 41 Unit-Tests je Variante, 60 Android-Tests ohne übersprungene Tests, neun Python-QA-Tests, Lint und APK-Berechtigungsprüfung. 24 Screenshots, sieben aktuelle Ansichten tatsächlich visuell geprüft.
+
+| Anforderung | Nachweis | Status |
+| --- | --- | --- |
+| Auftrag/KT/Container/Typ/Fotoanzahl und Return-Arbeiten als Begleittext | PhotoShareTextTest, SelectedPhotoSharingTest | bestanden |
+| Nur Daten der gewählten Fotos; Text und Leserechte bleiben im Android-Fallback | SelectedPhotoSharingTest, PhotoSharingTest | bestanden |
+| Expliziter Kopierbutton und tatsächliche Systemzwischenablage | GalleryProfileTest, ReferenceScreenshotsTest | bestanden |
+| Keine garantierte Kanalauswahl oder Textübernahme durch fremde Teams-App | Hinweise und manueller Kopier-/Kanalablauf | echte Teams-Version auf Nutzergerät prüfen |
+
+Aktueller Build: [QA_STATUS.md](QA_STATUS.md). Die folgenden Tabellen sind historische Prüfstände.
+
+# V1.4.1 — ohne Benutzerverwaltung
+
+Aktueller Umfang: direkter Start ohne Anmeldung, PINs und Rollen; sämtliche lokalen Aufträge und Fotos unabhängig von früherer Zuordnung sichtbar. Geräteeinstellungen ersetzen das Profil. Manueller Teams-Share und einmalige Erinnerungen bleiben erhalten, automatische Uploads deaktiviert.
+
+Bestanden: CI39909135079, 39 Unit-Tests je Variante, 60 Android-Tests, neun Python-QA-Tests, Lint und APK-Berechtigungsprüfung. 24 Screenshots, sieben aktuelle Ansichten tatsächlich visuell geprüft. Nachweise und aktueller Build: [QA_STATUS.md](QA_STATUS.md). Regression: LocalJobAccessTest prüft alte lokale/Microsoft-/leere Eigentümer, vollständige Fotodokumentation, Teilen, Datenbestand und fehlende Upload-Queues. NavigationTest und ReferenceScreenshotsTest prüfen direkten Start sowie Einstellungen ohne Benutzerverwaltung. Die folgenden Tabellen sind historische Prüfstände; Rollen und Anmeldung sind ab 1.4.1 aufgehoben.
+
+# V1.4.0 — lokale Benutzer und Abschluss über Teams
+
+| Anforderung | Nachweis | Status |
+| --- | --- | --- |
+| Ohne Server: lokale PIN-Profile, Admin/Mitarbeiter, Benutzerwechsel | LocalUserStoreTest, LocalUsersUiTest, ReferenceScreenshotsTest | bestanden: CI39905918718 |
+| Mitarbeiter nur eigene Aufträge; Admin auch vorhandene Daten | LocalJobAccessTest, LocalUserPolicyTest | bestanden: CI39905918718 |
+| PIN-Hash/Sperre, letzter Admin, Rollen-/Aktivierungs-/PIN-Verwaltung | LocalUserPolicyTest, LocalUserStoreTest, LocalUsersUiTest | bestanden: CI39905918718 |
+| Logger-Aktion verlangt passenden angemeldeten Benutzer | ReminderReceiverTest | bestanden: CI39905918718 |
+| Abschluss startet Teilen; kein neuer automatischer Transport | SelectedPhotoSharingTest, ReferenceScreenshotsTest, LocalJobAccessTest | bestanden: CI39905918718 |
+| Native Oberfläche und vorhandene Migration/OCR/Export/Timer | 67 Android-Tests, 42 Unit-Tests je Variante, manuelle Sichtprüfung | bestanden: CI39905918718 |
+
+[Debug-APK und vollständiger Prüfstatus](QA_STATUS.md), [aktuelle Ansichten](../design/verification/reference-ui-v1.4.0.jpg). Ältere Tabellen dokumentieren frühere Anforderungen und Prüfstände.
+
+# V1.3.2 — manuell direkt in Teams teilen
+
+| Anforderung | Nachweis | Status |
+| --- | --- | --- |
+| Teams ohne ContainerTrack-Firmenkonfiguration öffnen | PhotoSharingTest, ReferenceScreenshotsTest | bestanden: CI39843067438 |
+| Fehlende Teams-App: Android-Chooser mit unveränderten Leserechten | PhotoSharingTest | bestanden: CI39843067438 |
+| Nur ausgewählte Original-JPGs, kein bestätigter Upload-/Timer-Effekt | SelectedPhotoSharingTest, GalleryProfileTest | bestanden: CI39843067438 |
+| Reale Zielauswahl im installierten Teams | Teams-Version, Konto und Rechte auf Nutzergerät | Hardware-Abnahme offen |
+
+[Debug-APK und vollständiger Prüfstatus](QA_STATUS.md), [Bildschirmnachweis](../design/verification/reference-ui-v1.3.2.jpg).
+
+# V1.3.1 — ausgewählte Bildvorlagen
+
+Nachweis: [QA_STATUS.md](QA_STATUS.md), [visueller Abgleich](../design-qa.md), [acht native Ansichten](../design/verification/reference-ui-v1.3.1.jpg).
+
+| Anforderung | Nachweis | Status |
+| --- | --- | --- |
+| Acht Graphit-/Lime-Ansichten inklusive echter App-Navigation | ReferenceScreenshotsTest, manueller Referenzvergleich | bestanden: CI39839563123 |
+| Erster Container atomar, führende Null erhalten | InitialContainerTest | bestanden: CI39839563123 |
+| Original-JPG-Auswahl/Share ohne Timer-/Queue-Änderung | PhotoSelectionTest, SelectedPhotoSharingTest | bestanden: CI39839563123 |
+| Bestehende Migration, Delivery, Return, OCR, Timer, Upload-/Exportregeln | 56 Android-Tests und 39 Unit-Tests je Variante | bestanden: CI39839563123 |
+| CI erhält Fehlerstatus und sammelt Captures in beiden Fällen | DeviceRunnerTest, finaler grüner Gesamtlauf | bestanden: CI39839563123 |
+| Reale Firmenübertragung, zentrale Team-Galerie und Adminverwaltung | Firmenkonfiguration/echte Rechte erforderlich | offen; keine simulierten Erfolge |
+
+Die folgenden Tabellen dokumentieren frühere Abnahmestände.
+
+# V1.3 Ergänzung (22.10.2026)
+
+| Anforderung | Nachweis | Status |
+| --- | --- | --- |
+| Delivery 01–05 je Container, 06 später | WorkflowRulesTest, CompletionTest, TwoPhaseDeliveryTest | bestanden: CI39807919494 |
+| Timer/Queue einmal beim vollständigen Abschluss | CompletionTest, ExportSharingTest | bestanden: CI39807919494 |
+| Migration ohne Verlust / keine historischen Massen-Uploads | MigrationTest mit originalem Schema 1 | bestanden: CI39807919494 |
+| Konto-Bindung, Foto-Version, partieller Retry | GraphPhotoClientTest, PhotoSyncEngineTest, PhotoSyncTest | bestanden: CI39807919494 |
+| Nur JPEG an Teams, separater ZIP-Export | PhotoSharingTest, GraphPhotoClientTest, ShareChooserTest | bestanden: CI39807919494 |
+| Drei Tabs, Plus, Filter, Karten, echte Galerie/Profil | NavigationTest, OrderFiltersTest, GalleryFiltersTest, Screenshots | bestanden: CI39807919494 |
+| Echte Firmenanmeldung und Kanalübertragung | Microsoft-End-to-End-Abnahme | offen: öffentliche Konfiguration fehlt |
+| Debug-APK aus GitHub | aktueller Actions-Lauf laut QA_STATUS.md | erfolgreich: CI39807919494 |
+
+Historische Matrix folgt; Aussagen zum alten fehlenden Internetrecht und Export-Timer gelten nur für den damaligen Stand.
+
+# Container Track Android — Acceptance Matrix
+
+## Delivery
+- [ ] Order Number Pflicht
+- [ ] ZRH Number Pflicht
+- [ ] Order / Container-Typ Pflicht
+- [ ] Quantity 1..50
+- [ ] Quick nicht erforderlich und im Delivery-Formular ausgeblendet
+- [ ] additional Work nicht erforderlich und im Delivery-Formular ausgeblendet
+- [ ] OCR exakt 4-stellig
+- [ ] führende Null bleibt
+- [ ] erster gültiger Treffer wird übernommen
+- [ ] Duplicate blockiert
+- [ ] Manual Entry
+- [ ] Torch wenn Hardware unterstützt
+- [ ] Foto 1 leerer Innenraum
+- [ ] Foto 2 Front
+- [ ] Foto 3 Rückseite/Türen
+- [ ] Foto 4 links
+- [ ] Foto 5 rechts
+- [ ] Foto 6 befüllter Innenraum
+- [ ] kein Skip
+- [ ] Dateinamen 01..06
+- [ ] mehrere Container
+- [ ] ZIP Root = Order Number
+- [ ] Container-Unterordner
+- [ ] TXT Quick und additional Work leer, auch bei historischen Werten
+- [ ] TXT OUT
+- [ ] TXT KT = ZRH Number
+- [ ] TXT Order = Container-Typ
+- [ ] Quantity korrekt
+- [ ] alle Container im TXT
+- [ ] Export nur bei Vollständigkeit
+- [ ] 30-Minuten-Reminder nach Export
+- [ ] Re-Export erzeugt keinen zweiten/reset Timer
+- [ ] Countdown sichtbar
+- [ ] Standby Notification via AlarmManager
+- [ ] Logger gestartet muss bestätigt werden
+
+## Return
+- [ ] Formular zuerst gesperrt
+- [ ] Logger gestoppt zuerst bestätigen
+- [ ] loggerStoppedAt exakt bei Bestätigung
+- [ ] Return Number Pflicht
+- [ ] Order / Container-Typ Pflicht
+- [ ] Quantity 1..50
+- [ ] Quick Pflicht
+- [ ] additional Work Pflicht
+- [ ] `Nothing` und `Empty` in beiden Feldern akzeptiert
+- [ ] OCR 4-stellig
+- [ ] Duplicate Block
+- [ ] exakt 1 Inhaltsfoto pro Container
+- [ ] Dateiname 01
+- [ ] ZIP Root = Return Number
+- [ ] Container-Unterordner
+- [ ] TXT IN
+- [ ] TXT KT = Return Number
+- [ ] TXT Order = Container-Typ
+- [ ] alle Container im TXT
+
+## Offline / Privacy
+- [ ] Prozess-Tod verliert keinen Job
+- [ ] Neustart stellt Job wieder her
+- [ ] Bilder intern
+- [ ] OCR im Flugmodus
+- [ ] Export im Flugmodus
+- [ ] Logger im Flugmodus
+- [ ] kein INTERNET im merged manifest
+- [ ] keine Analytics-/Cloud-Datenhaltungs-SDKs; technische ML-Kit-Hilfsartefakte dokumentiert
+
+## UI / Anti-Slop
+- [ ] Referenzbild verwendet
+- [ ] Dark Navy / Electric Blue
+- [ ] keine fremden Logos
+- [ ] keine fremden Firmennamen
+- [ ] keine Placeholder Cards
+- [ ] keine nutzlosen Buttons
+- [ ] keine Fake-Daten
+- [ ] keine Marketingtexte
+- [ ] Touch Targets >=48dp
+- [ ] Fehler am Feld
+- [ ] Permission-Denial sauber
+- [ ] Start, Aufträge, Scannen, Export, Mehr funktionieren
+- [ ] Screenshot-Regressionstests für Kern-Screens
+
+## Update 1.2 / Teilen und Kompatibilität
+- [ ] ZIP teilen ist Primäraktion, ZIP speichern bleibt unabhängig verfügbar
+- [ ] ACTION_SEND, application/zip, EXTRA_STREAM und ClipData enthalten lesbare FileProvider-URI
+- [ ] Nur temporärer Lesezugriff, keine internen Foto-/Datenbankdateien freigegeben
+- [ ] Android Chooser öffnet; Abbruch gilt nicht als Versandbestätigung
+- [ ] Re-Share/Re-Export verändert weder Reminder-ID noch Frist
+- [ ] bestehende Room-Daten, Fotos und Reminder nach Update mit identischem Signaturschlüssel erhalten
+- [ ] Glasflächen auf Formularen, Export, Statuskarten und Navigation konsistent
+
+Checkboxen sind die vollständige Abnahmeliste, keine automatischen Testresultate. Aktuelle Nachweise und verbleibende Geräteprüfungen: [QA_STATUS.md](QA_STATUS.md).

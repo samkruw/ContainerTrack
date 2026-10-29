@@ -1,0 +1,172 @@
+package ch.zerogen.containertrack
+
+import android.Manifest
+import android.app.Activity
+import android.app.NotificationManager
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
+import android.os.Handler
+import android.os.Looper
+import android.os.ParcelFileDescriptor
+import androidx.room.withTransaction
+import androidx.test.core.app.ApplicationProvider
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
+import org.junit.Assert.*
+import org.junit.Test
+import org.junit.runner.RunWith
+import java.io.File
+import java.util.UUID
+
+@RunWith(AndroidJUnit4::class)
+class ReminderReceiverTest {
+    private val app = ApplicationProvider.getApplicationContext<ContainerTrackApp>()
+    private val notifications = app.getSystemService(NotificationManager::class.java)
+    private fun notificationPermission() = Build.VERSION.SDK_INT < 33 ||
+        app.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+
+    private fun setNotificationAppOp(allowed: Boolean) {
+        val command = "appops set ${app.packageName} POST_NOTIFICATION ${if (allowed) "allow" else "ignore"}"
+        ParcelFileDescriptor.AutoCloseInputStream(InstrumentationRegistry.getInstrumentation().uiAutomation.executeShellCommand(command))
+            .use { it.readBytes() }
+    }
+
+    private suspend fun setNotificationsAllowed(allowed: Boolean) {
+        if (Build.VERSION.SDK_INT >= 33) {
+            if (allowed) {
+                setNotificationAppOp(true)
+                InstrumentationRegistry.getInstrumentation().uiAutomation
+                    .grantRuntimePermission(app.packageName, Manifest.permission.POST_NOTIFICATIONS)
+            }
+            else {
+                val automation = InstrumentationRegistry.getInstrumentation().uiAutomation
+                automation.adoptShellPermissionIdentity(
+                    "android.permission.REVOKE_POST_NOTIFICATIONS_WITHOUT_KILL",
+                    "android.permission.REVOKE_RUNTIME_PERMISSIONS")
+                try {
+                    // Android 13+ checks the runtime grant, not the legacy notification app-op.
+                    // This platform test API revokes it without terminating instrumentation.
+                    val type = Class.forName("android.permission.PermissionManager")
+                    val permissions = requireNotNull(app.getSystemService(type))
+                    type.getMethod("revokePostNotificationPermissionWithoutKillForTest",
+                        String::class.java, Int::class.javaPrimitiveType)
+                        .invoke(permissions, app.packageName, android.os.Process.myUid() / 100_000)
+                } finally { automation.dropShellPermissionIdentity() }
+            }
+        } else setNotificationAppOp(allowed)
+        withTimeout(5_000) { while (app.alarms.notificationsAllowed() != allowed) delay(50) }
+        assertEquals(allowed, app.alarms.notificationsAllowed())
+    }
+
+    private suspend fun dispatch(action: String, id: Int) {
+        val finished = CompletableDeferred<Unit>()
+        app.sendOrderedBroadcast(Intent(app, ReminderReceiver::class.java).setAction(action).putExtra("id", id), null,
+            object : BroadcastReceiver() {
+                override fun onReceive(context: Context, intent: Intent) { finished.complete(Unit) }
+            }, Handler(Looper.getMainLooper()), Activity.RESULT_OK, null, null)
+        withTimeout(10_000) { finished.await() }
+    }
+
+    private suspend fun createDueReminder(): Pair<String, LoggerReminder> {
+        val reference = "TEST-LOGGER-${UUID.randomUUID()}"
+        val job = app.repository.createJob(JobDraft(JobKind.DELIVERY, reference, "ZRH-1", "20 ft", 1, "Nothing", "Empty"), null)
+        app.database.dao().insertReminder(LoggerReminder(jobId = job, referenceNumber = reference, dueAt = System.currentTimeMillis() - 1_000))
+        return job to app.database.dao().jobReminder(job)!!
+    }
+
+    @Test fun dueReceiverPostsNotificationAndActionConfirmsExactlyOnce() = runBlocking {
+        setNotificationsAllowed(true)
+        val (job, reminder) = createDueReminder()
+        try {
+            dispatch(ReminderAlarms.DUE, reminder.id)
+            withTimeout(5_000) { while (notifications.activeNotifications.none { it.id == reminder.id }) delay(50) }
+            val notification = notifications.activeNotifications.first { it.id == reminder.id }.notification
+            assertEquals("Logger starten", notification.extras.getString("android.title"))
+            assertFalse(notification.extras.getString("android.text").orEmpty().contains(reminder.referenceNumber))
+            assertEquals("Logger gestartet", notification.actions.single().title.toString())
+            if(Build.VERSION.SDK_INT>=31)assertTrue(notification.actions.single().actionIntent.isActivity)
+            assertNull(app.database.dao().reminder(reminder.id)!!.confirmedAt)
+            dispatch(ReminderAlarms.CONFIRM, reminder.id)
+            val confirmed = app.database.dao().reminder(reminder.id)!!.confirmedAt
+            assertNotNull(confirmed)
+            dispatch(ReminderAlarms.CONFIRM, reminder.id)
+            assertEquals(confirmed, app.database.dao().reminder(reminder.id)!!.confirmedAt)
+            withTimeout(5_000) { while (notifications.activeNotifications.any { it.id == reminder.id }) delay(50) }
+        } finally { app.repository.deleteJob(job) }
+    }
+
+    @Test fun returnConfirmationBroadcastCannotDismissTheEmailReminder() = runBlocking {
+        val job=app.repository.createJob(JobDraft(JobKind.RETURN,"TEST-RETURN-${UUID.randomUUID()}",
+            orderValue="20 ft",quick="Nothing",additionalWork="Empty"),123L)
+        try {
+            val reminder=app.database.dao().jobReminder(job)!!
+            assertEquals(ReminderKind.RETURN_CLOSE,reminder.kind)
+            dispatch(ReminderAlarms.CONFIRM,reminder.id)
+            assertNull(app.database.dao().reminder(reminder.id)!!.confirmedAt)
+            assertNull(app.database.dao().job(job)!!.job.emailSentAt)
+            assertTrue(app.database.dao().pendingReminders().any { it.id==reminder.id })
+        } finally { app.repository.deleteJob(job) }
+    }
+
+    @Test fun deniedNotificationLeavesReminderPending() = runBlocking {
+        var job: String? = null
+        try {
+            setNotificationsAllowed(false)
+            if (Build.VERSION.SDK_INT >= 33) assertFalse(notificationPermission())
+            val created = createDueReminder()
+            job = created.first
+            val reminder = created.second
+            dispatch(ReminderAlarms.DUE, reminder.id)
+            assertNull(app.database.dao().reminder(reminder.id)!!.confirmedAt)
+            assertTrue(app.database.dao().pendingReminders().any { it.id == reminder.id })
+            assertTrue(notifications.activeNotifications.none { it.id == reminder.id })
+        } finally {
+            job?.let { app.repository.deleteJob(it) }
+            setNotificationsAllowed(true)
+        }
+    }
+
+    @Test fun reconciliationCancelsReturnNotificationAfterConfirmationCommittedBeforeProcessStopped() = runBlocking {
+        setNotificationsAllowed(true)
+        val job = app.repository.createJob(JobDraft(JobKind.RETURN, "TEST-RECOVERY-${UUID.randomUUID()}",
+            orderValue = "20 ft", quick = "Nothing", additionalWork = "Empty"), 123L)
+        try {
+            val container = app.repository.addContainer(job, "0708")
+            for ((phase, category) in listOf(ReturnPhotoPhase.INITIAL to ReturnPhotoCategory.CONTENT,
+                    ReturnPhotoPhase.CLEAN to ReturnPhotoCategory.CLEAN)) {
+                val captured = File.createTempFile("return-recovery", ".jpg", app.cacheDir)
+                    .apply { writeBytes(byteArrayOf(1, 42)) }
+                try { app.repository.saveReturnPhoto(job, container, phase, category, captured) }
+                finally { captured.delete() }
+            }
+            val reminder = app.database.dao().jobReminder(job)!!
+            app.alarms.notifyDue(reminder)
+            withTimeout(5_000) { while (notifications.activeNotifications.none { it.id == reminder.id }) delay(50) }
+            val confirmedAt = System.currentTimeMillis()
+            // Simulate a process stopping after the durable confirmation but before OS cleanup.
+            app.database.withTransaction {
+                val completed = app.database.dao().job(job)!!
+                assertTrue(completed.complete)
+                app.database.dao().updateJob(completed.job.copy(
+                    emailPreparedRevision = completed.job.documentationRevision,
+                    emailPreparedAt = confirmedAt, emailSentAt = confirmedAt, updatedAt = confirmedAt))
+                app.database.dao().confirmReminder(reminder.id, confirmedAt)
+            }
+            assertTrue(notifications.activeNotifications.any { it.id == reminder.id })
+            app.repository.reconcilePendingEffects()
+            withTimeout(5_000) { while (notifications.activeNotifications.any { it.id == reminder.id }) delay(50) }
+            assertEquals(confirmedAt, app.database.dao().job(job)!!.job.emailSentAt)
+            assertEquals(confirmedAt, app.database.dao().reminder(reminder.id)!!.confirmedAt)
+            assertFalse(app.database.dao().pendingReminders().any { it.id == reminder.id })
+            app.repository.reconcilePendingEffects()
+            assertTrue(notifications.activeNotifications.none { it.id == reminder.id })
+        } finally { app.repository.deleteJob(job) }
+    }
+}

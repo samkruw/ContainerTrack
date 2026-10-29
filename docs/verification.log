@@ -1,0 +1,66 @@
+## Quality tooling tests
+Command: /opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python3 -m unittest discover -s tools -p test_*.py -v
+Exit: 0
+test_actual_network_permission_is_rejected (test_quality_tools.QualityToolsTest.test_actual_network_permission_is_rejected) ... ok
+test_production_network_call_is_rejected (test_quality_tools.QualityToolsTest.test_production_network_call_is_rejected) ... ok
+test_removal_markers_do_not_grant_network_permission (test_quality_tools.QualityToolsTest.test_removal_markers_do_not_grant_network_permission) ... ok
+test_screenshot_gate_checks_match_difference_and_missing (test_quality_tools.QualityToolsTest.test_screenshot_gate_checks_match_difference_and_missing) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.176s
+
+OK
+
+
+## Source privacy gate
+Command: /opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python3 tools/check_privacy.py
+Exit: 0
+PASS: source manifest permissions, backups, production network code, direct dependencies
+Source audit only; does not verify transitive dependencies or the packaged APK.
+
+
+## Wrapper shell syntax
+Command: sh -n gradlew
+Exit: 0
+
+
+## Android build and tests
+Command: timeout 25s ./gradlew -g /workspace/container-track/.gradle-local --no-daemon test lint assembleDebug
+Exit: 1
+Downloading https://services.gradle.org/distributions/gradle-8.13-bin.zip
+
+Exception in thread "main" java.net.SocketException: Operation not permitted
+	at java.base/sun.nio.ch.Net.socket0(Native Method)
+	at java.base/sun.nio.ch.Net.socket(Net.java:546)
+	at java.base/sun.nio.ch.Net.socket(Net.java:540)
+	at java.base/sun.nio.ch.NioSocketImpl.create(NioSocketImpl.java:466)
+	at java.base/java.net.DelegatingSocketImpl.create(DelegatingSocketImpl.java:74)
+	at java.base/java.net.Socket.getImpl(Socket.java:599)
+	at java.base/java.net.Socket.connect(Socket.java:751)
+	at java.base/sun.security.ssl.SSLSocketImpl.connect(SSLSocketImpl.java:304)
+	at java.base/sun.net.NetworkClient.doConnect(NetworkClient.java:178)
+	at java.base/sun.net.www.http.HttpClient.openServer(HttpClient.java:539)
+	at java.base/sun.net.www.http.HttpClient.openServer(HttpClient.java:644)
+	at java.base/sun.net.www.protocol.https.HttpsClient.<init>(HttpsClient.java:265)
+	at java.base/sun.net.www.protocol.https.HttpsClient.New(HttpsClient.java:378)
+	at java.base/sun.net.www.protocol.https.AbstractDelegateHttpsURLConnection.getNewHttpClient(AbstractDelegateHttpsURLConnection.java:196)
+	at java.base/sun.net.www.protocol.http.HttpURLConnection.plainConnect0(HttpURLConnection.java:1260)
+	at java.base/sun.net.www.protocol.http.HttpURLConnection.plainConnect(HttpURLConnection.java:1146)
+	at java.base/sun.net.www.protocol.http.HttpURLConnection.connect(HttpURLConnection.java:1075)
+	at java.base/sun.net.www.protocol.https.AbstractDelegateHttpsURLConnection.connect(AbstractDelegateHttpsURLConnection.java:181)
+	at java.base/sun.net.www.protocol.http.HttpURLConnection.getInputStream0(HttpURLConnection.java:1707)
+	at java.base/sun.net.www.protocol.http.HttpURLConnection.getInputStream(HttpURLConnection.java:1632)
+	at java.base/sun.net.www.protocol.https.HttpsURLConnectionImpl.getInputStream(HttpsURLConnectionImpl.java:223)
+	at org.gradle.wrapper.Install.forceFetch(SourceFile:2)
+	at org.gradle.wrapper.Install$1.call(SourceFile:8)
+	at org.gradle.wrapper.GradleWrapperMain.main(SourceFile:67)
+
+
+## Merged manifest gate
+Command: /opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python3 tools/check_privacy.py --merged
+Exit: 1
+FAIL: No debug merged manifest. Run ./gradlew assembleDebug first.
+
+
+## Structured files
+PASS: XML, TOML version references, workflow YAML and job names parsed.
