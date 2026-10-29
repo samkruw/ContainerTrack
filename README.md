@@ -4,6 +4,10 @@ Native Kotlin-App zur lokalen Erfassung von Lieferungen und Returns. Ein `:app`-
 
 **Stand:** Update 1.5.1 / versionCode 13. Adaptive Kamera mit festem Auslöser, kompakter Bedienung und seitlicher Anordnung im Querformat: [UPDATE_1_5_1.md](docs/UPDATE_1_5_1.md). Return-Zusatzfotos, gleich viele Leer-/Sauber-Fotos und die 24h-Erinnerung bis zur E-Mail-Versandbestätigung bleiben erhalten. Native Architektur/App-ID und Room-Schema 3 bleiben erhalten. KT, Benutzerverwaltung, PINs und Rollen entfallen. Historische Anleitungen beschreiben frühere Versionen; aktuell gilt [QA_STATUS.md](docs/QA_STATUS.md).
 
+[**Debug-APK 1.5.1 direkt herunterladen**](https://github.com/samkruw/ContainerTrack/releases/download/debug-v1.5.1/ContainerTrack-1.5.1-debug.apk) · [Release-Seite](https://github.com/samkruw/ContainerTrack/releases/tag/debug-v1.5.1)
+
+Die Vorabversion ist öffentlich ohne Actions-Download-Anmeldung verfügbar. Die Geräteabnahme bleibt offen; Einzelheiten stehen in den Release-Hinweisen.
+
 ## Projekt öffnen und APK bauen
 
 1. Ordner in Android Studio öffnen.

@@ -2,7 +2,11 @@
 
 App-/Test-Commit: `651f2acd0b4c5ea28406b77ab507bb9aa318a015`. Native Debug-APK 1.5.1 / versionCode 13, `ch.zerogen.containertrack`, gebaut am 29.10.2026.
 
-[GitHub-Debug-APK](https://github.com/samkruw/ContainerTrack/actions/runs/40834801102/artifacts/12880372209) aus [Lauf 40834801102](https://github.com/samkruw/ContainerTrack/actions/runs/40834801102). Die reguläre GitHub-Webseite bestätigt den erfolgreichen Build und das Artefakt `Container-Track-debug-APK` (42,9 MB). Der Lauf verwendet noch den historischen Titel von DraftPR1; der ausgecheckte App-Commit ist `651f2ac`.
+[Öffentliche Debug-APK herunterladen](https://github.com/samkruw/ContainerTrack/releases/download/debug-v1.5.1/ContainerTrack-1.5.1-debug.apk) · [Debug-Vorabversion](https://github.com/samkruw/ContainerTrack/releases/tag/debug-v1.5.1).
+
+Am 29.10.2026 durch [Veröffentlichungslauf 40879615382](https://github.com/samkruw/ContainerTrack/actions/runs/40879615382) erfolgreich veröffentlicht. Dieser Ablauf validiert das ursprüngliche Artefakt aus dem erfolgreichen Build-Job von [Lauf 40834801102](https://github.com/samkruw/ContainerTrack/actions/runs/40834801102) und übernimmt dessen APK unverändert. Tag `debug-v1.5.1` verweist auf `0e436423c299f838418ae070ede7be2fb2c7e66e`; die App selbst stammt aus Commit `651f2ac`.
+
+Der öffentliche direkte Download wurde vollständig mit HTTP 200 geprüft: 69.847.389 Bytes, Version 1.5.1, gültige APK-Signatur, SHA-256 `21c00c0206f6b2bed0a718efcbefe22a88ecd70ad6a5d86fbce4d2aa4384c39a`, identisch zur veröffentlichten Prüfsummendatei. Lokale Kopie dieses GitHub-APKs: `/workspace/ContainerTrack-1.5.1-github-debug.apk`. Die unten dokumentierte ursprüngliche lokale APK hat eine andere Prüfsumme. Der erfolgreiche Veröffentlichungsjob ist keine zusätzliche Gerätefreigabe.
 
 ## Bestätigt
 
