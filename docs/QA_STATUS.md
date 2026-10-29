@@ -1,11 +1,25 @@
-# Update 1.5.1 — adaptive Kamera
+# Update 1.5.1 — Debug-Build bestanden, Geräteabnahme offen
 
-Native Debug-APK 1.5.1 / versionCode 13, `ch.zerogen.containertrack`.
+App-/Test-Commit: `651f2acd0b4c5ea28406b77ab507bb9aa318a015`. Native Debug-APK 1.5.1 / versionCode 13, `ch.zerogen.containertrack`, gebaut am 29.10.2026.
 
-- `test lint assembleDebug assembleDebugAndroidTest` erfolgreich: 50 Unit-Tests je Variante, Lint und beide Debug-APKs gebaut.
+[GitHub-Debug-APK](https://github.com/samkruw/ContainerTrack/actions/runs/40834801102/artifacts/12880372209) aus [Lauf 40834801102](https://github.com/samkruw/ContainerTrack/actions/runs/40834801102). Die reguläre GitHub-Webseite bestätigt den erfolgreichen Build und das Artefakt `Container-Track-debug-APK` (42,9 MB). Der Lauf verwendet noch den historischen Titel von DraftPR1; der ausgecheckte App-Commit ist `651f2ac`.
+
+## Bestätigt
+
+- `test lint assembleDebug assembleDebugAndroidTest` lokal erfolgreich: 50 Unit-Tests je Variante, keine Fehler oder übersprungenen Tests; Lint und beide Debug-APKs gebaut.
 - Neun Python-QA-Tests sowie Quellcode-, gemergte Manifest- und tatsächliche APK-Berechtigungsprüfung bestanden.
-- Neue Geräteprüfungen für feste Bedienelemente, kleine Viewports, Querformat und Schriftfaktor 1,5 sind kompiliert. Die Ausführung und visuelle Abnahme stehen an diesem Zwischenstand noch aus.
-- Die App bleibt lokal; Return-Zählung, E-Mail und Erinnerungen sind unverändert. Details: [UPDATE_1_5_1.md](UPDATE_1_5_1.md).
+- Paketmetadaten der installierten lokalen APK bestätigen Version 1.5.1 / Code 13. Lokale Datei: `/workspace/ContainerTrack-1.5.1-debug.apk`, SHA-256 `f0ae2a61132dffcd758053e47acf5fc4f78e6901123fff80cb550a4c3bf0f64a`.
+- Das lokale Signaturzertifikat stimmt mit der zuvor lokal gebauten 1.5.0 überein. Dies beweist keine Übereinstimmung mit einer früher auf einem anderen CI-Runner signierten APK.
+- Statische unabhängige Prüfung der Anpassung: OCR pausiert während der manuellen Eingabe; eine Fotoauswahl beendet den Neuaufnahme-Modus. Kamera-IO und fachliche Return-/E-Mail-Regeln bleiben erhalten.
+
+## Noch offen
+
+- Der GitHub-Gerätejob aus Lauf 40834801102 ist fehlgeschlagen. Die öffentliche Webseite zeigt nur `The process '/usr/bin/sh' failed with exit code 1`; die konkrete fehlgeschlagene Prüfung ist noch nicht bekannt. [Geräteberichte und Screenshots](https://github.com/samkruw/ContainerTrack/actions/runs/40834801102/artifacts/12880910544) sind vorhanden, ihr Download und die ausführlichen Logs benötigen authentifizierten Zugriff. Der direkte öffentliche Download lieferte HTTP 404. Die aktive Netzwerkregel erlaubt weiterhin keinen GitHub-API-Zugriff; der Konfigurationsentwurf enthält die nötige Freigabe, wurde aber nicht aktiviert.
+- Die zehn gezielt gestarteten lokalen UI-Tests lieferten **keinen bestandenen Test**: Der Instrumentierungsprozess wurde vor dem ersten Testergebnis wegen nicht abgeschlossenem Prozessstart beendet (`Process crashed`, ANR). Im gleichen Zeitraum traten Start-/ANR-Fehler unter anderem in SystemUI, Bluetooth, Google-Diensten und Telefon auf. Der Software-Emulator wurde später durch die Unterbrechung beendet. Kein erneuter unveränderter Kaltstart wird als Prüfung ausgegeben.
+- Neue Layouttests sind kompiliert: feste Tasten und Vorschau, Delivery-/Return-Bestätigung, kompakte Berechtigungsaktionen, kleine Viewports einschließlich 640×224 dp und Schriftfaktor 1,5. Sie sind **noch nicht erfolgreich ausgeführt belegt**. Neue 1.5.1-Screenshots und eine visuelle Gerätefreigabe fehlen.
+- Reale Kamera, Drehung, TalkBack und E-Mail-App müssen weiterhin auf einem Gerät geprüft werden. Die vorhandenen Bilder von 1.5.0 dokumentieren ausschließlich die Vorgängerversion.
+
+Protokolle und Nachweise: `/workspace/.containertrack-setup/verification/adaptive-capture/`. Änderungen: [UPDATE_1_5_1.md](UPDATE_1_5_1.md). Der Branch bleibt `codex/native-android-app`; kein Merge oder Release.
 
 Der folgende Bericht hält die tatsächlich belegte Prüfung der Vorgängerversion fest.
 

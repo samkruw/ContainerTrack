@@ -1,3 +1,11 @@
+# Adaptive Kamera 1.5.1 — Sichtprüfung offen
+
+Die Aufnahmeansichten verwenden jetzt eine flexible Vorschau, feste Aktionen und im Querformat eine seitliche Bedienung. Gespeicherte Fotos liegen in einer eigenen Übersicht. Die kompakte Kopfzeile ersetzt während der Aufnahme die große Kopf-/Tabnavigation.
+
+Für diese Änderung liegen noch keine erfolgreich erzeugten und visuell geprüften Gerätescreenshots vor. Der lokale Testprozess scheiterte beim Start im instabilen Software-Emulator; der GitHub-Gerätejob meldet einen noch nicht eingegrenzten Fehler. Die kompilierten Layouttests sind kein Ersatz für eine erfolgreiche Ausführung. Aktueller Nachweis: [QA_STATUS.md](docs/QA_STATUS.md).
+
+Die folgenden Abbildungen und Berichte betreffen ältere Versionen.
+
 # Native Android — Referenzabgleich 1.5.0
 
 Die native Kotlin/Compose-App behält Graphit/Lime, Inter, die Container-Markenleiste und die Navigation Aufträge–Kamera–Galerie der ausgewählten Bildvorlagen. Aktuelle fachliche Anpassungen: kein KT, keine Anmeldung oder Rollen, lokale Galerie und E-Mail statt Teams. Return ergänzt Anfangs-/Abschlussphasen und optionale Schaden-/Zusatzfotos.
