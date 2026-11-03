@@ -1,3 +1,9 @@
+# Update 1.5.3 — Quick und Zusatzarbeiten entfernt, Geräteabnahme offen
+
+Quick und Zusatzarbeiten sind bei Lieferung und Return aus Formular, Pflichtprüfung, Auftragsdetails, Exportvorschau, E-Mail-/Share-Text, TXT und META entfernt. Neue Aufträge speichern leere Legacy-Werte; vorhandene Datenbankspalten und Aufträge bleiben erhalten. Die neue TXT hat sechs statt acht Spalten, META schemaVersion 5 statt 4. Siehe [UPDATE_1_5_3.md](UPDATE_1_5_3.md).
+
+Lokaler Prüfstand am 03.11.2026: `test lint assembleDebug assembleDebugAndroidTest` erfolgreich; 53 Debug- und 53 Release-Unit-Tests ohne Fehler oder übersprungene Tests. Neun Python-QA-Tests bestanden. Die lokale APK meldet Version 1.5.3 / Code 15 und debuggable=true; ihre Signatur und die gepackten/zusammengeführten Berechtigungen wurden erfolgreich geprüft. SHA-256 der **lokalen** APK: `e2d5d63c6b1f11da4f17b57d39e482205511fc9b9d4871ba3ed5691ea3c2efcf`. Die geänderten Android-UI- und Exporttests sind kompiliert, aber nicht auf einem Gerät ausgeführt. Die Geräte- und visuelle Abnahme bleibt offen. Der GitHub-Release-Download wird separat geprüft.
+
 # Update 1.5.2 — Sauberfotos überspringbar, Geräteabnahme offen
 
 Bei bereits sauberen Return-Containern kann der Nutzer die Sauberfotos pro Container ausdrücklich überspringen. Das Inhaltsfoto bleibt Pflicht. Für andere Container gilt unverändert die gleiche Anzahl Anfangs- und Abschlussfotos. Der Status wird mit Room-Migration 3→4 gespeichert, erscheint in den ZIP-Metadaten und wird in der vorbereiteten E-Mail benannt. Die 24h-Erinnerung bleibt bis zur bestätigten E-Mail offen. Einzelheiten: [UPDATE_1_5_2.md](UPDATE_1_5_2.md).

@@ -41,10 +41,8 @@ fun ExportReviewScreen(batch: JobWithContainers, busy: Boolean, onShare: () -> U
         Text("Excel-Zuordnung", style = MaterialTheme.typography.titleMedium)
         val rows = listOf("In/Out" to if (draft.kind == JobKind.DELIVERY) "OUT" else "IN",
             "Auftragsnummer" to draft.referenceNumber,
-            "Order" to draft.orderValue, "Quantity" to draft.quantity.toString()) +
-            (if (draft.kind == JobKind.RETURN) listOf("additional Work" to draft.additionalWork) else emptyList()) +
-            listOf("Container Number" to batch.ordered.joinToString(",") { it.container.containerNumber }) +
-            (if (draft.kind == JobKind.RETURN) listOf("Quick" to draft.quick) else emptyList())
+            "Order" to draft.orderValue, "Quantity" to draft.quantity.toString(),
+            "Container Number" to batch.ordered.joinToString(",") { it.container.containerNumber })
         GlassSurface {
             Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 rows.forEach { (label, value) ->

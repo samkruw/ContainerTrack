@@ -18,8 +18,8 @@ data class JobDraft(
     val kt: String = "", // Legacy Room column; retained only to preserve existing databases.
     val orderValue: String = "",
     val quantity: Int = 1,
-    val quick: String = "",
-    val additionalWork: String = ""
+    val quick: String = "", // Legacy Room column; no longer collected or exported.
+    val additionalWork: String = "" // Legacy Room column; no longer collected or exported.
 ) {
     fun errors(loggerStoppedAt: Long? = null): Map<String, String> = buildMap {
         if (referenceNumber.isBlank()) put("referenceNumber", "Pflichtfeld")
@@ -27,8 +27,6 @@ data class JobDraft(
         if (kind == JobKind.RETURN && loggerStoppedAt == null) put("loggerStoppedAt", "Logger zuerst stoppen und bestätigen.")
         if (orderValue.isBlank()) put("orderValue", "Pflichtfeld")
         if (quantity !in 1..50) put("quantity", "1 bis 50 Container")
-        if (kind == JobKind.RETURN && quick.isBlank()) put("quick", "Pflichtfeld – Nothing und Empty sind erlaubt.")
-        if (kind == JobKind.RETURN && additionalWork.isBlank()) put("additionalWork", "Pflichtfeld – Nothing und Empty sind erlaubt.")
     }
 }
 
@@ -66,13 +64,11 @@ fun reminderDueAt(exportedAt: Long) = exportedAt + 30 * 60 * 1000L
 fun cleanCell(value: String) = value.replace("\r\n", "\n").replace('\r', '\n').replace("\n", " / ").replace('\t', ' ')
 
 fun excelText(draft: JobDraft, numbers: List<String>, date: LocalDate): String {
-    val header = "Datum\tIn/Out\tAuftragsnummer\tOrder\tQuantity\tadditional Work\tContainer Number\tQuick"
+    val header = "Datum\tIn/Out\tAuftragsnummer\tOrder\tQuantity\tContainer Number"
     val row = listOf(date.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")),
         if (draft.kind == JobKind.DELIVERY) "OUT" else "IN",
         draft.referenceNumber,
-        draft.orderValue, draft.quantity.toString(),
-        if (draft.kind == JobKind.RETURN) draft.additionalWork else "", numbers.joinToString(","),
-        if (draft.kind == JobKind.RETURN) draft.quick else "")
+        draft.orderValue, draft.quantity.toString(), numbers.joinToString(","))
     return "$header\r\n${row.joinToString("\t") { cleanCell(it) }}\r\n"
 }
 

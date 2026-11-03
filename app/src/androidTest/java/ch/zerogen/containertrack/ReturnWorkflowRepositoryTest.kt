@@ -35,6 +35,22 @@ class ReturnWorkflowRepositoryTest {
         catch (_: IllegalStateException) { }
     }
 
+    @Test fun newDeliveryAndReturnJobsDiscardLegacyQuickAndWorkValues(): Unit = runBlocking {
+        val db = Room.inMemoryDatabaseBuilder(context, TrackDatabase::class.java).build()
+        val repo = TrackRepository(context, db)
+        val delivery = repo.createJob(JobDraft(JobKind.DELIVERY, "DEL-${UUID.randomUUID()}",
+            orderValue = "20 ft", quick = "OLD-QUICK", additionalWork = "OLD-WORK"), null)
+        val returned = repo.createJob(JobDraft(JobKind.RETURN, "RET-${UUID.randomUUID()}",
+            orderValue = "20 ft", quick = "OLD-QUICK", additionalWork = "OLD-WORK"), 123L)
+        try {
+            for (id in listOf(delivery, returned)) {
+                val draft = db.dao().job(id)!!.job.draft
+                assertEquals("", draft.quick)
+                assertEquals("", draft.additionalWork)
+            }
+        } finally { repo.deleteJob(delivery); repo.deleteJob(returned); db.close() }
+    }
+
     @Test fun threeInitialPhotosNeedThreeCleanPhotosAndEveryContainerNeedsContentFirst(): Unit = runBlocking {
         val db = Room.inMemoryDatabaseBuilder(context, TrackDatabase::class.java).build()
         val repo = TrackRepository(context, db)

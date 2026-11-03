@@ -45,22 +45,22 @@ class NavigationTest {
         compose.onNodeWithText("TEST-UI").assertIsDisplayed()
     }
 
-    @Test fun returnStillRequiresBothExtraFieldsAndAcceptsNothingEmpty() {
+    @Test fun returnNeedsNoQuickOrAdditionalWorkAfterLoggerStop() {
         compose.onNodeWithContentDescription("Neuer Auftrag").performClick()
         compose.onNodeWithText("Return", useUnmergedTree = true).performClick()
-        compose.onNodeWithText("Quick").assertIsNotEnabled()
-        compose.onNodeWithText("additional Work").assertIsNotEnabled()
+        compose.onNodeWithText("Quick").assertDoesNotExist()
+        compose.onNodeWithText("additional Work").assertDoesNotExist()
         compose.onNodeWithText("Logger gestoppt – bestätigen").performClick()
         compose.onNodeWithText("Order Number").performTextInput("RETURN-UI")
         compose.onNodeWithText("Order / Container-Typ").performTextInput("20 ft")
-        compose.onNodeWithText("Fotos starten").performClick()
-        compose.onAllNodesWithText("Pflichtfeld – Nothing und Empty sind erlaubt.").assertCountEquals(2)
-        compose.onNodeWithText("Quick").performScrollTo().performTextInput("Nothing")
-        compose.onNodeWithText("additional Work").performScrollTo().performTextInput("Empty")
+        compose.onNodeWithText("Quick").assertDoesNotExist()
+        compose.onNodeWithText("additional Work").assertDoesNotExist()
         compose.onNodeWithText("Fotos starten").performClick()
         compose.waitUntil(10_000) { compose.onAllNodesWithText("Container 1 / 1 erfassen").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithText("Fotos starten").assertDoesNotExist()
-        compose.onNodeWithText("Quick · Nothing\nadditional Work · Empty").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("RETURN-UI").assertIsDisplayed()
+        compose.onNodeWithText("Quick", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("additional Work", substring = true).assertDoesNotExist()
     }
 
     @Test fun bottomNavigationOpensAllDestinations() {

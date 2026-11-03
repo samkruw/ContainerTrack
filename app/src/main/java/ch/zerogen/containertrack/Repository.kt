@@ -37,8 +37,8 @@ class TrackRepository(private val context: Context, val database: TrackDatabase,
         require(draft.errors(stoppedAt).isEmpty()) { "Bitte alle Pflichtfelder prüfen." }
         val normalized = draft.copy(referenceNumber = draft.referenceNumber.trim(),
             kt = "",
-            quick = if (draft.kind == JobKind.RETURN) draft.quick else "",
-            additionalWork = if (draft.kind == JobKind.RETURN) draft.additionalWork else "")
+            quick = "",
+            additionalWork = "")
         val entity = JobEntity(draft = normalized, createdAt = System.currentTimeMillis(), loggerStoppedAt = stoppedAt, createdByAccountId = accountId(),
             returnWorkflowVersion = if(normalized.kind==JobKind.RETURN)1 else 0)
         database.withTransaction {
@@ -536,11 +536,9 @@ class TrackRepository(private val context: Context, val database: TrackDatabase,
                 .put("photos", photos))
         }
         return JSONObject().apply {
-        put("schemaVersion", 4); put("id", job.id); put("type", job.draft.kind.name)
+        put("schemaVersion", 5); put("id", job.id); put("type", job.draft.kind.name)
         put("referenceNumber", job.draft.referenceNumber)
         put("orderValue", job.draft.orderValue); put("quantity", job.draft.quantity)
-        put("quick", if (job.draft.kind == JobKind.RETURN) job.draft.quick else "")
-        put("additionalWork", if (job.draft.kind == JobKind.RETURN) job.draft.additionalWork else "")
         put("createdAt", job.createdAt); put("updatedAt", job.updatedAt)
         put("completedAt", job.completedAt ?: JSONObject.NULL)
         put("exportedAt", job.exportedAt ?: JSONObject.NULL); put("archiveCreatedAt", preparedAt)

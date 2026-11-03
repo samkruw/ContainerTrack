@@ -33,12 +33,12 @@ class ExportScreenTest {
         compose.runOnIdle { assertEquals(1, shares); assertEquals(1, saves) }
     }
 
-    @Test fun returnShowsExtrasAndBusyStatePreventsDuplicateExport() {
+    @Test fun returnHidesLegacyExtrasAndBusyStatePreventsDuplicateExport() {
         compose.setContent { ContainerTheme { ExportReviewScreen(batch(JobKind.RETURN), true, {}, {}) } }
-        compose.onNodeWithText("additional Work").assertExists()
-        compose.onNodeWithText("Empty").assertExists()
-        compose.onNodeWithText("Quick").assertExists()
-        compose.onNodeWithText("Nothing").assertExists()
+        compose.onNodeWithText("additional Work").assertDoesNotExist()
+        compose.onNodeWithText("Empty").assertDoesNotExist()
+        compose.onNodeWithText("Quick").assertDoesNotExist()
+        compose.onNodeWithText("Nothing").assertDoesNotExist()
         compose.onNodeWithText("ZIP wird erstellt …").performScrollTo().assertIsNotEnabled()
         compose.onNodeWithText("ZIP speichern").performScrollTo().assertIsNotEnabled()
     }

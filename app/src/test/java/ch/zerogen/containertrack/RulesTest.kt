@@ -19,17 +19,17 @@ class RulesTest {
         assertTrue(draft().copy(referenceNumber = " ").errors().containsKey("referenceNumber"))
         assertTrue(draft().copy(kt = " ").errors().isEmpty())
         assertTrue(draft().copy(orderValue = " ").errors().containsKey("orderValue"))
-        assertTrue(draft(JobKind.RETURN).copy(quick = "\n").errors(123L).containsKey("quick"))
-        assertTrue(draft(JobKind.RETURN).copy(additionalWork = "").errors(123L).containsKey("additionalWork"))
+        assertTrue(draft(JobKind.RETURN).copy(quick = "", additionalWork = "").errors(123L).isEmpty())
     }
 
-    @Test fun deliveryNeedsNeitherQuickNorAdditionalWork() {
-        assertTrue(draft().copy(quick = "", additionalWork = "").errors().isEmpty())
+    @Test fun neitherKindNeedsQuickOrAdditionalWork() {
+        assertTrue(draft(JobKind.DELIVERY).copy(quick = "", additionalWork = "").errors().isEmpty())
+        assertTrue(draft(JobKind.RETURN).copy(quick = "", additionalWork = "").errors(123L).isEmpty())
     }
 
-    @Test fun returnRequiresBothExtraFieldsEvenAfterLoggerStop() {
+    @Test fun returnOnlyRequiresLoggerStopInAdditionToSharedFields() {
         val errors = draft(JobKind.RETURN).copy(quick = "", additionalWork = "").errors(123L)
-        assertEquals(setOf("quick", "additionalWork"), errors.keys)
+        assertTrue(errors.isEmpty())
     }
 
     @Test fun returnRequiresLoggerConfirmationButNotSeparateZrh() {
@@ -37,10 +37,10 @@ class RulesTest {
         assertTrue(draft(JobKind.RETURN).copy(kt = "").errors(123L).isEmpty())
     }
 
-    @Test fun returnAcceptsNothingAndEmptyInEitherExtraField() {
-        for (quick in listOf("Nothing", "Empty")) for (work in listOf("Nothing", "Empty")) {
-            assertTrue("$quick / $work", draft(JobKind.RETURN).copy(quick = quick, additionalWork = work).errors(123L).isEmpty())
-        }
+    @Test fun legacyExtraValuesDoNotAffectValidation() {
+        val legacy = draft(JobKind.RETURN).copy(quick = "LEGACY-QUICK", additionalWork = "LEGACY-WORK")
+        assertTrue(legacy.errors(123L).isEmpty())
+        assertEquals(setOf("loggerStoppedAt"), legacy.errors().keys)
     }
 
     @Test fun unsafeReferenceIsRejected() {
@@ -75,14 +75,16 @@ class RulesTest {
 
     @Test fun txtDeliveryUsesOrderReferenceAndContainerType() {
         val txt = excelText(draft().copy(quantity = 2), listOf("0708", "0710"), LocalDate.of(2026, 10, 20))
-        assertEquals("Datum\tIn/Out\tAuftragsnummer\tOrder\tQuantity\tadditional Work\tContainer Number\tQuick\r\n" +
-            "20.10.2026\tOUT\tORD-12\t20 ft\t2\t\t0708,0710\t\r\n", txt)
+        assertEquals("Datum\tIn/Out\tAuftragsnummer\tOrder\tQuantity\tContainer Number\r\n" +
+            "20.10.2026\tOUT\tORD-12\t20 ft\t2\t0708,0710\r\n", txt)
     }
 
-    @Test fun txtReturnUsesReferenceAndNormalizesNewlines() {
-        val txt = excelText(draft(JobKind.RETURN).copy(quick = "A\tB\r\nC"), listOf("0708"), LocalDate.of(2026, 1, 2))
-        assertTrue(txt.contains("02.01.2026\tIN\tORD-12\t20 ft\t1"))
-        assertTrue(txt.endsWith("\tEmpty\t0708\tA B / C\r\n"))
+    @Test fun txtReturnUsesSixColumnsAndIgnoresLegacyExtras() {
+        val txt = excelText(draft(JobKind.RETURN).copy(quick = "A\tB\r\nC", additionalWork = "LEGACY-WORK"),
+            listOf("0708"), LocalDate.of(2026, 1, 2))
+        assertEquals("Datum\tIn/Out\tAuftragsnummer\tOrder\tQuantity\tContainer Number\r\n" +
+            "02.01.2026\tIN\tORD-12\t20 ft\t1\t0708\r\n", txt)
+        assertFalse(txt.contains("LEGACY-WORK"))
     }
 
     @Test fun timerNeverResets() {

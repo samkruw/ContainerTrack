@@ -2,9 +2,9 @@
 
 Native Kotlin-App zur lokalen Erfassung von Lieferungen und Returns. Ein `:app`-Modul mit Compose, Room, CameraX und gebündeltem ML Kit. Kein WebView. Direkter Start ohne Anmeldung, Benutzerverwaltung oder Rollen; Fotos werden als vollständige Auftrags-E-Mail im Smartphone-Mailprogramm vorbereitet.
 
-**Stand:** Update 1.5.2 / versionCode 14. Bereits saubere Return-Container können Sauberfotos nach ausdrücklicher Auswahl überspringen: [UPDATE_1_5_2.md](docs/UPDATE_1_5_2.md). Die adaptive Kamera und die 24h-Erinnerung bis zur E-Mail-Versandbestätigung bleiben erhalten. Native Architektur/App-ID bleiben erhalten; Room migriert auf Schema 4. KT, Benutzerverwaltung, PINs und Rollen entfallen. Historische Anleitungen beschreiben frühere Versionen; aktuell gilt [QA_STATUS.md](docs/QA_STATUS.md).
+**Stand:** Update 1.5.3 / versionCode 15. Quick und Zusatzarbeiten entfallen bei Lieferung und Return: [UPDATE_1_5_3.md](docs/UPDATE_1_5_3.md). Bereits saubere Return-Container können Sauberfotos nach ausdrücklicher Auswahl überspringen. Die adaptive Kamera und die 24h-Erinnerung bis zur E-Mail-Versandbestätigung bleiben erhalten. Native Architektur/App-ID und Room-Schema 4 bleiben erhalten. KT, Benutzerverwaltung, PINs und Rollen entfallen. Historische Anleitungen beschreiben frühere Versionen; aktuell gilt [QA_STATUS.md](docs/QA_STATUS.md).
 
-[**Debug-APK 1.5.2 direkt herunterladen**](https://github.com/samkruw/ContainerTrack/releases/download/debug-v1.5.2/ContainerTrack-1.5.2-debug.apk) · [Release-Seite](https://github.com/samkruw/ContainerTrack/releases/tag/debug-v1.5.2)
+[**Debug-APK 1.5.3 direkt herunterladen**](https://github.com/samkruw/ContainerTrack/releases/download/debug-v1.5.3/ContainerTrack-1.5.3-debug.apk) · [Release-Seite](https://github.com/samkruw/ContainerTrack/releases/tag/debug-v1.5.3)
 
 Die Vorabversion ist öffentlich ohne Actions-Download-Anmeldung verfügbar. Die Geräteabnahme bleibt offen; Einzelheiten stehen in den Release-Hinweisen. **Die öffentlichen Debug-APKs 1.5.1 und 1.5.2 sind unterschiedlich signiert.** Android kann 1.5.2 deshalb nicht über die öffentliche 1.5.1 installieren. Bei vorhandenen lokalen Aufträgen und Fotos nicht deinstallieren: Dabei gingen diese Daten verloren.
 
@@ -27,7 +27,7 @@ Bei Push/PR führt [android.yml](.github/workflows/android.yml) Build, Unit-Test
 
 ## Bedienung
 
-- **Plus-Button:** Lieferung oder Return anlegen. Optional die erste Container-Nummer direkt eingeben oder scannen. Weitere Pflichtangaben sind ausklappbar. Alle Pflichtfelder ausfüllen. `Quick` und `additional Work` werden ausschliesslich bei Return angegeben; `Nothing` und `Empty` sind dort gültig. Quantity: 1–50.
+- **Plus-Button:** Lieferung oder Return anlegen. Optional die erste Container-Nummer direkt eingeben oder scannen. Weitere Pflichtangaben sind ausklappbar. Alle Pflichtfelder ausfüllen; Quick und Zusatzarbeiten werden bei beiden Arten nicht abgefragt. Quantity: 1–50.
 - **Return:** zuerst den gestoppten Logger bestätigen. Der Zeitstempel wird genau bei der Bestätigung gesetzt. Erst danach sind die Formularfelder aktiv.
 - **Kamera:** Auftrag auswählen; vierstellige Nummer in den Rahmen halten. Der erste gültige OCR-Treffer wird übernommen. Manuelle Eingabe und spätere Nummernkorrektur sind möglich. Führende Nullen bleiben erhalten; doppelte Nummern im Auftrag werden blockiert.
 - **Fotos:** Lieferung benötigt sechs Fotos: zuerst je Container 01–05, anschließend darf 06 (befüllt) später folgen. Neue Returns benötigen ein Inhaltsfoto plus optionale Schaden-/Zusatzfotos. Danach sind normalerweise je Container gleich viele Leer-/Sauber-Fotos nötig. Ist ein Container bereits sauber, lassen sich seine Sauberfotos ausdrücklich überspringen; vorhandene Sauberfotos müssen dazu zuerst gelöscht werden. Die Auswahl kann bis zum ZIP-Export oder zur E-Mail-Bestätigung rückgängig gemacht werden. Foto prüfen und ausdrücklich verwenden. Neuaufnahme ersetzt erst nach Bestätigung das bisherige Foto. Bei Lieferung entfernt Löschen ab einem Schritt auch nachfolgende Fotos; neue Return-Fotos werden einzeln gelöscht. Änderungen machen eine alte E-Mail-Vorbereitung ungültig.
@@ -53,12 +53,12 @@ Lieferung: sechs JPEGs `01`–`06`. Neue Returns: Anfangs- und Abschlussfotos mi
 TXT: UTF-8, tabgetrennt, eine Kopfzeile und eine Datenzeile mit allen Container-Nummern in Reihenfolge, kommagetrennt. Kopfzeile:
 
 ```text
-Datum\tIn/Out\tAuftragsnummer\tOrder\tQuantity\tadditional Work\tContainer Number\tQuick
+Datum\tIn/Out\tAuftragsnummer\tOrder\tQuantity\tContainer Number
 ```
 
-Lieferung: `OUT`; die TXT-Spalten `additional Work` und `Quick` bleiben leer, auch bei älteren Aufträgen mit gespeicherten Werten. Return: `IN`. Auftragsnummer = Order Number; KT wird nicht verwendet. Order = manuell eingegebener Container-Typ. Datum = lokales Gerätedatum `dd.MM.yyyy`. Tabs werden zu Leerzeichen, Zeilenumbrüche zu ` / `. Die TXT-Datei kann beim Import als Tab-getrennt angegeben werden. In Tabellenprogrammen Container-Nummern als Text importieren, um führende Nullen zu bewahren.
+Lieferung: `OUT`; Return: `IN`. Die TXT hat sechs Spalten. Auftragsnummer = Order Number; KT wird nicht verwendet. Order = manuell eingegebener Container-Typ. Datum = lokales Gerätedatum `dd.MM.yyyy`. Tabs werden zu Leerzeichen, Zeilenumbrüche zu ` / `. Die TXT-Datei kann beim Import als Tab-getrennt angegeben werden. In Tabellenprogrammen Container-Nummern als Text importieren, um führende Nullen zu bewahren.
 
-META (schemaVersion 4) enthält Auftragswerte, Foto-Phase/Kategorie, Fotozeitpunkte, `cleanPhotoSkipped` je Container und relative Exportnamen, keine internen Dateipfade. `archiveCreatedAt` bezeichnet die Archiverstellung; `exportedAt` im Archiv ist der zuvor bekannte erste Exportzeitpunkt, beim ersten Archiv noch `null`. Der erfolgreiche Exportzeitpunkt wird nach dem Schliessen des Zielstreams bzw. nach vollständiger Archiverstellung zum Teilen in Room gespeichert.
+META (schemaVersion 5) enthält Auftragswerte ohne Quick und Zusatzarbeiten, Foto-Phase/Kategorie, Fotozeitpunkte, `cleanPhotoSkipped` je Container und relative Exportnamen, keine internen Dateipfade. `archiveCreatedAt` bezeichnet die Archiverstellung; `exportedAt` im Archiv ist der zuvor bekannte erste Exportzeitpunkt, beim ersten Archiv noch `null`. Der erfolgreiche Exportzeitpunkt wird nach dem Schliessen des Zielstreams bzw. nach vollständiger Archiverstellung zum Teilen in Room gespeichert.
 
 ## Return-Erinnerung, Logger und Berechtigungen
 

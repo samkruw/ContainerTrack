@@ -89,8 +89,6 @@ fun SetupScreen(vm:TrackViewModel,busy:Boolean,onCreated:(String)->Unit) {
     val reference by vm.formReference.collectAsStateWithLifecycle()
     val order by vm.formOrder.collectAsStateWithLifecycle()
     val quantity by vm.formQuantity.collectAsStateWithLifecycle()
-    val quick by vm.formQuick.collectAsStateWithLifecycle()
-    val work by vm.formWork.collectAsStateWithLifecycle()
     val number by vm.formContainer.collectAsStateWithLifecycle()
     val stopped by vm.formStoppedAt.collectAsStateWithLifecycle()
     val kind=JobKind.valueOf(kindName)
@@ -98,7 +96,7 @@ fun SetupScreen(vm:TrackViewModel,busy:Boolean,onCreated:(String)->Unit) {
     var attempted by rememberSaveable{mutableStateOf(false)}
     var details by rememberSaveable(kindName){mutableStateOf(kind==JobKind.RETURN)}
     var scanning by remember{mutableStateOf(false)}
-    val draft=JobDraft(kind=kind,referenceNumber=reference,orderValue=order,quantity=quantity.toIntOrNull() ?: 0,quick=quick,additionalWork=work)
+    val draft=JobDraft(kind=kind,referenceNumber=reference,orderValue=order,quantity=quantity.toIntOrNull() ?: 0)
     val errors=if(attempted)draft.errors(stopped) else emptyMap()
     val numberError=if(number.isNotBlank())containerError(number,emptySet()) else null
     Column(Modifier.fillMaxSize().padding(horizontal=16.dp)) {
@@ -118,11 +116,6 @@ fun SetupScreen(vm:TrackViewModel,busy:Boolean,onCreated:(String)->Unit) {
         if(details) {
             FormField("Order / Container-Typ",order,!locked && !busy,errors["orderValue"]){vm.field("formOrder",it)}
             OutlinedTextField(quantity,{if(it.length<=2 && it.all{c->c in '0'..'9'})vm.field("formQuantity",it)},Modifier.fillMaxWidth(),enabled=!locked && !busy,label={Text("Quantity · 1 bis 50")},singleLine=true,keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Number),isError=errors["quantity"]!=null,supportingText={errors["quantity"]?.let{Text(it)}})
-            if(kind==JobKind.RETURN) {
-                FormField("Quick",quick,!locked && !busy,errors["quick"],true){vm.field("formQuick",it)}
-                FormField("additional Work",work,!locked && !busy,errors["additionalWork"],true){vm.field("formWork",it)}
-                Text("Nothing und Empty sind gültige Angaben.",color=Muted,style=MaterialTheme.typography.bodySmall)
-            }
         }
         HorizontalDivider(color=Hairline)
         Text("Fotodokumentation",style=MaterialTheme.typography.titleLarge)
@@ -193,9 +186,6 @@ fun JobScreen(batch: JobWithContainers, vm: TrackViewModel, busy: Boolean, onSca
         if (onReview!=null && batch.containers.any{it.photos.isNotEmpty()}) item { PrimaryButton("Fotos prüfen",!busy,onReview) }
         if (batch.complete && onUpload!=null) item { PrimaryButton("Auftrag per E-Mail", !busy, onUpload) }
         if (batch.complete) item { PrimaryButton(if (job.exportedAt == null) "Export prüfen" else "Erneut exportieren", !busy, onExport) }
-        if (job.draft.kind == JobKind.RETURN) item {
-            Text("Quick · ${job.draft.quick}\nadditional Work · ${job.draft.additionalWork}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
         item { OutlinedButton(enabled = !busy, onClick = { deleting = true }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text("Auftrag löschen", color = MaterialTheme.colorScheme.error) } }
     }
     if (deleting) AlertDialog(onDismissRequest = { deleting = false }, title = { Text("Auftrag löschen?") },

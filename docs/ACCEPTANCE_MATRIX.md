@@ -1,3 +1,15 @@
+# V1.5.3 — Quick und Zusatzarbeiten entfernt
+
+Aktueller Umfang: Lieferung und Return benötigen weder Quick noch Zusatzarbeiten. Beide Felder fehlen in Formular, Auftragsdetails, E-Mail-Text, Exportvorschau, neuer sechs Spalten umfassender TXT und META schemaVersion 5. Alte Room-Spalten bleiben zum Lesen bestehender Aufträge erhalten; neue Aufträge speichern dort leere Werte. Return-Foto- und Erinnerungsregeln aus 1.5.2 gelten weiter. [Prüfstand und noch offene Geräteabnahme](QA_STATUS.md).
+
+| Aktuelle Anforderung | Nachweis | Prüfstatus |
+| --- | --- | --- |
+| Beide Auftragsarten ohne Quick-/Zusatzarbeiten-Pflicht erstellbar | RulesTest, NavigationTest, ReturnWorkflowRepositoryTest | Unit-Tests bestanden; Android-Tests kompiliert, Geräteausführung offen |
+| Alte Werte erscheinen nicht in neuer E-Mail, TXT oder META | PhotoShareTextTest, ExportSharingTest | Unit-Tests bestanden; Android-Tests kompiliert, Geräteausführung offen |
+| TXT hat sechs Spalten, META schemaVersion 5; Room bleibt Schema 4 | RulesTest, ExportSharingTest, Schema 4 | Unit-Tests und Build bestanden; Export auf Gerät offen |
+
+Die folgenden Tabellen dokumentieren frühere Versionen und ihre damaligen Anforderungen.
+
 # V1.5.0 — Return-Dokumentation und E-Mail
 
 Aktueller Umfang, Stand 28.10.2026: native lokale Android-App ohne KT-Nutzung, Anmeldung, Benutzerverwaltung, Rollen oder aktive Teams-Übergabe. E-Mail umfasst jeweils einen vollständigen Auftrag mit allen Fotos aller Container. Die Regeln dieser Sektion ersetzen abweichende Anforderungen der historischen Tabellen weiter unten.

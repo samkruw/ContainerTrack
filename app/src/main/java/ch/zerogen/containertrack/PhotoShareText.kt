@@ -6,9 +6,5 @@ fun photoShareText(draft:JobDraft,containers:List<String>,photoCount:Int):String
     add("Auftrag: ${draft.referenceNumber}")
     add("Container: ${containers.distinct().joinToString(", ")}")
     add("Container-Typ: ${draft.orderValue}")
-    if(draft.kind==JobKind.RETURN) {
-        add("Quick: ${draft.quick}")
-        add("Zusatzarbeiten: ${draft.additionalWork}")
-    }
     add("Fotos: $photoCount")
 }.joinToString("\n")

@@ -43,8 +43,6 @@ class TrackViewModel(application: Application, private val saved: SavedStateHand
     val formReference = saved.getStateFlow("formReference", "")
     val formOrder = saved.getStateFlow("formOrder", "")
     val formQuantity = saved.getStateFlow("formQuantity", "1")
-    val formQuick = saved.getStateFlow("formQuick", "")
-    val formWork = saved.getStateFlow("formWork", "")
     val formStoppedAt = saved.getStateFlow<Long?>("formStoppedAt", null)
 
     init { viewModelScope.launch { while (true) { now.value = System.currentTimeMillis(); kotlinx.coroutines.delay(1_000) } } }
@@ -110,13 +108,13 @@ class TrackViewModel(application: Application, private val saved: SavedStateHand
     }
     fun begin(kind: JobKind) {
         saved["formKind"] = kind.name
-        for (key in listOf("formReference", "formOrder", "formQuick", "formWork", "formContainer")) saved[key] = ""
+        for (key in listOf("formReference", "formOrder", "formContainer")) saved[key] = ""
         saved["formQuantity"] = "1"; saved["formStoppedAt"] = null
     }
     fun field(key: String, value: String) { saved[key] = value }
     fun confirmStopped() { if (formStoppedAt.value == null) saved["formStoppedAt"] = System.currentTimeMillis() }
     fun draft() = JobDraft(kind=JobKind.valueOf(formKind.value), referenceNumber=formReference.value,
-        orderValue=formOrder.value, quantity=formQuantity.value.toIntOrNull() ?: 0, quick=formQuick.value, additionalWork=formWork.value)
+        orderValue=formOrder.value, quantity=formQuantity.value.toIntOrNull() ?: 0)
 
     private fun runAction(action: suspend () -> Unit) {
         if (busy.value) return
