@@ -1,0 +1,90 @@
+name: Publish debug APK 1.5.3
+
+on:
+  push:
+    tags: [debug-v1.5.3]
+
+permissions: {}
+
+concurrency:
+  group: debug-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    if: github.repository == 'samkruw/ContainerTrack'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - uses: gradle/actions/setup-gradle@v4
+      - run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
+      - name: Build and verify the tagged Debug APK
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = refs/tags/debug-v1.5.3
+          chmod +x gradlew
+          ./gradlew test lint assembleDebug assembleDebugAndroidTest --no-daemon --stacktrace
+          python3 tools/check_privacy.py --merged
+          apk=app/build/outputs/apk/debug/app-debug.apk
+          test -s "$apk"
+          test "$(apkanalyzer manifest application-id "$apk")" = ch.zerogen.containertrack
+          test "$(apkanalyzer manifest version-name "$apk")" = 1.5.3
+          test "$(apkanalyzer manifest version-code "$apk")" = 15
+          test "$(apkanalyzer manifest debuggable "$apk")" = true
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify "$apk"
+          apkanalyzer manifest permissions "$apk" > apk-permissions.txt
+          python3 tools/check_privacy.py --apk-permissions apk-permissions.txt
+          mkdir release
+          cp "$apk" release/ContainerTrack-1.5.3-debug.apk
+          cp docs/RELEASE_1_5_3_DEBUG.md release/release-notes.md
+          cd release
+          sha256sum ContainerTrack-1.5.3-debug.apk > ContainerTrack-1.5.3-debug.apk.sha256
+      - name: Run QA scripts
+        run: |
+          python3 -m pip install Pillow==11.3.0
+          python3 -m unittest discover -s tools -p 'test_*.py' -v
+      - uses: actions/upload-artifact@v4
+        with:
+          name: verified-debug-release-1.5.3
+          path: release/
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: verified-debug-release-1.5.3
+          path: release
+      - name: Publish debug prerelease
+        working-directory: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = refs/tags/debug-v1.5.3
+          sha256sum --check --strict ContainerTrack-1.5.3-debug.apk.sha256
+          gh release create debug-v1.5.3 \
+            ContainerTrack-1.5.3-debug.apk \
+            ContainerTrack-1.5.3-debug.apk.sha256 \
+            --repo "$RELEASE_REPOSITORY" \
+            --verify-tag --prerelease --latest=false \
+            --title 'Container Track 1.5.3 – Debug-APK' \
+            --notes-file release-notes.md

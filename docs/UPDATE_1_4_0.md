@@ -1,0 +1,15 @@
+# ContainerTrack 1.4.0 — lokale Benutzer und Teilen beim Abschluss
+
+Die Benutzerverwaltung funktioniert ausschließlich auf dem jeweiligen Gerät, ohne Server, Online-Dienst oder ContainerTrack-Microsoft-Anmeldung. Eine Team-Galerie ist nicht vorgesehen. Fotos und Aufträge werden nicht zwischen Geräten synchronisiert.
+
+Beim ersten Start legt der Geräteverantwortliche einen Administrator mit Namen und einer PIN aus 6–12 Ziffern an. Der Admin kann lokale Benutzer hinzufügen, Namen und Rollen ändern, Konten deaktivieren/reaktivieren und PINs zurücksetzen. Es bleibt immer mindestens ein aktiver Admin erhalten. Deaktivieren löscht weder Benutzerkennungen noch deren Aufträge/Fotos. Mitarbeiter sehen und bearbeiten nur ihre eigenen lokalen Aufträge; Admins sehen alle lokalen Aufträge, auch vorhandene Aufträge ohne lokalen Eigentümer. Eigene PIN ändern und Benutzerwechsel sind im Profil verfügbar.
+
+Profile und gesalzene PBKDF2-HMAC-SHA256-Prüfwerte werden im privaten App-Speicher gespeichert. PINs werden nicht im Klartext gespeichert. Fünf Fehlversuche sperren weitere Anmeldeversuche für eine Minute; die Sperre übersteht einen Prozessneustart. Die Anmeldung selbst bleibt nur im laufenden App-Prozess erhalten. Ein anderer Benutzer muss sich mit seiner PIN anmelden. Rollen schützen die App-Aktionen auf diesem Gerät; sie vergeben keine Teams-/Microsoft-Rechte und ersetzen keinen Betriebssystemschutz vor einem kompromittierten Gerät. Eine vergessene letzte Admin-PIN kann nicht über einen Online-Dienst zurückgesetzt werden.
+
+Zugriffe werden zusätzlich im Repository geprüft, einschließlich Export, ausgewählten Fotos, Löschen und Logger-Bestätigung. Die Datenbank bleibt Schema 2; es gibt keine destruktive Migration. Bisherige Aufträge, Fotos, Reminder und Fristen bleiben erhalten. Logger-Benachrichtigungen verraten keine Auftragsreferenz und öffnen zur Bestätigung die App mit Anmeldung.
+
+„Abschließen & in Teams teilen“ öffnet nach vollständiger Fotodokumentation direkt den Teams-Teilen-Empfänger. Der Benutzer wählt dort Chat oder Kanal und sendet selbst, soweit die Teams-Version und seine Rechte diese Ziele anbieten. Ohne Teams-Empfänger wird Android-Teilen geöffnet. Ein Abbruch bestätigt keinen Versand; erneutes Teilen ist möglich. Beim Abschluss werden weiterhin nur einmal die vorhandenen Completion-/Reminder-Effekte ausgelöst. Die Übergabe an Teams setzt keine Upload-Bestätigung und startet keinen Timer erneut.
+
+Neue lokale Aufträge erzeugen keine automatische Graph-Upload-Queue. Frühere Hintergrundaufträge werden gestoppt; ein vorhandener alter Worker sendet keine Dateien mehr. Historische Daten bleiben erhalten. Der bisherige Graph-Adapter bleibt als inaktiver Kompatibilitätscode erhalten, wird über die lokale Oberfläche aber nicht verwendet. Die bisherige Microsoft-Konfiguration ist für diesen Ablauf nicht erforderlich.
+
+Nur Debug-APK: Version 1.4.0 / versionCode 7, App-ID unverändert. Ein Update über einer vorhandenen Installation benötigt weiterhin denselben Signaturschlüssel. Eine Deinstallation würde lokale Daten einschließlich Benutzerverwaltung löschen und ist kein Verfahren zur Aktualisierung.
