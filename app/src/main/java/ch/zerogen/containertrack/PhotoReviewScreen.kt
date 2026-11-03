@@ -19,7 +19,7 @@ fun PhotoReviewScreen(batch:JobWithContainers,busy:Boolean,onPhoto:(String,Int)-
     val item=batch.ordered.find{it.container.id==current} ?: batch.ordered.firstOrNull()
     if(item==null){Information("Noch keine Container erfasst.");return}
     val photos=namedPhotos(batch).filter{it.photo.containerId==item.container.id}
-    val progress=returnProgress(item.photos)
+    val progress=returnProgress(item.photos,item.container.cleanPhotoSkipped)
     val complete=containerDocumentationComplete(batch,item)
     Column(Modifier.fillMaxSize().padding(16.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
         Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(10.dp)) {
@@ -34,13 +34,18 @@ fun PhotoReviewScreen(batch:JobWithContainers,busy:Boolean,onPhoto:(String,Int)-
         HorizontalDivider(color=Hairline)
         Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(10.dp)) {
             Icon(if(complete)Icons.Outlined.CheckCircle else Icons.Outlined.PhotoCamera,null,Modifier.size(28.dp),tint=Lime)
-            Text(if(batch.isManagedReturn)"${progress.initialCount} Anfangsfotos · ${progress.cleanCount}/${progress.initialCount.coerceAtLeast(1)} Leer-/Sauber-Fotos" else "${item.photos.size} von ${batch.job.draft.kind.photoCount} Fotos ${if(complete)"vollständig" else "gespeichert"}",style=MaterialTheme.typography.bodyMedium)
+            Text(if(batch.isManagedReturn) {
+                if(item.container.cleanPhotoSkipped) "${progress.initialCount} Anfangsfotos · Sauberfotos übersprungen"
+                else "${progress.initialCount} Anfangsfotos · ${progress.cleanCount}/${progress.initialCount.coerceAtLeast(1)} Leer-/Sauber-Fotos"
+            } else "${item.photos.size} von ${batch.job.draft.kind.photoCount} Fotos ${if(complete)"vollständig" else "gespeichert"}",style=MaterialTheme.typography.bodyMedium)
         }
         LazyVerticalGrid(GridCells.Fixed(2),Modifier.weight(1f),horizontalArrangement=Arrangement.spacedBy(10.dp),verticalArrangement=Arrangement.spacedBy(14.dp)) {
             val sections = if(batch.isManagedReturn) listOf("Anfangsfotos" to photos.filter{it.photo.returnPhase==ReturnPhotoPhase.INITIAL}, "Leer-/Sauber-Fotos nach der Reinigung" to photos.filter{it.photo.returnPhase==ReturnPhotoPhase.CLEAN}) else listOf("Fotos" to photos)
             sections.forEach { (title, sectionPhotos) ->
                 if(batch.isManagedReturn) item(span={GridItemSpan(maxLineSpan)}){Text(title,style=MaterialTheme.typography.titleMedium)}
-                if(sectionPhotos.isEmpty() && batch.isManagedReturn) item(span={GridItemSpan(maxLineSpan)}){Text("Noch keine Fotos",color=Muted)}
+                if(sectionPhotos.isEmpty() && batch.isManagedReturn) item(span={GridItemSpan(maxLineSpan)}){
+                    Text(if(item.container.cleanPhotoSkipped && title.startsWith("Leer")) "Bereits sauber · Sauberfotos übersprungen" else "Noch keine Fotos",color=Muted)
+                }
                 items(sectionPhotos,key={it.photo.id}){named->
                     Column(Modifier.clickable(enabled=!busy){onPhoto(item.container.id,named.photo.step)},verticalArrangement=Arrangement.spacedBy(7.dp)) {
                         Surface(shape=MaterialTheme.shapes.small){PhotoImage(named.photo.localPath,named.label,Modifier.fillMaxWidth().height(176.dp))}

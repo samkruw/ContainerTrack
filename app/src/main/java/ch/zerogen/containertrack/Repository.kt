@@ -282,7 +282,8 @@ class TrackRepository(private val context: Context, val database: TrackDatabase,
 
     private fun writeArchive(batch: JobWithContainers, file: File, preparedAt: Long) {
         val containers = batch.ordered.map { item -> ExportContainer(item.container.containerNumber,
-            item.photos.sortedBy { it.step }.map { ExportPhoto(it.step, File(it.localPath),it.returnPhase,it.returnCategory) }) }
+            item.photos.sortedBy { it.step }.map { ExportPhoto(it.step, File(it.localPath),it.returnPhase,it.returnCategory) },
+            cleanPhotoSkipped = item.container.cleanPhotoSkipped) }
         file.outputStream().use { output ->
             writeExportZip(output, batch.job.draft, containers, metadata(batch, preparedAt),
                 Instant.ofEpochMilli(preparedAt).atZone(ZoneId.systemDefault()).toLocalDate(),managedReturn=batch.isManagedReturn)
@@ -422,6 +423,7 @@ class TrackRepository(private val context: Context, val database: TrackDatabase,
                             else require(progress.hasContent) { "Zuerst das Inhalts-Pflichtfoto aufnehmen." }
                         } else {
                             require(category==ReturnPhotoCategory.CLEAN && batch.initialDocumentationComplete) { "Zuerst alle Container anfangs dokumentieren." }
+                            require(!item.container.cleanPhotoSkipped) { "Sauberfotos wurden für diesen Container übersprungen. Zuerst rückgängig machen." }
                             require(old!=null || progress.cleanCount<progress.initialCount) { "Die erforderlichen Abschlussfotos sind bereits vorhanden." }
                         }
                         val at=System.currentTimeMillis()
@@ -439,9 +441,26 @@ class TrackRepository(private val context: Context, val database: TrackDatabase,
     private suspend fun updateReturnState(jobId:String,containerId:String,previous:JobEntity,at:Long) {
         val batch=checkedJob(jobId)
         val item=batch.containers.first{it.container.id==containerId}
-        dao.updateContainer(item.container.copy(completedAt=if(returnProgress(item.photos).complete)item.container.completedAt ?: at else null))
+        dao.updateContainer(item.container.copy(completedAt=if(returnProgress(item.photos,item.container.cleanPhotoSkipped).complete)
+            item.container.completedAt ?: at else null))
         dao.updateJob(edited(previous,at).copy(completedAt=if(batch.complete)previous.completedAt ?: at else null,
             completionTriggeredAt=if(batch.complete)previous.completionTriggeredAt ?: at else previous.completionTriggeredAt))
+    }
+    suspend fun setReturnCleanPhotoSkipped(jobId:String,containerId:String,skipped:Boolean)=withContext(Dispatchers.IO) {
+        mutations.withLock {
+            database.withTransaction {
+                val batch=checkedJob(jobId);check(batch.isManagedReturn);checkEditable(batch)
+                val item=batch.containers.first{it.container.id==containerId}
+                if(item.container.cleanPhotoSkipped==skipped)return@withTransaction
+                if(skipped) {
+                    val progress=returnProgress(item.photos)
+                    require(progress.hasContent) { "Zuerst das Inhalts-Pflichtfoto aufnehmen." }
+                    require(progress.cleanCount==0) { "Vorhandene Sauberfotos zuerst löschen." }
+                }
+                dao.updateContainer(item.container.copy(cleanPhotoSkipped=skipped))
+                updateReturnState(jobId,containerId,batch.job,System.currentTimeMillis())
+            }
+        }
     }
     suspend fun deleteReturnPhoto(jobId:String,containerId:String,photoId:String)=withContext(Dispatchers.IO) {
         mutations.withLock {
@@ -458,7 +477,7 @@ class TrackRepository(private val context: Context, val database: TrackDatabase,
     suspend fun prepareOrderEmail(jobId:String):Intent=withContext(Dispatchers.IO) {
         mutations.withLock {
             val batch=checkedJob(jobId)
-            require(batch.complete) { "Zuerst alle Pflicht- und Abschlussfotos aufnehmen." }
+            require(batch.complete) { "Zuerst die Fotodokumentation für alle Container abschliessen." }
             pruneSharedExports(System.currentTimeMillis())
             val directory=File(context.cacheDir,"shared-photos/$jobId/${UUID.randomUUID()}")
             check(directory.mkdirs())
@@ -469,7 +488,11 @@ class TrackRepository(private val context: Context, val database: TrackDatabase,
                     File(directory,named.fileName).also{source.copyTo(it)}
                 }
                 val body=photoShareText(batch.job.draft,attachments.map{it.containerNumber},files.size)+
-                    "\n\n"+attachments.joinToString("\n"){it.fileName+" · "+it.label}
+                    "\n\n"+attachments.joinToString("\n"){it.fileName+" · "+it.label}+
+                    batch.ordered.filter{it.container.cleanPhotoSkipped}.takeIf{it.isNotEmpty()}?.let { skipped ->
+                        "\n\nBereits sauber – Sauberfotos übersprungen: "+
+                            skipped.joinToString(", "){it.container.containerNumber}
+                    }.orEmpty()
                 val intent=emailPhotoIntent(context,files,batch.job.draft.referenceNumber,body)
                 dao.updateJob(batch.job.copy(emailPreparedRevision=batch.job.documentationRevision,emailPreparedAt=System.currentTimeMillis()))
                 intent
@@ -508,11 +531,12 @@ class TrackRepository(private val context: Context, val database: TrackDatabase,
             containers.put(JSONObject()
                 .put("containerNumber", item.container.containerNumber)
                 .put("sequenceIndex", item.container.sequenceIndex)
+                .put("cleanPhotoSkipped", item.container.cleanPhotoSkipped)
                 .put("completedAt", item.container.completedAt ?: JSONObject.NULL)
                 .put("photos", photos))
         }
         return JSONObject().apply {
-        put("schemaVersion", 3); put("id", job.id); put("type", job.draft.kind.name)
+        put("schemaVersion", 4); put("id", job.id); put("type", job.draft.kind.name)
         put("referenceNumber", job.draft.referenceNumber)
         put("orderValue", job.draft.orderValue); put("quantity", job.draft.quantity)
         put("quick", if (job.draft.kind == JobKind.RETURN) job.draft.quick else "")

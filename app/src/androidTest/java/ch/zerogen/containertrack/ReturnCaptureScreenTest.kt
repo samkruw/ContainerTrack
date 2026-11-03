@@ -55,7 +55,8 @@ class ReturnCaptureScreenTest {
             compose.onNodeWithContentDescription("Zur Fotoübersicht").performClick()
             compose.onNodeWithText("Schliessen").performClick()
             compose.onNodeWithText("Sauber · 1/3").performClick()
-            compose.onNodeWithText("Sauberfoto aufnehmen").assertIsDisplayed().assertIsEnabled()
+            compose.onNodeWithContentDescription("Sauberfoto aufnehmen").assertIsDisplayed().assertIsEnabled()
+            compose.onNodeWithContentDescription("Sauberfotos überspringen").assertIsDisplayed().assertIsNotEnabled()
             compose.onNodeWithText("0708_nachher_01_leer_sauber.jpg").assertIsDisplayed()
             compose.onNodeWithText("Kamera erlauben").assertDoesNotExist()
             compose.onNodeWithText("Foto aufnehmen").assertDoesNotExist()
@@ -64,17 +65,53 @@ class ReturnCaptureScreenTest {
         }
     }
 
-    private fun fixture(directory: File): JobWithContainers {
+    @Test fun alreadyCleanContainerOffersExplicitSkip() {
+        val fixtureDirectory = File(app.cacheDir, "return-skip-${UUID.randomUUID()}").apply { mkdirs() }
+        try {
+            val vm = TrackViewModel(app, SavedStateHandle())
+            compose.setContent {
+                ContainerTheme { PhotoScreen(fixture(fixtureDirectory,
+                    categories = listOf(ReturnPhotoCategory.CONTENT)), "return-capture-container", 0, vm, false) {} }
+            }
+            compose.onNodeWithText("Sauber · 0/1").performClick()
+            compose.onNodeWithContentDescription("Sauberfotos überspringen").assertIsDisplayed().assertIsEnabled().performClick()
+            compose.onNodeWithText("Container bereits sauber?").assertIsDisplayed()
+            compose.onNodeWithText("Abbrechen").performClick()
+        } finally {
+            fixtureDirectory.deleteRecursively()
+        }
+    }
+
+    @Test fun skippedCleanContainerOffersUndo() {
+        val fixtureDirectory = File(app.cacheDir, "return-skipped-${UUID.randomUUID()}").apply { mkdirs() }
+        try {
+            val vm = TrackViewModel(app, SavedStateHandle())
+            compose.setContent {
+                ContainerTheme { PhotoScreen(fixture(fixtureDirectory,
+                    categories = listOf(ReturnPhotoCategory.CONTENT), cleanPhotoSkipped = true),
+                    "return-capture-container", 0, vm, false) {} }
+            }
+            compose.onNodeWithText("Sauber · übersprungen").performClick()
+            compose.onNodeWithContentDescription("Überspringen rückgängig").assertIsDisplayed().assertIsEnabled()
+            compose.onNodeWithText("Bereits sauber · Sauberfotos übersprungen").assertIsDisplayed()
+        } finally {
+            fixtureDirectory.deleteRecursively()
+        }
+    }
+
+    private fun fixture(directory: File,
+        categories: List<ReturnPhotoCategory> = listOf(ReturnPhotoCategory.CONTENT, ReturnPhotoCategory.DAMAGE,
+            ReturnPhotoCategory.DAMAGE, ReturnPhotoCategory.CLEAN),
+        cleanPhotoSkipped: Boolean = false): JobWithContainers {
         val at = 1_792_483_200_000L
         val job = JobEntity(id = "return-capture-job", draft = JobDraft(JobKind.RETURN,
             referenceNumber = "ORD-0708", orderValue = "20 ft", quantity = 1, quick = "Nothing", additionalWork = "Empty"),
             createdAt = at, loggerStoppedAt = at, returnWorkflowVersion = 1)
         val container = ContainerEntity(id = "return-capture-container", jobId = job.id,
-            sequenceIndex = 1, containerNumber = "0708")
+            sequenceIndex = 1, containerNumber = "0708", cleanPhotoSkipped = cleanPhotoSkipped)
         val bitmap = InstrumentationRegistry.getInstrumentation().context.assets.open("container_front.jpg").use {
             requireNotNull(BitmapFactory.decodeStream(it, null, BitmapFactory.Options().apply { inSampleSize = 8 }))
         }
-        val categories = listOf(ReturnPhotoCategory.CONTENT, ReturnPhotoCategory.DAMAGE, ReturnPhotoCategory.DAMAGE, ReturnPhotoCategory.CLEAN)
         val photos = try {
             categories.mapIndexed { index, category ->
                 val file = File(directory, "photo-$index.jpg")

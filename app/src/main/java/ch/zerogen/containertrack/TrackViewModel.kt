@@ -153,6 +153,9 @@ class TrackViewModel(application: Application, private val saved: SavedStateHand
         discardPhoto(jobId, containerId); done()
     }
     fun deletePhotos(jobId: String, containerId: String, step: Int) = runAction { app.repository.deletePhotos(jobId, containerId, step) }
+    fun setReturnCleanPhotoSkipped(jobId: String, containerId: String, skipped: Boolean) = runAction {
+        app.repository.setReturnCleanPhotoSkipped(jobId, containerId, skipped)
+    }
     fun export(uri: Uri) {
         val id = pendingExport ?: return
         pendingExport = null

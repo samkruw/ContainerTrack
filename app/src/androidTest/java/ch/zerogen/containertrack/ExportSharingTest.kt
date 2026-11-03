@@ -80,7 +80,7 @@ class ExportSharingTest {
             assertArrayEquals(byteArrayOf(6), archive.getValue("${form.referenceNumber}/0708/0708_06.jpg"))
             val meta = JSONObject(archive.getValue("${form.referenceNumber}/${form.referenceNumber}_META.json").toString(Charsets.UTF_8))
             assertFalse(meta.has("kt"))
-            assertEquals(3,meta.getInt("schemaVersion"))
+            assertEquals(4,meta.getInt("schemaVersion"))
             assertEquals("", meta.getString("quick")); assertEquals("", meta.getString("additionalWork"))
             val row = archive.getValue("${form.referenceNumber}/${form.referenceNumber}_EXCEL.txt").toString(Charsets.UTF_8).split("\r\n")[1]
             assertTrue(row.endsWith("\t1\t\t0708\t"))
@@ -111,7 +111,7 @@ class ExportSharingTest {
             assertArrayEquals(byteArrayOf(2),archive.getValue("${form.referenceNumber}/0708/0708_nachher_01_leer_sauber.jpg"))
             val meta = JSONObject(archive.getValue("${form.referenceNumber}/${form.referenceNumber}_META.json").toString(Charsets.UTF_8))
             assertFalse(meta.has("kt"))
-            assertEquals(3,meta.getInt("schemaVersion"))
+            assertEquals(4,meta.getInt("schemaVersion"))
             assertEquals("Nothing", meta.getString("quick")); assertEquals("Empty", meta.getString("additionalWork"))
             val photos=meta.getJSONArray("containers").getJSONObject(0).getJSONArray("photos")
             assertEquals(2,photos.length())
@@ -126,6 +126,42 @@ class ExportSharingTest {
             val reminder=db.dao().pendingReminders().single()
             assertEquals(ReminderKind.RETURN_CLOSE,reminder.kind)
             assertEquals(stored.createdAt+86_400_000L,reminder.dueAt)
+        } finally { repo.deleteJob(job); db.close() }
+    }
+
+    @Test fun returnZipWithSkippedCleanPhotoContainsOnlyInitialPhotoAndKeepsReminderOpen() = runBlocking {
+        val db = Room.inMemoryDatabaseBuilder(context, TrackDatabase::class.java).build()
+        val repo = TrackRepository(context, db)
+        val form = draft(JobKind.RETURN)
+        val job = repo.createJob(form, 123L)
+        try {
+            val container = repo.addContainer(job, "0708")
+            repo.saveReturnPhoto(job, container, ReturnPhotoPhase.INITIAL, ReturnPhotoCategory.CONTENT,
+                File.createTempFile("share-skipped-clean", ".jpg", context.cacheDir).apply { writeBytes(byteArrayOf(9)) })
+            repo.setReturnCleanPhotoSkipped(job, container, true)
+            assertTrue(db.dao().job(job)!!.complete)
+            val reminderBefore = db.dao().jobReminder(job)!!
+
+            val archive = entries(uri(repo.prepareShare(job)))
+            assertEquals(3, archive.size)
+            assertArrayEquals(byteArrayOf(9), archive.getValue("${form.referenceNumber}/0708/0708_vorher_01_inhalt.jpg"))
+            assertFalse(archive.keys.any { it.contains("_nachher_") })
+            val meta = JSONObject(archive.getValue("${form.referenceNumber}/${form.referenceNumber}_META.json").toString(Charsets.UTF_8))
+            assertEquals(4, meta.getInt("schemaVersion"))
+            val item = meta.getJSONArray("containers").getJSONObject(0)
+            assertEquals("0708", item.getString("containerNumber"))
+            assertTrue(item.getBoolean("cleanPhotoSkipped"))
+            assertEquals(1, item.getJSONArray("photos").length())
+            assertEquals("INITIAL", item.getJSONArray("photos").getJSONObject(0).getString("phase"))
+
+            val stored = db.dao().job(job)!!.job
+            assertNotNull(stored.exportedAt)
+            assertNull(stored.emailSentAt)
+            val reminderAfter = db.dao().jobReminder(job)!!
+            assertEquals(reminderBefore.id, reminderAfter.id)
+            assertEquals(reminderBefore.dueAt, reminderAfter.dueAt)
+            assertNull(reminderAfter.confirmedAt)
+            assertEquals(ReminderKind.RETURN_CLOSE, reminderAfter.kind)
         } finally { repo.deleteJob(job); db.close() }
     }
 

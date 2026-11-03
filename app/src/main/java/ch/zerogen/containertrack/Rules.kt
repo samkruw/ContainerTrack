@@ -79,7 +79,7 @@ fun excelText(draft: JobDraft, numbers: List<String>, date: LocalDate): String {
 data class ExportPhoto(val step: Int, val file: File,
     val returnPhase: ReturnPhotoPhase = ReturnPhotoPhase.INITIAL,
     val returnCategory: ReturnPhotoCategory = ReturnPhotoCategory.CONTENT)
-data class ExportContainer(val number: String, val photos: List<ExportPhoto>)
+data class ExportContainer(val number: String, val photos: List<ExportPhoto>, val cleanPhotoSkipped: Boolean = false)
 
 fun writeExportZip(output: OutputStream, draft: JobDraft, containers: List<ExportContainer>, metadata: String, date: LocalDate,
     managedReturn: Boolean = false) {
@@ -87,7 +87,8 @@ fun writeExportZip(output: OutputStream, draft: JobDraft, containers: List<Expor
     require(!managedReturn || (draft.kind == JobKind.RETURN && draft.quantity in 1..50))
     require(containers.size == draft.quantity && containers.map { it.number }.distinct().size == containers.size)
     require(containers.all { c -> validContainerNumber(c.number) &&
-        (if (managedReturn) returnProgressFor(c.photos.map { ReturnPhotoInfo(it.step, it.returnPhase, it.returnCategory) }).complete
+        (if (managedReturn) returnProgressFor(c.photos.map { ReturnPhotoInfo(it.step, it.returnPhase, it.returnCategory) },
+            c.cleanPhotoSkipped).complete
         else c.photos.map { it.step }.sorted() == (1..draft.kind.photoCount).toList()) &&
         c.photos.all { it.file.isFile && it.file.length() > 0 } }) { "Auftrag unvollständig." }
     val root = draft.referenceNumber.trim()

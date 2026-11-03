@@ -71,6 +71,106 @@ class ReturnWorkflowRepositoryTest {
         } finally { repo.deleteJob(job); db.close() }
     }
 
+    @Test fun cleanPhotoSkipCompletesOnlyTheSelectedContainer(): Unit = runBlocking {
+        val db = Room.inMemoryDatabaseBuilder(context, TrackDatabase::class.java).build()
+        val repo = TrackRepository(context, db)
+        val job = repo.createJob(draft(2), 123L)
+        try {
+            val clean = repo.addContainer(job, "0708")
+            photo(repo, job, clean, ReturnPhotoPhase.INITIAL, ReturnPhotoCategory.CONTENT)
+            photo(repo, job, clean, ReturnPhotoPhase.INITIAL, ReturnPhotoCategory.DAMAGE)
+            photo(repo, job, clean, ReturnPhotoPhase.INITIAL, ReturnPhotoCategory.OTHER)
+            val needsPhotos = repo.addContainer(job, "0710")
+            photo(repo, job, needsPhotos, ReturnPhotoPhase.INITIAL, ReturnPhotoCategory.CONTENT)
+
+            repo.setReturnCleanPhotoSkipped(job, clean, true)
+            val partlyDone = db.dao().job(job)!!
+            val skipped = partlyDone.containers.single { it.container.id == clean }
+            assertTrue(skipped.container.cleanPhotoSkipped)
+            assertTrue(returnProgress(skipped.photos, skipped.container.cleanPhotoSkipped).complete)
+            assertEquals(0, returnProgress(skipped.photos, skipped.container.cleanPhotoSkipped).cleanCount)
+            assertFalse(partlyDone.complete)
+            assertEquals(1, partlyDone.completedCount)
+            rejected { repo.prepareOrderEmail(job) }
+
+            photo(repo, job, needsPhotos, ReturnPhotoPhase.CLEAN, ReturnPhotoCategory.CLEAN)
+            val complete = db.dao().job(job)!!
+            assertFalse(complete.containers.single { it.container.id == needsPhotos }.container.cleanPhotoSkipped)
+            assertTrue(complete.complete)
+            assertEquals(WorkflowPhase.RETURN_AWAITING_EMAIL, complete.phase)
+            assertEquals(2, complete.completedCount)
+        } finally { repo.deleteJob(job); db.close() }
+    }
+
+    @Test fun cleanPhotoSkipRequiresInitialContentAndRejectsExistingCleanPhotos(): Unit = runBlocking {
+        val db = Room.inMemoryDatabaseBuilder(context, TrackDatabase::class.java).build()
+        val repo = TrackRepository(context, db)
+        val job = repo.createJob(draft(), 123L)
+        try {
+            val container = repo.addContainer(job, "0708")
+            rejected { repo.setReturnCleanPhotoSkipped(job, container, true) }
+            photo(repo, job, container, ReturnPhotoPhase.INITIAL, ReturnPhotoCategory.CONTENT)
+            photo(repo, job, container, ReturnPhotoPhase.CLEAN, ReturnPhotoCategory.CLEAN)
+            rejected { repo.setReturnCleanPhotoSkipped(job, container, true) }
+            assertFalse(db.dao().job(job)!!.containers.single().container.cleanPhotoSkipped)
+
+            val clean = db.dao().job(job)!!.containers.single().photos.single { it.returnPhase == ReturnPhotoPhase.CLEAN }
+            repo.deleteReturnPhoto(job, container, clean.id)
+            repo.setReturnCleanPhotoSkipped(job, container, true)
+            assertTrue(db.dao().job(job)!!.complete)
+            repo.setReturnCleanPhotoSkipped(job, container, false)
+            val undone = db.dao().job(job)!!
+            assertFalse(undone.complete)
+            assertFalse(undone.containers.single().container.cleanPhotoSkipped)
+            assertNull(undone.containers.single().container.completedAt)
+            photo(repo, job, container, ReturnPhotoPhase.CLEAN, ReturnPhotoCategory.CLEAN)
+            assertTrue(db.dao().job(job)!!.complete)
+        } finally { repo.deleteJob(job); db.close() }
+    }
+
+    @Test fun skippedCleanPhotoEmailStillNeedsCurrentPreparationAndExplicitSentConfirmation(): Unit = runBlocking {
+        val db = Room.inMemoryDatabaseBuilder(context, TrackDatabase::class.java).build()
+        val repo = TrackRepository(context, db)
+        val job = repo.createJob(draft(), 123L)
+        try {
+            val container = repo.addContainer(job, "0708")
+            photo(repo, job, container, ReturnPhotoPhase.INITIAL, ReturnPhotoCategory.CONTENT, 7)
+            repo.setReturnCleanPhotoSkipped(job, container, true)
+            val reminder = db.dao().jobReminder(job)!!
+            rejected { repo.confirmEmailSent(job) }
+
+            val intent = repo.prepareOrderEmail(job)
+            emailTargets(intent).forEach { target ->
+                assertEquals("image/jpeg", target.type)
+                assertEquals(1, streams(target).size)
+                assertEquals("0708_vorher_01_inhalt.jpg", context.contentResolver.query(
+                    streams(target).single(), arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)!!.use { cursor ->
+                    assertTrue(cursor.moveToFirst())
+                    cursor.getString(0)
+                })
+            }
+            val prepared = db.dao().job(job)!!.job
+            assertEquals(prepared.documentationRevision, prepared.emailPreparedRevision)
+            assertNull(db.dao().jobReminder(job)!!.confirmedAt)
+
+            repo.setReturnCleanPhotoSkipped(job, container, false)
+            val undone = db.dao().job(job)!!
+            assertNull(undone.job.emailPreparedRevision)
+            assertTrue(undone.job.documentationRevision > prepared.documentationRevision)
+            rejected { repo.confirmEmailSent(job) }
+            rejected { repo.prepareOrderEmail(job) }
+
+            repo.setReturnCleanPhotoSkipped(job, container, true)
+            rejected { repo.confirmEmailSent(job) }
+            repo.prepareOrderEmail(job)
+            repo.confirmEmailSent(job)
+            assertNotNull(db.dao().job(job)!!.job.emailSentAt)
+            assertNotNull(db.dao().jobReminder(job)!!.confirmedAt)
+            assertEquals(reminder.id, db.dao().jobReminder(job)!!.id)
+            rejected { repo.setReturnCleanPhotoSkipped(job, container, false) }
+        } finally { repo.deleteJob(job); db.close() }
+    }
+
     @Test fun returnReminderStartsAtCreationAndOnlyExplicitEmailConfirmationClosesIt(): Unit = runBlocking {
         val db = Room.inMemoryDatabaseBuilder(context, TrackDatabase::class.java).build()
         val repo = TrackRepository(context, db)

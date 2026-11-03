@@ -23,15 +23,17 @@ private fun hasInitialDocumentation(photos: List<ReturnPhotoInfo>) =
     validReturnPhotoInfo(photos) &&
         photos.count { it.phase == ReturnPhotoPhase.INITIAL && it.category == ReturnPhotoCategory.CONTENT } == 1
 
-internal fun returnProgressFor(photos: List<ReturnPhotoInfo>): ReturnProgress {
+internal fun returnProgressFor(photos: List<ReturnPhotoInfo>, cleanPhotoSkipped: Boolean = false): ReturnProgress {
     val initialCount = photos.count { it.phase == ReturnPhotoPhase.INITIAL }
     val cleanCount = photos.count { it.phase == ReturnPhotoPhase.CLEAN }
     val hasContent = photos.any { it.phase == ReturnPhotoPhase.INITIAL && it.category == ReturnPhotoCategory.CONTENT }
     return ReturnProgress(initialCount, cleanCount, hasContent,
-        hasInitialDocumentation(photos) && initialCount == cleanCount)
+        hasInitialDocumentation(photos) &&
+            (if (cleanPhotoSkipped) cleanCount == 0 else initialCount == cleanCount))
 }
 
-fun returnProgress(photos: List<PhotoEntity>): ReturnProgress = returnProgressFor(photos.map { it.returnInfo() })
+fun returnProgress(photos: List<PhotoEntity>, cleanPhotoSkipped: Boolean = false): ReturnProgress =
+    returnProgressFor(photos.map { it.returnInfo() }, cleanPhotoSkipped)
 
 val JobWithContainers.isManagedReturn: Boolean
     get() = job.draft.kind == JobKind.RETURN && job.returnWorkflowVersion >= 1

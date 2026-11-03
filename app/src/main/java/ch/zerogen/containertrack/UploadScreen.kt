@@ -35,7 +35,7 @@ fun UploadScreen(batch: JobWithContainers, busy: Boolean, onPrepareEmail: () -> 
             Text("Betreff: ${job.draft.referenceNumber}", color = Muted)
             Text("Die E-Mail enthält alle Fotos aller Container dieses Auftrags.", color = Muted)
         }
-        if (!batch.complete) item { Information("Die Fotodokumentation ist noch unvollständig. Zuerst alle Pflichtfotos und bei Return die passende Anzahl Leer-/Sauber-Fotos aufnehmen.", warning = true) }
+        if (!batch.complete) item { Information("Die Fotodokumentation ist noch unvollständig. Zuerst alle Inhaltsfotos aufnehmen. Je Return-Container danach gleich viele Sauberfotos aufnehmen oder bei bereits sauberem Container ausdrücklich überspringen.", warning = true) }
         if (job.emailSentAt != null) item { Information("E-Mail gesendet · in der App bestätigt am ${localTime(job.emailSentAt)}") }
         item {
             PrimaryIconButton(if (prepared) "E-Mail erneut vorbereiten" else "E-Mail vorbereiten", Icons.Outlined.Email,

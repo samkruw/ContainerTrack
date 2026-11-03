@@ -31,7 +31,7 @@ fun ReturnPhotoScreen(batch: JobWithContainers, containerId: String, vm: TrackVi
     val item = batch.containers.find { it.container.id == containerId } ?: return
     val jobId = batch.job.id
     val readonly = batch.job.exportedAt != null || batch.job.emailSentAt != null
-    val progress = returnProgress(item.photos)
+    val progress = returnProgress(item.photos, item.container.cleanPhotoSkipped)
     val entryPhoto = item.photos.find { it.step == selectedStep }
     var phaseName by rememberSaveable(jobId, containerId, selectedStep) {
         mutableStateOf((entryPhoto?.returnPhase ?: ReturnPhotoPhase.INITIAL).name)
@@ -46,6 +46,7 @@ fun ReturnPhotoScreen(batch: JobWithContainers, containerId: String, vm: TrackVi
     var renameError by remember { mutableStateOf<String?>(null) }
     var photosOpen by rememberSaveable(jobId, containerId) { mutableStateOf(false) }
     var informationOpen by rememberSaveable(jobId, containerId) { mutableStateOf(false) }
+    var skipConfirmation by rememberSaveable(jobId, containerId) { mutableStateOf(false) }
     val pendingPath by vm.pendingPhoto(jobId, containerId).collectAsStateWithLifecycle()
     val pendingPhaseName by vm.pendingReturnPhase(jobId, containerId).collectAsStateWithLifecycle()
     val pendingCategoryName by vm.pendingReturnCategory(jobId, containerId).collectAsStateWithLifecycle()
@@ -63,10 +64,11 @@ fun ReturnPhotoScreen(batch: JobWithContainers, containerId: String, vm: TrackVi
     val capturePhase = if (automaticContent) ReturnPhotoPhase.INITIAL else replacement?.returnPhase ?: phase
     val captureCategory = if (automaticContent) ReturnPhotoCategory.CONTENT else replacement?.returnCategory ?: category
     val captureReplaceId = if (automaticContent) null else replaceId
-    val cleanAvailable = batch.initialDocumentationComplete && progress.cleanCount < progress.initialCount
+    val cleanAvailable = !item.container.cleanPhotoSkipped && batch.initialDocumentationComplete &&
+        progress.cleanCount < progress.initialCount
     val captureAllowed = !readonly && (captureReplaceId == null || replacement != null) &&
         (capturePhase == ReturnPhotoPhase.INITIAL ||
-            (batch.initialDocumentationComplete && (replacement != null || cleanAvailable)))
+            (!item.container.cleanPhotoSkipped && batch.initialDocumentationComplete && (replacement != null || cleanAvailable)))
     val named = namedPhotos(batch).filter { it.photo.containerId == containerId }.associateBy { it.photo.id }
     val phasePhotos = item.photos.filter { it.returnPhase == displayedPhase }.sortedBy { it.step }
     val reviewing = selected != null && (!capturing || readonly) && !hasPending
@@ -74,7 +76,7 @@ fun ReturnPhotoScreen(batch: JobWithContainers, containerId: String, vm: TrackVi
     val pendingTarget = item.photos.find { it.id == pendingReplaceId }
     val maySave = pendingFile != null && (pendingReplaceId == null || pendingTarget != null) &&
         (pendingPhase == ReturnPhotoPhase.INITIAL ||
-            (batch.initialDocumentationComplete && (pendingTarget != null || cleanAvailable)))
+            (!item.container.cleanPhotoSkipped && batch.initialDocumentationComplete && (pendingTarget != null || cleanAvailable)))
 
     fun startCapture(nextPhase: ReturnPhotoPhase, nextCategory: ReturnPhotoCategory, photoId: String? = null) {
         phaseName = nextPhase.name; categoryName = nextCategory.name
@@ -88,7 +90,8 @@ fun ReturnPhotoScreen(batch: JobWithContainers, containerId: String, vm: TrackVi
         header = {
             CaptureContextHeader("Container ${item.container.containerNumber}",
                 "${batch.job.draft.referenceNumber} · Rücknahme",
-                "${progress.initialCount} Anfangsfotos · ${progress.cleanCount} / ${progress.initialCount} Sauberfotos",
+                if (item.container.cleanPhotoSkipped) "${progress.initialCount} Anfangsfotos · Sauberfotos übersprungen"
+                else "${progress.initialCount} Anfangsfotos · ${progress.cleanCount} / ${progress.initialCount} Sauberfotos",
                 onEdit = if (readonly || busy) null else ({
                     renameValue = item.container.containerNumber; renameError = null; renaming = true
                 }))
@@ -97,7 +100,9 @@ fun ReturnPhotoScreen(batch: JobWithContainers, containerId: String, vm: TrackVi
                     FilterChip(selected = displayedPhase == tab, enabled = !busy && !hasPending,
                         modifier = Modifier.weight(1f).heightIn(min = 48.dp), shape = MaterialTheme.shapes.small,
                         onClick = { phaseName = tab.name; openOverview() },
-                        label = { Text(if (tab == ReturnPhotoPhase.INITIAL) "Anfang · ${progress.initialCount}" else "Sauber · ${progress.cleanCount}/${progress.initialCount}",
+                        label = { Text(if (tab == ReturnPhotoPhase.INITIAL) "Anfang · ${progress.initialCount}"
+                            else if (item.container.cleanPhotoSkipped) "Sauber · übersprungen"
+                            else "Sauber · ${progress.cleanCount}/${progress.initialCount}",
                             style = MaterialTheme.typography.labelMedium, maxLines = 1, overflow = TextOverflow.Ellipsis) })
                 }
                 IconButton(onClick = { informationOpen = true }, modifier = Modifier.size(48.dp)) {
@@ -132,6 +137,8 @@ fun ReturnPhotoScreen(batch: JobWithContainers, containerId: String, vm: TrackVi
                     val message = when {
                         readonly -> "Abgeschlossen · Fotos zur Ansicht"
                         capturing -> "Aufnahme derzeit nicht möglich. Anfangsfotos und Fotoanzahl prüfen."
+                        displayedPhase == ReturnPhotoPhase.CLEAN && item.container.cleanPhotoSkipped ->
+                            "Bereits sauber · Sauberfotos übersprungen"
                         displayedPhase == ReturnPhotoPhase.CLEAN && !batch.initialDocumentationComplete ->
                             "Zuerst bei allen Containern das Inhaltsfoto aufnehmen."
                         progress.cleanCount > progress.initialCount -> "Überzählige Sauberfotos über Fotos einzeln löschen."
@@ -160,7 +167,8 @@ fun ReturnPhotoScreen(batch: JobWithContainers, containerId: String, vm: TrackVi
                     reviewing -> {
                         if (!readonly) {
                             ReturnPrimaryAction("Dieses Foto erneut aufnehmen",
-                                !busy && (selected!!.returnPhase != ReturnPhotoPhase.CLEAN || batch.initialDocumentationComplete)) {
+                                !busy && (selected!!.returnPhase != ReturnPhotoPhase.CLEAN ||
+                                    (!item.container.cleanPhotoSkipped && batch.initialDocumentationComplete))) {
                                 startCapture(selected!!.returnPhase, selected.returnCategory, selected.id)
                             }
                             ReturnActionRow("Dieses Foto löschen", !busy, { deletingId = selected!!.id },
@@ -178,9 +186,14 @@ fun ReturnPhotoScreen(batch: JobWithContainers, containerId: String, vm: TrackVi
                                 "Sonstiges ergänzen · optional", !busy && progress.hasContent,
                                 { startCapture(ReturnPhotoPhase.INITIAL, ReturnPhotoCategory.OTHER) })
                         } else if (!showingCamera && !readonly && displayedPhase == ReturnPhotoPhase.CLEAN) {
-                            ReturnPrimaryAction("Sauberfoto aufnehmen", !busy && cleanAvailable) {
-                                startCapture(ReturnPhotoPhase.CLEAN, ReturnPhotoCategory.CLEAN)
-                            }
+                            if (item.container.cleanPhotoSkipped) {
+                                ReturnPrimaryAction("Überspringen rückgängig", !busy) {
+                                    vm.setReturnCleanPhotoSkipped(jobId, containerId, false)
+                                }
+                            } else ReturnActionRow("Sauberfoto aufnehmen", !busy && cleanAvailable,
+                                { startCapture(ReturnPhotoPhase.CLEAN, ReturnPhotoCategory.CLEAN) },
+                                "Sauberfotos überspringen", !busy && progress.hasContent && progress.cleanCount == 0,
+                                { skipConfirmation = true })
                         }
                         ReturnActionRow("Fotos (${phasePhotos.size})", !busy && phasePhotos.isNotEmpty(), { photosOpen = true },
                             "Zum Auftrag", !busy, onDone)
@@ -207,9 +220,17 @@ fun ReturnPhotoScreen(batch: JobWithContainers, containerId: String, vm: TrackVi
     }
     if (informationOpen) AlertDialog(onDismissRequest = { informationOpen = false }, title = { Text("Return-Fotodokumentation") },
         text = { Column(Modifier.verticalScroll(rememberScrollState())) {
-            Text("Je Container ist ein Inhaltsfoto erforderlich. Schaden und Sonstiges sind zusätzliche Anfangsfotos. Jedes Anfangsfoto zählt zum Soll der Leer-/Sauber-Fotos.\n\nAbschlussfotos sind möglich, sobald bei allen Containern der Inhalt dokumentiert ist. Die Anzahl muss pro Container genau übereinstimmen.\n\nNeuaufnahmen ersetzen das ausgewählte Foto erst nach dem Bestätigen. Einzelnes Löschen entfernt keine anderen Fotos. Die 24h-Erinnerung bleibt bis zur Versandbestätigung offen.")
+            Text("Je Container ist ein Inhaltsfoto erforderlich. Schaden und Sonstiges sind zusätzliche Anfangsfotos. Normalerweise muss die Anzahl der Leer-/Sauber-Fotos pro Container genau übereinstimmen.\n\nIst ein Container bereits sauber, kannst du seine Sauberfotos ausdrücklich überspringen. Das geht nur, solange noch kein Sauberfoto für diesen Container gespeichert ist. Die Auswahl kann bis zum ZIP-Export oder zur E-Mail-Bestätigung rückgängig gemacht werden.\n\nNeuaufnahmen ersetzen das ausgewählte Foto erst nach dem Bestätigen. Einzelnes Löschen entfernt keine anderen Fotos. Die 24h-Erinnerung bleibt bis zur Versandbestätigung offen.")
         } },
         confirmButton = { TextButton(onClick = { informationOpen = false }) { Text("Verstanden") } })
+    if (skipConfirmation && !readonly) AlertDialog(onDismissRequest = { skipConfirmation = false },
+        title = { Text("Container bereits sauber?") },
+        text = { Text("Für Container ${item.container.containerNumber} werden dann keine Sauberfotos verlangt. Das Inhaltsfoto bleibt Pflicht. Du kannst die Auswahl bis zum ZIP-Export oder zur E-Mail-Bestätigung rückgängig machen.") },
+        confirmButton = { TextButton(enabled = !busy && progress.hasContent && progress.cleanCount == 0,
+            onClick = { skipConfirmation = false; vm.setReturnCleanPhotoSkipped(jobId, containerId, true) }) {
+            Text("Sauberfotos überspringen")
+        } },
+        dismissButton = { TextButton(onClick = { skipConfirmation = false }) { Text("Abbrechen") } })
     item.photos.find { it.id == deletingId }?.takeIf { !readonly }?.let { photo ->
         ReturnDeletePhotoDialog(photo, busy, onDismiss = { deletingId = null }, onDelete = {
             deletingId = null; openOverview(); vm.deleteReturnPhoto(jobId, containerId, photo.id)
@@ -283,6 +304,9 @@ private fun returnActionLabel(text: String): String = when (text) {
     "Zur Fotoübersicht" -> "Fotos"
     "Schaden ergänzen · optional" -> "Schaden"
     "Sonstiges ergänzen · optional" -> "Sonstiges"
+    "Sauberfoto aufnehmen" -> "Sauberfoto"
+    "Sauberfotos überspringen" -> "Überspringen"
+    "Überspringen rückgängig" -> "Rückgängig"
     else -> text
 }
 

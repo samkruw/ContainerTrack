@@ -121,11 +121,11 @@ fun TrackApp(vm: TrackViewModel = viewModel(), requestedJob: String? = null, onR
         if(batch.complete){nav.navigate("upload/$id");return}
         if(batch.job.exportedAt!=null){openJob(id);return}
         if(batch.isManagedReturn) {
-            val initial=batch.ordered.firstOrNull{!returnProgress(it.photos).hasContent}
+            val initial=batch.ordered.firstOrNull{!returnProgress(it.photos,it.container.cleanPhotoSkipped).hasContent}
             when {
                 initial!=null -> nav.navigate("photo/$id/${initial.container.id}?step=0")
                 batch.containers.size<batch.job.draft.quantity -> nav.navigate("scan/$id")
-                else -> batch.ordered.firstOrNull{!returnProgress(it.photos).complete}?.let{nav.navigate("photo/$id/${it.container.id}?step=0")}
+                else -> batch.ordered.firstOrNull{!returnProgress(it.photos,it.container.cleanPhotoSkipped).complete}?.let{nav.navigate("photo/$id/${it.container.id}?step=0")}
             }
             return
         }

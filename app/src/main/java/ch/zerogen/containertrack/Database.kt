@@ -30,7 +30,8 @@ data class ContainerEntity(
     val jobId: String,
     val sequenceIndex: Int,
     val containerNumber: String,
-    val completedAt: Long? = null
+    val completedAt: Long? = null,
+    @ColumnInfo(defaultValue = "0") val cleanPhotoSkipped: Boolean = false
 )
 
 @Entity(tableName = "photos", foreignKeys = [ForeignKey(entity = ContainerEntity::class,
@@ -72,7 +73,7 @@ data class JobWithContainers(
     val ordered get() = containers.sortedBy { it.container.sequenceIndex }
     val complete get() = if (isManagedReturn) {
         job.draft.quantity in 1..50 && containers.size == job.draft.quantity &&
-            containers.all { returnProgress(it.photos).complete }
+            containers.all { returnProgress(it.photos, it.container.cleanPhotoSkipped).complete }
     } else containers.size == job.draft.quantity && containers.all {
         it.photos.map { p -> p.step }.sorted() == (1..job.draft.kind.photoCount).toList()
     }
@@ -82,7 +83,9 @@ data class JobWithContainers(
         initialDocumentationComplete -> WorkflowPhase.RETURN_READY_FOR_CLEAN
         else -> WorkflowPhase.LOCAL_INCOMPLETE
     } else workflowPhase(job.draft.kind, job.draft.quantity, containers.map { it.photos.map { photo -> photo.step }.toSet() })
-    val completedCount get() = if (isManagedReturn) containers.count { returnProgress(it.photos).complete }
+    val completedCount get() = if (isManagedReturn) containers.count {
+        returnProgress(it.photos, it.container.cleanPhotoSkipped).complete
+    }
         else containers.count { it.container.completedAt != null }
     val status get() = when {
         isManagedReturn && phase == WorkflowPhase.COMPLETE -> "Abgeschlossen"
@@ -167,5 +170,5 @@ interface TrackDao {
     @Query("DELETE FROM jobs WHERE id = :id") suspend fun deleteJob(id: String)
 }
 
-@Database(entities = [JobEntity::class, ContainerEntity::class, PhotoEntity::class, LoggerReminder::class, UploadJobEntity::class, UploadPhotoEntity::class], version = 3, exportSchema = true)
+@Database(entities = [JobEntity::class, ContainerEntity::class, PhotoEntity::class, LoggerReminder::class, UploadJobEntity::class, UploadPhotoEntity::class], version = 4, exportSchema = true)
 abstract class TrackDatabase : RoomDatabase() { abstract fun dao(): TrackDao }

@@ -134,7 +134,7 @@ fun SetupScreen(vm:TrackViewModel,busy:Boolean,onCreated:(String)->Unit) {
             NumberDisc("1");Column {Text("Befüllt-Foto",fontWeight=FontWeight.SemiBold);Text("Kann später ergänzt werden",color=Muted,style=MaterialTheme.typography.bodySmall)}
         }}
         if(kind==JobKind.RETURN) GlassSurface { Row(Modifier.padding(14.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(14.dp)) {
-            NumberDisc("=");Column {Text("Leer-/Sauber-Fotos nach der Reinigung",fontWeight=FontWeight.SemiBold);Text("Pro Container gleich viele Leer-/Sauber-Fotos wie Anfangsfotos. Nach 24 Stunden erinnert die App bis „E-Mail gesendet“ bestätigt ist.",color=Muted,style=MaterialTheme.typography.bodySmall)}
+            NumberDisc("=");Column {Text("Leer-/Sauber-Fotos nach der Reinigung",fontWeight=FontWeight.SemiBold);Text("Pro Container gleich viele Sauberfotos wie Anfangsfotos. Bereits saubere Container können übersprungen werden. Nach 24 Stunden erinnert die App bis „E-Mail gesendet“ bestätigt ist.",color=Muted,style=MaterialTheme.typography.bodySmall)}
         }}
         Spacer(Modifier.height(8.dp))
     }
@@ -205,11 +205,12 @@ fun JobScreen(batch: JobWithContainers, vm: TrackViewModel, busy: Boolean, onSca
 }
 
 fun containerDocumentationComplete(batch: JobWithContainers, item: ContainerWithPhotos): Boolean =
-    if (batch.isManagedReturn) returnProgress(item.photos).complete
+    if (batch.isManagedReturn) returnProgress(item.photos, item.container.cleanPhotoSkipped).complete
     else item.photos.map { it.step }.sorted() == (1..batch.job.draft.kind.photoCount).toList()
 
 fun documentationTarget(batch: JobWithContainers): Int = if (batch.isManagedReturn) {
-    batch.containers.sumOf { returnProgress(it.photos).initialCount.coerceAtLeast(1) * 2 } +
+    batch.containers.sumOf { item -> returnProgress(item.photos, item.container.cleanPhotoSkipped).initialCount.coerceAtLeast(1) *
+        (if (item.container.cleanPhotoSkipped) 1 else 2) } +
         (batch.job.draft.quantity - batch.containers.size).coerceAtLeast(0) * 2
 } else batch.job.draft.quantity * batch.job.draft.kind.photoCount
 

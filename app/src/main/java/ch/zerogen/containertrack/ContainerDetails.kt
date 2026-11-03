@@ -93,16 +93,18 @@ fun ContainerDetails(item: ContainerWithPhotos, kind: JobKind, readonly: Boolean
 private fun ManagedReturnDetails(item: ContainerWithPhotos, readonly: Boolean, expanded: Boolean,
                                  onExpand: () -> Unit, onPhoto: (Int) -> Unit, busy: Boolean,
                                  names: List<NamedPhoto>) {
-    val progress = returnProgress(item.photos)
+    val progress = returnProgress(item.photos, item.container.cleanPhotoSkipped)
     GlassSurface {
         Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(Modifier.fillMaxWidth().clickable(onClick = onExpand).heightIn(min = 64.dp), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                     Text(item.container.containerNumber, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    Text("${progress.initialCount} Anfangsfotos · ${progress.cleanCount}/${progress.initialCount.coerceAtLeast(1)} Leer-/Sauber-Fotos", color = Muted)
+                    Text(if (item.container.cleanPhotoSkipped) "${progress.initialCount} Anfangsfotos · Sauberfotos übersprungen"
+                        else "${progress.initialCount} Anfangsfotos · ${progress.cleanCount}/${progress.initialCount.coerceAtLeast(1)} Leer-/Sauber-Fotos", color = Muted)
                     Text(when {
                         progress.complete -> "Dokumentation vollständig"
                         !progress.hasContent -> "Inhaltsfoto fehlt"
+                        item.container.cleanPhotoSkipped -> "Sauberfotos übersprungen · Inhaltsfoto prüfen"
                         else -> "Leer-/Sauber-Fotos fehlen"
                     }, color = if (progress.complete) Lime else Warning, style = MaterialTheme.typography.labelMedium)
                 }
@@ -113,7 +115,11 @@ private fun ManagedReturnDetails(item: ContainerWithPhotos, readonly: Boolean, e
                 listOf(ReturnPhotoPhase.INITIAL to "Anfangsfotos", ReturnPhotoPhase.CLEAN to "Leer-/Sauber-Fotos nach der Reinigung").forEach { (phase, title) ->
                     Text(title, style = MaterialTheme.typography.titleSmall)
                     val photos = names.filter { it.photo.returnPhase == phase }
-                    if (photos.isEmpty()) Text(if (phase == ReturnPhotoPhase.INITIAL) "Ein Inhaltsfoto ist Pflicht. Schaden und Sonstiges sind optional." else "Gleich viele Leer-/Sauber-Fotos wie Anfangsfotos aufnehmen.", color = Muted, style = MaterialTheme.typography.bodySmall)
+                    if (photos.isEmpty()) Text(when {
+                        phase == ReturnPhotoPhase.INITIAL -> "Ein Inhaltsfoto ist Pflicht. Schaden und Sonstiges sind optional."
+                        item.container.cleanPhotoSkipped -> "Bereits sauber · Sauberfotos übersprungen."
+                        else -> "Gleich viele Leer-/Sauber-Fotos wie Anfangsfotos aufnehmen oder bei bereits sauberem Container überspringen."
+                    }, color = Muted, style = MaterialTheme.typography.bodySmall)
                     photos.chunked(2).forEach { row ->
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             row.forEach { named ->

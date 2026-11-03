@@ -1,3 +1,9 @@
+# Update 1.5.2 — Sauberfotos überspringbar, Geräteabnahme offen
+
+Bei bereits sauberen Return-Containern kann der Nutzer die Sauberfotos pro Container ausdrücklich überspringen. Das Inhaltsfoto bleibt Pflicht. Für andere Container gilt unverändert die gleiche Anzahl Anfangs- und Abschlussfotos. Der Status wird mit Room-Migration 3→4 gespeichert, erscheint in den ZIP-Metadaten und wird in der vorbereiteten E-Mail benannt. Die 24h-Erinnerung bleibt bis zur bestätigten E-Mail offen. Einzelheiten: [UPDATE_1_5_2.md](UPDATE_1_5_2.md).
+
+Lokaler Prüfstand am 03.11.2026: `test lint assembleDebug assembleDebugAndroidTest` erfolgreich; 53 Debug- und 53 Release-Unit-Tests ohne Fehler, Lint und beide Debug-APKs gebaut. Neun Python-QA-Tests bestanden. Quell- und gemergte Manifestberechtigungen wurden geprüft; die lokale APK meldet Version 1.5.2 / Code 14, und ihre Signaturprüfung war erfolgreich. Die neuen Android-Tests für Room-Migration, Skip/Undo, E-Mail, ZIP und den sichtbaren Button sind **kompiliert, aber nicht auf einem Gerät ausgeführt**. Die Geräte- und visuelle Abnahme bleibt offen. Die öffentliche GitHub-Debug-Veröffentlichung wird getrennt geprüft; ein lokaler Build belegt noch keinen funktionierenden Download.
+
 # Update 1.5.1 — Debug-Build bestanden, Geräteabnahme offen
 
 App-/Test-Commit: `651f2acd0b4c5ea28406b77ab507bb9aa318a015`. Native Debug-APK 1.5.1 / versionCode 13, `ch.zerogen.containertrack`, gebaut am 29.10.2026.

@@ -80,4 +80,37 @@ class ReturnMigrationTest {
             db.query("PRAGMA foreign_key_check").use { assertFalse(it.moveToFirst()) }
         }
     }
+
+    @Test fun existingContainersDefaultToRequiringCleanPhotosAfterMigration() {
+        val name = "migration-return-v3-v4.db"
+        helper.createDatabase(name, 3).apply {
+            execSQL("""INSERT INTO jobs (id,kind,referenceNumber,kt,orderValue,quantity,quick,additionalWork,createdAt,updatedAt,returnWorkflowVersion)
+                VALUES ('open','RETURN','RET-OPEN','','20 ft',1,'Nothing','Empty',3000,3000,1),
+                ('delivery','DELIVERY','DEL-1','','20 ft',1,'','',4000,4000,0)""")
+            execSQL("""INSERT INTO containers (id,jobId,sequenceIndex,containerNumber,completedAt)
+                VALUES ('rc','open',1,'0708',NULL),('dc','delivery',1,'0710',NULL)""")
+            execSQL("""INSERT INTO photos (id,containerId,step,localPath,capturedAt,returnPhase,returnCategory)
+                VALUES ('rp','rc',1,'/existing/return.jpg',3200,'INITIAL','CONTENT')""")
+            close()
+        }
+
+        helper.runMigrationsAndValidate(name, 4, true, MIGRATION_3_4).use { db ->
+            db.query("SELECT id,cleanPhotoSkipped FROM containers ORDER BY id").use { cursor ->
+                assertTrue(cursor.moveToFirst())
+                assertEquals("dc", cursor.getString(0))
+                assertEquals(0, cursor.getInt(1))
+                assertTrue(cursor.moveToNext())
+                assertEquals("rc", cursor.getString(0))
+                assertEquals(0, cursor.getInt(1))
+                assertFalse(cursor.moveToNext())
+            }
+            db.query("SELECT localPath,returnPhase,returnCategory FROM photos WHERE id='rp'").use { cursor ->
+                assertTrue(cursor.moveToFirst())
+                assertEquals("/existing/return.jpg", cursor.getString(0))
+                assertEquals("INITIAL", cursor.getString(1))
+                assertEquals("CONTENT", cursor.getString(2))
+            }
+            db.query("PRAGMA foreign_key_check").use { assertFalse(it.moveToFirst()) }
+        }
+    }
 }

@@ -36,6 +36,30 @@ class ReturnWorkflowTest {
         assertFalse(returnProgress(complete + photo(7, ReturnPhotoPhase.CLEAN, ReturnPhotoCategory.CLEAN)).complete)
     }
 
+    @Test fun alreadyCleanContainerExplicitlySkipsOnlyItsCleanPhotos() {
+        val initial = listOf(photo(1), photo(2, category = ReturnPhotoCategory.OTHER))
+        assertFalse(returnProgress(initial).complete)
+        assertTrue(returnProgress(initial, cleanPhotoSkipped = true).complete)
+        assertFalse(returnProgress(listOf(photo(1, category = ReturnPhotoCategory.DAMAGE)), cleanPhotoSkipped = true).complete)
+        assertFalse(returnProgress(emptyList(), cleanPhotoSkipped = true).complete)
+        assertFalse(returnProgress(initial + photo(3, ReturnPhotoPhase.CLEAN, ReturnPhotoCategory.CLEAN),
+            cleanPhotoSkipped = true).complete)
+    }
+
+    @Test fun skipAppliesToOneContainerWhileAnotherStillRequiresCleanPhotos() {
+        val skipped = ContainerWithPhotos(ContainerEntity(id = "clean", jobId = "job", sequenceIndex = 1,
+            containerNumber = "0708", cleanPhotoSkipped = true), listOf(photo(1)))
+        val ordinary = ContainerWithPhotos(ContainerEntity(id = "ordinary", jobId = "job", sequenceIndex = 2,
+            containerNumber = "0710"), listOf(photo(1).copy(containerId = "ordinary")))
+        val job = JobEntity(id = "job", draft = JobDraft(JobKind.RETURN, referenceNumber = "RET-2", quantity = 2),
+            createdAt = 1L, returnWorkflowVersion = 1)
+        val batch = JobWithContainers(job, listOf(skipped, ordinary))
+        assertFalse(batch.complete)
+        assertEquals(1, batch.completedCount)
+        assertTrue(batch.copy(containers = listOf(skipped, ordinary.copy(photos = ordinary.photos +
+            photo(2, ReturnPhotoPhase.CLEAN, ReturnPhotoCategory.CLEAN).copy(containerId = "ordinary")))).complete)
+    }
+
     @Test fun contentIsRequiredAndPhaseCategoriesCannotBeMixed() {
         val clean = photo(2, ReturnPhotoPhase.CLEAN, ReturnPhotoCategory.CLEAN)
         assertFalse(returnProgress(emptyList()).complete)
@@ -123,6 +147,29 @@ class ReturnWorkflowTest {
                 writeExportZip(incomplete, draft, listOf(ExportContainer("0708", photos.dropLast(1))), "{}", LocalDate.now(), managedReturn = true)
                 fail("Unbalanced Return accepted")
             } catch (_: IllegalArgumentException) { assertEquals(0, incomplete.size()) }
+        } finally { file.delete() }
+    }
+
+    @Test fun managedZipAcceptsRecordedSkipButRejectsUndocumentedOrConflictingSkip() {
+        val file = File.createTempFile("return-skip", ".jpg").apply { writeBytes(byteArrayOf(1, 2, 3)) }
+        try {
+            val draft = JobDraft(JobKind.RETURN, referenceNumber = "RET-SKIP")
+            val initial = ExportPhoto(1, file)
+            val clean = ExportPhoto(2, file, ReturnPhotoPhase.CLEAN, ReturnPhotoCategory.CLEAN)
+            val output = ByteArrayOutputStream()
+            writeExportZip(output, draft, listOf(ExportContainer("0708", listOf(initial), cleanPhotoSkipped = true)),
+                "{}", LocalDate.of(2026, 1, 2), managedReturn = true)
+            ZipInputStream(output.toByteArray().inputStream()).use { zip ->
+                assertEquals("RET-SKIP/0708/0708_vorher_01_inhalt.jpg", zip.nextEntry?.name)
+                assertEquals("RET-SKIP/RET-SKIP_EXCEL.txt", zip.nextEntry?.name)
+            }
+            for (container in listOf(ExportContainer("0708", listOf(initial)),
+                ExportContainer("0708", listOf(initial, clean), cleanPhotoSkipped = true))) {
+                val rejected = ByteArrayOutputStream()
+                try { writeExportZip(rejected, draft, listOf(container), "{}", LocalDate.now(), managedReturn = true)
+                    fail("Invalid skip accepted")
+                } catch (_: IllegalArgumentException) { assertEquals(0, rejected.size()) }
+            }
         } finally { file.delete() }
     }
 }
