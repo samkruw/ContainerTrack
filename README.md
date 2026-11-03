@@ -6,7 +6,7 @@ Native Kotlin-App zur lokalen Erfassung von Lieferungen und Returns. Ein `:app`-
 
 [**Debug-APK 1.5.3 direkt herunterladen**](https://github.com/samkruw/ContainerTrack/releases/download/debug-v1.5.3/ContainerTrack-1.5.3-debug.apk) · [Release-Seite](https://github.com/samkruw/ContainerTrack/releases/tag/debug-v1.5.3)
 
-Die Vorabversion ist öffentlich ohne Actions-Download-Anmeldung verfügbar. Die Geräteabnahme bleibt offen; Einzelheiten stehen in den Release-Hinweisen. **Die öffentlichen Debug-APKs 1.5.1 und 1.5.2 sind unterschiedlich signiert.** Android kann 1.5.2 deshalb nicht über die öffentliche 1.5.1 installieren. Bei vorhandenen lokalen Aufträgen und Fotos nicht deinstallieren: Dabei gingen diese Daten verloren.
+Die Vorabversion ist öffentlich ohne Actions-Download-Anmeldung verfügbar. Die Geräteabnahme bleibt offen; Einzelheiten stehen in den Release-Hinweisen. **Die öffentlichen Debug-APKs 1.5.1, 1.5.2 und 1.5.3 sind unterschiedlich signiert.** Android kann 1.5.3 deshalb nicht über die öffentliche 1.5.2 installieren. Bei vorhandenen lokalen Aufträgen und Fotos nicht deinstallieren: Dabei gingen diese Daten verloren.
 
 ## Projekt öffnen und APK bauen
 
